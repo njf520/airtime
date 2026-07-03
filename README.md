@@ -11,9 +11,11 @@ Live at **https://njf520.github.io/airtime/**.
 
 ## What works right now
 
-- Browse the source catalog (~33 shows), filter by category (NPR pinned
-  first), drag onto a timeline, adjust flexible-length blocks (Spotify
-  genre/decade), see running total vs. target length.
+- Browse the source catalog (~37 shows), filter by category (NPR pinned
+  first) and by typical length (under 5 min / 5-20 min / 20+ min — flexible
+  Spotify blocks show up in every length bucket since their length is
+  user-set), drag onto a timeline, adjust flexible-length blocks, see
+  running total vs. target length.
 - **Hit "Play Broadcast" and it plays for real**: each podcast/archive block
   fetches its actual RSS feed, grabs the latest episode's audio file, and
   streams it; when the block's allotted minutes elapse (or the episode ends),
@@ -117,19 +119,38 @@ embedded inside the full ~2-hour *Prairie Home Companion* broadcast, with no
 timestamp data to jump to it, so it can't be isolated without transcribing/
 detecting the segment ourselves (out of scope). Rather than fake a "12-minute
 Lake Wobegon" block that's actually a random slice of a variety show, added
-**`phc-full-show`** instead — the complete broadcast for today's date (same
-year-fallback trick, 1980–2016, hosted at
-`play.publicradio.org/api-2.0.1/o/phc/YYYY/MM/DD/phc_YYYYMMDD_128.mp3`),
-honestly labeled as the full ~2-hour show rather than just the segment.
+**`phc-full-show`** instead — the complete broadcast, honestly labeled as the
+full ~2-hour show rather than just the segment.
+
+**Important distinction baked into how dates are chosen:** StarDate (tells
+you what's visible in tonight's sky) and the Writer's Almanac (a specific
+day-in-history) are genuinely date-sensitive — they must match today's
+calendar date. StarDate gets this for free since it's still actively
+produced (its RSS feed's "latest" episode already is today's, whenever it's
+fetched); the Writer's Almanac gets it via a deliberate year-fallback search
+for today's month+day. **Prairie Home Companion is not date-sensitive** —
+any episode is fine — so `phc-full-show` instead picks a *random* month/day
+and searches across years (1980–2016) for a broadcast that exists, rather
+than wastefully cycling through years hunting for one specific day that may
+never have aired.
 
 The Internet Archive's old-time-radio *collection* feed points at item
-detail pages rather than direct audio — `otr-drama` is wired instead to a
-specific, well-organized Archive.org item (the "Suspense" series, 460
-individual episode files) and picks one at random each play. All three
-date/random-fallback sources (`writers-almanac`, `phc-full-show`,
-`otr-drama`) share `fetchLatestEpisode`'s candidate-list contract: it
+detail pages rather than direct audio, so each OTR series is wired to a
+specific, well-curated Archive.org item instead (verified via the metadata
+API to contain real per-episode MP3 files, not a zip archive) and picks one
+episode at random each play. Five distinct series now, each a different
+Archive.org item with no overlapping content: **Suspense** (460 episodes),
+**Dragnet** (185), **Gunsmoke**, 1952-1961 (274), **The Shadow**, original
+1937-1954 broadcasts (164), and **Sherlock Holmes** with Basil Rathbone and
+Nigel Bruce (107). A few other series were checked and rejected as either
+zip-only bundles (Whistler) or too-small samplers (X Minus One, Escape,
+Yours Truly Johnny Dollar) rather than full single-item collections.
+
+All date/random-fallback sources (`writers-almanac`, `phc-full-show`, the
+five OTR series) share `fetchLatestEpisode`'s candidate-list contract: it
 returns `{ candidates: [...] }`, and `tryLoadAudio()` walks the list using
-the `<audio>` element's real load events until one succeeds.
+the `<audio>` element's real load/error events until one succeeds — this
+also sidesteps a separate CORS-sensitive existence-check fetch.
 
 ## Known limitations / next steps
 
@@ -140,7 +161,22 @@ the `<audio>` element's real load events until one succeeds.
   accepts reorders programmatically (verified), worth a manual pass in a
   real browser.
 - Optional: PWA polish (manifest, service worker) to match
-  `dinner-planner`'s install/offline setup.
+  `dinner-planner`'s install/offline setup — needed for real Android/mobile
+  installability.
+
+## Bug fixes from live testing
+
+- **Timeouts were too strict** — a real playlist skipped its first two
+  blocks (StarDate and a Spotify block) because per-request timeouts (6-10s)
+  weren't generous enough for some hosts/connections. Raised RSS/Archive.org
+  fetch timeouts to 15s and the `<audio>` per-candidate load timeout to 12s.
+- **Spotify blocks could skip immediately even when "connected"** — right
+  after connecting (or on a fresh page load), the Web Playback SDK's device
+  can take a few seconds to come online; the code was checking
+  `spotifyState.deviceId` synchronously and failing instantly if it wasn't
+  set yet, rather than giving it a chance. Added `waitForSpotifyDevice()`,
+  which polls for up to 12s before giving up.
+- Added a favicon (inline SVG data URI, no extra files needed).
 
 ## Development
 

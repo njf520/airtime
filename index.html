@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Airtime — build your own broadcast</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f1115'/%3E%3Cpath d='M20 20 Q32 8 44 20' stroke='%234fb0ff' stroke-width='3.5' fill='none' stroke-linecap='round'/%3E%3Cpath d='M13 15 Q32 -4 51 15' stroke='%234fb0ff' stroke-width='3.5' fill='none' stroke-linecap='round' opacity='0.55'/%3E%3Ccircle cx='32' cy='38' r='19' fill='%234fb0ff'/%3E%3Cpath d='M27 29 L27 47 L42 38 Z' fill='%230f1115'/%3E%3C/svg%3E">
 <style>
   :root {
     --bg: #0f1115;
@@ -379,6 +380,7 @@
     <h2>Source library</h2>
     <input type="text" id="search" placeholder="Search sources...">
     <div class="cat-filters" id="cat-filters"></div>
+    <div class="cat-filters" id="length-filters"></div>
     <div id="source-list"></div>
   </section>
 
@@ -468,7 +470,11 @@ const SOURCES = [
   { id: 'poetry-unbound',  name: 'On Being: Poetry Unbound',         category: 'Poetry',     cadence: 'Weekly', lengthMin: 15,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/p9JRgDEG', feedStatus: 'verified', desc: 'A poem read and unpacked, one per episode.' },
   { id: 'writers-almanac', name: 'The Writer\'s Almanac',            category: 'Poetry',     cadence: 'Daily',  lengthMin: 5,   flexible: false, sourceType: 'archive', feedUrl: 'date-archive:writers-almanac', feedStatus: 'verified', desc: 'Garrison Keillor: a poem and this-day-in-history — no longer produced, but plays the archived edition for today\'s calendar date from whichever year (1993-2016) is available.' },
   { id: 'foc',             name: 'BBC From Our Own Correspondent',   category: 'News',       cadence: 'Weekly', lengthMin: 28,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcasts.files.bbci.co.uk/p02nrtpm.rss', feedStatus: 'verified', desc: 'Foreign correspondents\' personal essays.' },
-  { id: 'otr-drama',       name: 'Old-Time Radio Drama',             category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:SUSPENSE_Radio_Digitally_Restored_Collection', feedStatus: 'verified', desc: 'A random episode of the classic "Suspense" radio drama series (Internet Archive, public domain, 460 episodes).' },
+  { id: 'otr-suspense',    name: 'Suspense (Old-Time Radio)',        category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:SUSPENSE_Radio_Digitally_Restored_Collection', feedStatus: 'verified', desc: 'A random episode of the classic "Suspense" radio drama series (Internet Archive, public domain, 460 episodes).' },
+  { id: 'otr-dragnet',     name: 'Dragnet (Old-Time Radio)',         category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:dragnet', feedStatus: 'verified', desc: 'A random episode of the classic police-procedural drama (Internet Archive, public domain, 185 episodes).' },
+  { id: 'otr-gunsmoke',    name: 'Gunsmoke (Old-Time Radio)',        category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:gunsmoke_radio_show_1952-1961_improved_audio_no_commercials', feedStatus: 'verified', desc: 'A random episode of the classic Western drama, 1952-1961 (Internet Archive, public domain, 274 episodes).' },
+  { id: 'otr-shadow',      name: 'The Shadow (Old-Time Radio)',      category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:the-shadow-radio-show-1937-1954-old-time-radio-all-available-episodes', feedStatus: 'verified', desc: 'A random episode of the classic pulp-mystery drama, original 1937-1954 broadcasts (Internet Archive, public domain, 164 episodes).' },
+  { id: 'otr-holmes',      name: 'Sherlock Holmes (Old-Time Radio)', category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:sherlockholmes_otr', feedStatus: 'verified', desc: 'A random episode starring Basil Rathbone and Nigel Bruce (Internet Archive, public domain, 107 episodes).' },
   { id: 'phc-full-show',   name: 'A Prairie Home Companion (full show)', category: 'Storytelling', cadence: 'Anytime', lengthMin: 120, flexible: false, sourceType: 'archive', feedUrl: 'date-archive:prairie-home-companion', feedStatus: 'verified', desc: 'The full ~2-hour variety show (incl. the "News from Lake Wobegon" monologue somewhere within it — it was never released as a standalone clip) for today\'s calendar date, whichever year (1980-2016) is available.' },
   { id: 'spotify-jazz',    name: 'Jazz (Spotify)',                   category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'genre:jazz', feedStatus: 'verified', desc: 'Spotify jazz genre mix, length you set.' },
   { id: 'spotify-80s',     name: '1980s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:1980-1989', feedStatus: 'verified', desc: 'Spotify 1980s decade mix, length you set.' },
@@ -482,6 +488,7 @@ const CATEGORY_COLORS = {
 
 // ---------- State ----------
 let activeCategory = null;
+let activeLengthBucket = null;
 let searchText = '';
 let timelineBlocks = load('airtime_timeline_v1', []);
 let targetMinutes = load('airtime_target_v1', 120);
@@ -500,6 +507,19 @@ function save(key, val) {
 }
 
 // ---------- Library rendering ----------
+const LENGTH_BUCKETS = [
+  { id: 'under5', label: 'Under 5 min', test: len => len < 5 },
+  { id: '5to20',  label: '5-20 min',    test: len => len >= 5 && len <= 20 },
+  { id: 'over20', label: '20+ min',     test: len => len > 20 },
+];
+
+function matchesLengthBucket(s) {
+  if (!activeLengthBucket) return true;
+  if (s.flexible) return true; // length is user-set at drop time, so it fits every bucket
+  const bucket = LENGTH_BUCKETS.find(b => b.id === activeLengthBucket);
+  return bucket ? bucket.test(s.lengthMin) : true;
+}
+
 function renderFilters() {
   const cats = [...new Set(SOURCES.map(s => s.category))].sort((a, b) => {
     if (a === 'NPR') return -1;
@@ -520,6 +540,21 @@ function renderFilters() {
     chip.onclick = () => { activeCategory = (activeCategory === cat ? null : cat); renderFilters(); renderLibrary(); };
     wrap.appendChild(chip);
   });
+
+  const lengthWrap = document.getElementById('length-filters');
+  lengthWrap.innerHTML = '';
+  const allLengthChip = document.createElement('div');
+  allLengthChip.className = 'cat-chip' + (activeLengthBucket === null ? ' active' : '');
+  allLengthChip.textContent = 'Any length';
+  allLengthChip.onclick = () => { activeLengthBucket = null; renderFilters(); renderLibrary(); };
+  lengthWrap.appendChild(allLengthChip);
+  LENGTH_BUCKETS.forEach(b => {
+    const chip = document.createElement('div');
+    chip.className = 'cat-chip' + (activeLengthBucket === b.id ? ' active' : '');
+    chip.textContent = b.label;
+    chip.onclick = () => { activeLengthBucket = (activeLengthBucket === b.id ? null : b.id); renderFilters(); renderLibrary(); };
+    lengthWrap.appendChild(chip);
+  });
 }
 
 function renderLibrary() {
@@ -528,6 +563,7 @@ function renderLibrary() {
   const q = searchText.trim().toLowerCase();
   SOURCES
     .filter(s => !activeCategory || s.category === activeCategory)
+    .filter(matchesLengthBucket)
     .filter(s => !q || s.name.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q))
     .forEach(s => {
       const card = document.createElement('div');
@@ -724,7 +760,7 @@ async function fetchTextWithProxies(url) {
   let lastErr;
   for (const wrap of CORS_PROXIES) {
     try {
-      const res = await fetchWithTimeout(wrap(url), { cache: 'no-store' }, 8000);
+      const res = await fetchWithTimeout(wrap(url), { cache: 'no-store' }, 15000);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const text = await res.text();
       if (text && text.trim().length > 0) return text;
@@ -736,7 +772,7 @@ async function fetchTextWithProxies(url) {
 }
 
 async function resolveArchiveOrgAudio(identifier) {
-  const res = await fetchWithTimeout('https://archive.org/metadata/' + identifier, {}, 8000);
+  const res = await fetchWithTimeout('https://archive.org/metadata/' + identifier, {}, 12000);
   if (!res.ok) throw new Error('Archive.org metadata lookup failed');
   const data = await res.json();
   const files = (data && data.files) || [];
@@ -746,7 +782,7 @@ async function resolveArchiveOrgAudio(identifier) {
 }
 
 async function fetchRandomArchiveItemAudio(identifier) {
-  const res = await fetchWithTimeout('https://archive.org/metadata/' + identifier, {}, 8000);
+  const res = await fetchWithTimeout('https://archive.org/metadata/' + identifier, {}, 12000);
   if (!res.ok) throw new Error('Archive.org metadata lookup failed');
   const data = await res.json();
   const files = (data.files || []).filter(f => (f.format || '').toUpperCase().includes('MP3'));
@@ -778,20 +814,25 @@ function buildWritersAlmanacCandidates() {
   }));
 }
 
+// Unlike StarDate (must match tonight's sky) or the Writer's Almanac (a specific day-in-history),
+// A Prairie Home Companion isn't date-sensitive — any episode works. So instead of anchoring to
+// today's date and cycling through years looking for a match (which was slow and often missed,
+// since the show aired weekly, not daily), pick a random month/day and try that across years.
 function buildPrairieHomeCompanionCandidates() {
-  const now = new Date();
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const dd = String(now.getDate()).padStart(2, '0');
-  const monthName = now.toLocaleString('en-US', { month: 'long' });
+  const month = 1 + Math.floor(Math.random() * 12);
+  const day = 1 + Math.floor(Math.random() * 28); // avoid month-length edge cases
+  const mm = String(month).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  const monthName = new Date(2000, month - 1, 1).toLocaleString('en-US', { month: 'long' });
   return yearsDescending(1980, 2016).map(y => ({
     audioUrl: `https://play.publicradio.org/api-2.0.1/o/phc/${y}/${mm}/${dd}/phc_${y}${mm}${dd}_128.mp3`,
-    title: `A Prairie Home Companion, full show — ${monthName} ${now.getDate()}, ${y}`,
+    title: `A Prairie Home Companion, full show — ${monthName} ${day}, ${y}`,
   }));
 }
 
 // Tries each candidate in order using the audio element's own load events (avoids a separate
 // CORS-sensitive existence check) — returns the first one that actually loads.
-async function tryLoadAudio(candidates, perAttemptTimeoutMs = 6000) {
+async function tryLoadAudio(candidates, perAttemptTimeoutMs = 12000) {
   for (const c of candidates) {
     const ok = await new Promise(resolve => {
       let settled = false;
@@ -992,12 +1033,21 @@ function updateSpotifyButton() {
   btn.textContent = spotifyState.deviceId ? 'Spotify connected' : (spotifyState.token ? 'Spotify: connecting device…' : 'Connect Spotify');
 }
 
+async function waitForSpotifyDevice(timeoutMs) {
+  const start = Date.now();
+  while (!spotifyState.deviceId) {
+    if (Date.now() - start > timeoutMs) return false;
+    await new Promise(r => setTimeout(r, 300));
+  }
+  return true;
+}
+
 async function spotifyApi(path, opts = {}) {
   const token = await ensureFreshToken();
   const res = await fetchWithTimeout('https://api.spotify.com/v1' + path, {
     ...opts,
     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers || {}) },
-  }, 10000);
+  }, 15000);
   if (res.status === 204) return null;
   if (!res.ok) throw new Error('Spotify API error ' + res.status);
   const text = await res.text();
@@ -1150,10 +1200,22 @@ async function playBlockAt(index) {
       playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
     }
   } else if (src.sourceType === 'spotify-genre' || src.sourceType === 'spotify-decade') {
-    if (!spotifyState.token || !spotifyState.deviceId) {
+    if (!spotifyState.token) {
       setNowPlaying(block.name, '', 'Spotify not connected — skipping in 2s…');
       playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
       return;
+    }
+    if (!spotifyState.deviceId) {
+      // Right after connecting (or on a fresh page load), the Web Playback SDK can take a few
+      // seconds to establish its device — give it a real chance instead of failing instantly.
+      setNowPlaying(block.name, '', 'Waiting for Spotify device to come online…');
+      const ready = await waitForSpotifyDevice(12000);
+      if (playerState.currentIndex !== index) return;
+      if (!ready) {
+        setNowPlaying(block.name, '', 'Spotify device never came online — skipping in 2s…');
+        playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
+        return;
+      }
     }
     setNowPlaying(block.name, 'Finding tracks…', '');
     try {
