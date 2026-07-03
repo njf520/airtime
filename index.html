@@ -490,7 +490,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '1.1.1';
+const VERSION = '1.1.2';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
@@ -843,6 +843,15 @@ async function fetchWithTimeout(url, opts, timeoutMs) {
   }
 }
 
+// Free third-party CORS proxies have no reliability guarantee — one occasionally returns its own
+// error page (HTML, JSON, "rate limited", etc.) with a 200 status instead of the real feed. Check
+// the response actually looks like XML before accepting it, so a bad proxy falls through to the
+// next one instead of silently poisoning the result.
+function looksLikeXml(text) {
+  const head = text.slice(0, 500).trimStart();
+  return head.startsWith('<?xml') || /^<(rss|feed)[\s>]/i.test(head) || /<(rss|feed)[\s>]/i.test(head);
+}
+
 async function fetchTextWithProxies(url) {
   let lastErr;
   for (const wrap of CORS_PROXIES) {
@@ -850,7 +859,8 @@ async function fetchTextWithProxies(url) {
       const res = await fetchWithTimeout(wrap(url), { cache: 'no-store' }, 15000);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const text = await res.text();
-      if (text && text.trim().length > 0) return text;
+      if (text && text.trim().length > 0 && looksLikeXml(text)) return text;
+      if (text && text.trim().length > 0) throw new Error('Response did not look like a valid feed (possibly a proxy error page)');
     } catch (e) {
       lastErr = e;
     }
