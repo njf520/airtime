@@ -490,7 +490,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '1.1.2';
+const VERSION = '1.1.3';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
@@ -1147,12 +1147,18 @@ async function spotifyApi(path, opts = {}) {
   }, 15000);
   if (res.status === 204) return null;
   if (!res.ok) {
+    const rawBody = await res.text().catch(() => '');
     let detail = '';
     try {
-      const body = await res.json();
-      detail = body && body.error && body.error.message ? ': ' + body.error.message : '';
-    } catch (e) {}
-    throw new Error('Spotify API error ' + res.status + detail);
+      const body = JSON.parse(rawBody);
+      detail = body && body.error && body.error.message ? body.error.message
+             : body && body.error_description ? body.error_description
+             : rawBody.slice(0, 200);
+    } catch (e) {
+      detail = rawBody.slice(0, 200);
+    }
+    console.error('Spotify API call failed', res.status, path, rawBody);
+    throw new Error('Spotify API error ' + res.status + (detail ? ': ' + detail : '') + ' [' + path + ']');
   }
   const text = await res.text();
   return text ? JSON.parse(text) : null;
