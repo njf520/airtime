@@ -190,6 +190,15 @@ variable, clamped 220-640px, persisted in `localStorage`).
   which polls for up to 12s before giving up.
 - Added a favicon (inline SVG data URI, no extra files needed).
 
+## Versioning
+
+The header shows a version badge (e.g. `v1.1.0`) next to the title, driven
+by the `VERSION` constant near the top of the `<script>` block. On every
+deploy, bump `VERSION` **and** `CACHE_NAME` in `sw.js` together — the
+service worker uses `CACHE_NAME` to know when to discard old cached assets,
+so if they drift out of sync, installed/offline clients can get stuck
+serving a stale version.
+
 ## Development
 
 There's no build step — open `index.html` directly, or serve the folder
