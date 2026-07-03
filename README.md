@@ -189,6 +189,19 @@ variable, clamped 220-640px, persisted in `localStorage`).
   set yet, rather than giving it a chance. Added `waitForSpotifyDevice()`,
   which polls for up to 12s before giving up.
 - Added a favicon (inline SVG data URI, no extra files needed).
+- **Spotify's `genre:` search filter is only valid for artist search, not
+  track search** — the Jazz block was sending `q=genre:jazz&type=track`,
+  which Spotify rejects with a 400. Switched to a plain `jazz` keyword
+  search. Also made `spotifyApi()` surface Spotify's actual error message
+  body instead of just the HTTP status code.
+- **A "good" feed could still fail with "did not parse as XML"** — the free
+  CORS proxies have no reliability guarantee, and one occasionally returns
+  its own error page (HTML/JSON/rate-limit message) with a 200 status
+  instead of the real feed; `fetchTextWithProxies` was accepting any
+  non-empty 200 response as success. Added `looksLikeXml()` to validate the
+  response before accepting it, falling through to the next proxy
+  otherwise — reproduced this exactly with StarDate, where the feed itself
+  was fine but a bad proxy response poisoned the result.
 
 ## Versioning
 
