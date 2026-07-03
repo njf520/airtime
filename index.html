@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Airtime — build your own broadcast</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1e222b;
+    --border: #2a2f3a;
+    --text: #e8eaed;
+    --text-dim: #9aa0ab;
+    --accent: #4fb0ff;
+    --good: #3ecf8e;
+    --warn: #e0a233;
+    --bad: #e05a5a;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  header h1 {
+    font-size: 20px;
+    margin: 0;
+  }
+  header h1 span {
+    color: var(--text-dim);
+    font-weight: normal;
+    font-size: 14px;
+    display: block;
+  }
+  .target-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+  .target-controls input {
+    width: 56px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 14px;
+  }
+  main {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 65px);
+  }
+  #library {
+    border-right: 1px solid var(--border);
+    padding: 16px;
+    overflow-y: auto;
+    max-height: calc(100vh - 65px);
+  }
+  #library h2, #timeline-col h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin: 0 0 12px 0;
+  }
+  #search {
+    width: 100%;
+    padding: 8px 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .cat-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .cat-chip {
+    font-size: 11px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+  }
+  .cat-chip.active {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .source-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--card-color, var(--accent));
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    cursor: grab;
+  }
+  .source-card:active { cursor: grabbing; }
+  .source-card.dragging { opacity: 0.4; }
+  .source-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .source-meta {
+    font-size: 11px;
+    color: var(--text-dim);
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .tag {
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  .source-desc {
+    font-size: 11.5px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+  #timeline-col {
+    padding: 16px 24px;
+    overflow-y: auto;
+    max-height: calc(100vh - 65px);
+  }
+  #progress-wrap {
+    margin-bottom: 18px;
+  }
+  #progress-bar {
+    height: 10px;
+    border-radius: 6px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    display: flex;
+  }
+  #progress-fill {
+    height: 100%;
+    background: var(--good);
+    transition: width 0.2s ease;
+  }
+  #progress-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+  #timeline {
+    min-height: 200px;
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  #timeline.drag-over {
+    border-color: var(--accent);
+    background: rgba(79,176,255,0.05);
+  }
+  #timeline.empty::before {
+    content: "Drag sources here to build your broadcast, in order top to bottom.";
+    color: var(--text-dim);
+    font-size: 13px;
+    display: block;
+    text-align: center;
+    padding: 40px 10px;
+  }
+  .block {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--card-color, var(--accent));
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    cursor: grab;
+  }
+  .block.dragging { opacity: 0.4; }
+  .block.playing { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .block-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .block-index {
+    font-size: 11px;
+    color: var(--text-dim);
+    width: 18px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .block-body { flex: 1; min-width: 0; }
+  .block-name { font-size: 13.5px; font-weight: 600; }
+  .block-meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .block-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .block-duration {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .block-duration input {
+    width: 52px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+  .block-remove {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 15px;
+    padding: 2px 6px;
+  }
+  .block-remove:hover { color: var(--bad); }
+  .feed-badge {
+    font-size: 9.5px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .feed-badge.verified { background: rgba(62,207,142,0.15); color: var(--good); }
+  .feed-badge.unverified { background: rgba(224,162,51,0.15); color: var(--warn); }
+  .feed-badge.none { background: rgba(224,90,90,0.15); color: var(--bad); }
+  .header-buttons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .btn {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #06131f; font-weight: 600; }
+  .btn.primary:hover { opacity: 0.9; }
+  .btn.danger:hover { border-color: var(--bad); color: var(--bad); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  #now-playing {
+    display: none;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+  }
+  #now-playing.active { display: block; }
+  #np-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  #np-info { min-width: 0; }
+  #np-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+  #np-name { font-size: 15px; font-weight: 600; }
+  #np-episode { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  #np-controls { display: flex; gap: 6px; flex-shrink: 0; }
+  #np-controls button {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    width: 34px;
+    height: 34px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  #np-controls button:hover { border-color: var(--accent); }
+  #np-scrub {
+    height: 6px;
+    border-radius: 4px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  #np-scrub-fill { height: 100%; background: var(--accent); width: 0%; }
+  #np-status { font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+    width: 420px;
+    max-width: 90vw;
+  }
+  .modal h3 { margin: 0 0 10px 0; font-size: 16px; }
+  .modal p { font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
+  .modal label { font-size: 12px; color: var(--text-dim); display: block; margin: 12px 0 4px; }
+  .modal input[type="text"] {
+    width: 100%;
+    padding: 8px 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 13px;
+  }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  .modal code {
+    background: var(--panel);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 11.5px;
+  }
+  footer {
+    padding: 10px 24px;
+    font-size: 11px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Airtime <span>drag sources onto a timeline to build a custom broadcast</span></h1>
+  <div class="header-buttons">
+    <div class="target-controls">
+      <label>Target length:</label>
+      <input type="number" id="target-hours" min="0" value="2"> h
+      <input type="number" id="target-mins" min="0" max="59" value="0"> m
+    </div>
+    <button class="btn" id="spotify-connect-btn">Connect Spotify</button>
+    <button class="btn primary" id="play-broadcast-btn">▶ Play Broadcast</button>
+  </div>
+</header>
+
+<main>
+  <section id="library">
+    <h2>Source library</h2>
+    <input type="text" id="search" placeholder="Search sources...">
+    <div class="cat-filters" id="cat-filters"></div>
+    <div id="source-list"></div>
+  </section>
+
+  <section id="timeline-col">
+    <div id="now-playing">
+      <div id="np-top">
+        <div id="np-info">
+          <div id="np-label">Now playing</div>
+          <div id="np-name">—</div>
+          <div id="np-episode"></div>
+        </div>
+        <div id="np-controls">
+          <button id="np-prev" title="Previous">⏮</button>
+          <button id="np-playpause" title="Play/Pause">⏯</button>
+          <button id="np-next" title="Next">⏭</button>
+          <button id="np-stop" title="Stop">⏹</button>
+        </div>
+      </div>
+      <div id="np-scrub"><div id="np-scrub-fill"></div></div>
+      <div id="np-status"></div>
+    </div>
+    <div id="progress-wrap">
+      <div id="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
+      <div id="progress-label"></div>
+    </div>
+    <h2>Your timeline</h2>
+    <div id="timeline" class="empty"></div>
+  </section>
+</main>
+
+<footer>
+  Podcast blocks stream their real latest episode via public RSS feeds. Music blocks play through your own Spotify Premium account once connected. Some sources have no working public feed (marked in red) and will be skipped during playback.
+</footer>
+
+<div class="modal-overlay" id="spotify-modal">
+  <div class="modal">
+    <h3>Connect Spotify</h3>
+    <p>Playing Spotify genre/decade blocks requires your own free Spotify
+       Developer app (Spotify doesn't allow embedding a shared one). This takes
+       about a minute:</p>
+    <p>
+      1. Go to <code>developer.spotify.com/dashboard</code> and create an app.<br>
+      2. Add this exact Redirect URI to the app: <code id="redirect-uri-display"></code><br>
+      3. Copy the Client ID and paste it below.
+    </p>
+    <label>Spotify Client ID</label>
+    <input type="text" id="spotify-client-id" placeholder="e.g. 8f7a2b1c9d3e4f5a6b7c8d9e0f1a2b3c">
+    <div class="modal-actions">
+      <button class="btn" id="spotify-modal-cancel">Cancel</button>
+      <button class="btn primary" id="spotify-modal-connect">Connect</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- Source catalog ----------
+// sourceType: 'podcast-rss' | 'spotify-genre' | 'spotify-decade' | 'archive'
+// feedStatus: 'verified' (fetched & confirmed working) | 'unverified' (documented feed, blocked/network error during our check
+//             but likely real — try it live) | 'none' (no working public feed exists, playback will skip this block)
+const SOURCES = [
+  { id: 'npr-hourly',      name: 'NPR Hourly News',                 category: 'NPR',        cadence: 'Hourly', lengthMin: 5,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.npr.org/500005/podcast.xml', feedStatus: 'verified', desc: 'Top-of-the-hour national news summary.' },
+  { id: 'up-first',        name: 'NPR Up First',                    category: 'NPR',        cadence: 'Daily',  lengthMin: 15,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.npr.org/510318/podcast.xml', feedStatus: 'verified', desc: 'Morning news briefing, the day\'s top 3 stories.' },
+  { id: 'indicator',       name: 'The Indicator from Planet Money', category: 'NPR',        cadence: 'Daily',  lengthMin: 10,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.npr.org/510325/podcast.xml', feedStatus: 'verified', desc: 'Short daily explainer on one economic idea.' },
+  { id: 'waitwait',        name: 'Wait Wait... Don\'t Tell Me!',     category: 'NPR',        cadence: 'Weekly', lengthMin: 50,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.npr.org/344098539/podcast.xml', feedStatus: 'verified', desc: 'NPR\'s weekly news quiz show.' },
+  { id: 'fresh-air',       name: 'NPR Fresh Air',                    category: 'NPR',        cadence: 'Daily',  lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.npr.org/381444908/podcast.xml', feedStatus: 'verified', desc: 'Terry Gross interviews.' },
+  { id: 'ap-hourly',       name: 'AP Hourly Radio News',             category: 'News',       cadence: 'Hourly', lengthMin: 5,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://audioboom.com/channels/3270305.rss', feedStatus: 'verified', desc: 'Associated Press top-of-the-hour national and world news summary (via AudioBoom syndication).' },
+  { id: 'abc-hourly',      name: 'ABC News Update',                  category: 'News',       cadence: 'Hourly', lengthMin: 5,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/ESP9792844572', feedStatus: 'verified', desc: 'ABC Audio\'s 5-minute national news update, refreshed twice hourly.' },
+  { id: 'marketplace',     name: 'Marketplace (APM)',                category: 'Business',   cadence: 'Daily',  lengthMin: 26,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.publicradio.org/public_feeds/marketplace', feedStatus: 'verified', desc: 'Daily business and economic news.' },
+  { id: 'nyt-daily',       name: 'The Daily (NYT)',                  category: 'News',       cadence: 'Daily',  lengthMin: 25,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/Sl5CSM3S', feedStatus: 'verified', desc: 'One story, deeply reported, every weekday.' },
+  { id: 'bbc-world-news',  name: 'BBC World Service News',           category: 'International', cadence: 'Hourly', lengthMin: 5, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcast.voice.api.bbci.co.uk/rss/audio/p002vsmz?api_key=Wbek5zSqxz0Hk1blo5IBqbd9SCWIfNbT', feedStatus: 'verified', desc: 'Top-of-the-hour global news bulletin from the BBC World Service.' },
+  { id: 'bbc-global-news', name: 'BBC Global News Podcast',          category: 'International', cadence: 'Daily', lengthMin: 30, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcasts.files.bbci.co.uk/p02nq0gn.rss', feedStatus: 'verified', desc: 'BBC\'s twice-daily deep dive on the world\'s top stories.' },
+  { id: 'dw-news',         name: 'DW News',                          category: 'International', cadence: 'Daily', lengthMin: 30, flexible: false, sourceType: 'podcast-rss', feedUrl: null, feedStatus: 'none', desc: 'Deutsche Welle\'s English-language news broadcast — no verifiable public podcast feed found (DW\'s public RSS feeds are text/article only).' },
+  { id: 'nhk-newsline',    name: 'NHK World Radio Japan: English News', category: 'International', cadence: 'Daily', lengthMin: 20, flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://www3.nhk.or.jp/rj/podcast/rss/english.xml', feedStatus: 'unverified', desc: 'NHK\'s English-language radio news from Japan (closest available feed to the TV show "NHK Newsline", which has no independent podcast feed).' },
+  { id: 'witness-history', name: 'BBC Witness History',              category: 'History',   cadence: 'Daily',  lengthMin: 9,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcasts.files.bbci.co.uk/p004t1hd.rss', feedStatus: 'verified', desc: 'A historical event, told by someone who was there.' },
+  { id: 'thought-for-day', name: 'BBC Thought for the Day',          category: 'Reflection', cadence: 'Daily',  lengthMin: 3,   flexible: false, sourceType: 'podcast-rss', feedUrl: null, feedStatus: 'none', desc: 'Short daily reflection from Radio 4\'s Today programme — no verifiable standalone feed found.' },
+  { id: 'as-it-happens',   name: 'CBC As It Happens',                category: 'News',       cadence: 'Daily',  lengthMin: 54,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.cbc.ca/podcasting/includes/asithappens.xml', feedStatus: 'unverified', desc: 'Canadian nightly news and interviews.' },
+  { id: 'tal',             name: 'This American Life',               category: 'Storytelling', cadence: 'Weekly', lengthMin: 59, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.thisamericanlife.org/podcast/rss.xml', feedStatus: 'unverified', desc: 'Weekly theme, told in a few first-person stories.' },
+  { id: 'the-moth',        name: 'The Moth',                         category: 'Storytelling', cadence: 'Weekly', lengthMin: 10, flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feeds.themoth.org/themothpodcast', feedStatus: 'unverified', desc: 'A single true story, told live, no notes.' },
+  { id: 'radiolab',        name: 'Radiolab',                         category: 'Science',   cadence: 'Weekly', lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feeds.wnyc.org/radiolab', feedStatus: 'unverified', desc: 'Sound-rich exploration of science and philosophy.' },
+  { id: 'says-you',        name: 'Says You!',                        category: 'Comedy',     cadence: 'Weekly', lengthMin: 50,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://saysyou.libsyn.com/rss', feedStatus: 'verified', desc: 'A word game, bluffing quiz show, PRX — now airing reruns, feed still playable.' },
+  { id: 'startalk',        name: 'StarTalk Radio',                   category: 'Science',   cadence: 'Weekly', lengthMin: 40,  flexible: false, sourceType: 'podcast-rss', feedUrl: null, feedStatus: 'none', desc: 'Neil deGrasse Tyson on science and pop culture — the commonly-cited feed exists but is empty (stale redirect); no working feed found.' },
+  { id: 'quirks',          name: 'CBC Quirks & Quarks',              category: 'Science',   cadence: 'Weekly', lengthMin: 54,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.cbc.ca/podcasting/includes/quirksaio.xml', feedStatus: 'unverified', desc: 'Canadian weekly science radio show.' },
+  { id: 'moment-science',  name: 'A Moment of Science',              category: 'Science',   cadence: 'Daily',  lengthMin: 2,   flexible: false, sourceType: 'podcast-rss', feedUrl: null, feedStatus: 'none', desc: 'Two-minute daily science tidbit, Indiana Public Media — no verifiable feed URL found.' },
+  { id: 'sciam-quickly',   name: 'Scientific American: Science Quickly', category: 'Science', cadence: 'Weekly', lengthMin: 8, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/SAM8799470961', feedStatus: 'verified', desc: 'Short science news bites.' },
+  { id: 'stardate',        name: 'StarDate',                         category: 'Science',   cadence: 'Daily',  lengthMin: 2,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://stardate.org/feeds/podcast.xml', feedStatus: 'verified', desc: 'Daily stargazing tip from McDonald Observatory.' },
+  { id: 'slowdown',        name: 'The Slowdown',                     category: 'Poetry',     cadence: 'Daily',  lengthMin: 5,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.publicradio.org/public_feeds/the-slowdown/rss/rss.rss', feedStatus: 'verified', desc: 'Daily poem with a short reflection, hosted by a US Poet Laureate.' },
+  { id: 'poetry-unbound',  name: 'On Being: Poetry Unbound',         category: 'Poetry',     cadence: 'Weekly', lengthMin: 15,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/p9JRgDEG', feedStatus: 'verified', desc: 'A poem read and unpacked, one per episode.' },
+  { id: 'foc',             name: 'BBC From Our Own Correspondent',   category: 'News',       cadence: 'Weekly', lengthMin: 28,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcasts.files.bbci.co.uk/p02nrtpm.rss', feedStatus: 'verified', desc: 'Foreign correspondents\' personal essays.' },
+  { id: 'otr-drama',       name: 'Old-Time Radio Drama',             category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:SUSPENSE_Radio_Digitally_Restored_Collection', feedStatus: 'verified', desc: 'A random episode of the classic "Suspense" radio drama series (Internet Archive, public domain, 460 episodes).' },
+  { id: 'shipping-forecast', name: 'The Shipping Forecast',          category: 'Weather',    cadence: 'Anytime', lengthMin: 12, flexible: false, sourceType: 'podcast-rss', feedUrl: null, feedStatus: 'none', desc: 'BBC Radio 4\'s sea-area weather bulletin — lives only inside the Radio 4 broadcast/BBC Sounds stream, no standalone feed exists.' },
+  { id: 'spotify-jazz',    name: 'Jazz (Spotify)',                   category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'genre:jazz', feedStatus: 'verified', desc: 'Spotify jazz genre mix, length you set.' },
+  { id: 'spotify-80s',     name: '1980s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:1980-1989', feedStatus: 'verified', desc: 'Spotify 1980s decade mix, length you set.' },
+];
+
+const CATEGORY_COLORS = {
+  NPR: '#e05a5a', News: '#4fb0ff', International: '#3ec6cf', Business: '#3ecf8e',
+  Storytelling: '#e0a233', Comedy: '#e05ac0', Science: '#7c8cff', Poetry: '#e0a233',
+  Reflection: '#9aa0ab', History: '#c98a4a', Drama: '#c9564a', Weather: '#4fd1ff', Music: '#3ecf8e',
+};
+
+// ---------- State ----------
+let activeCategory = null;
+let searchText = '';
+let timelineBlocks = load('airtime_timeline_v1', []);
+let targetMinutes = load('airtime_target_v1', 120);
+
+document.getElementById('target-hours').value = Math.floor(targetMinutes / 60);
+document.getElementById('target-mins').value = targetMinutes % 60;
+
+function load(key, fallback) {
+  try {
+    const v = localStorage.getItem(key);
+    return v ? JSON.parse(v) : fallback;
+  } catch (e) { return fallback; }
+}
+function save(key, val) {
+  localStorage.setItem(key, JSON.stringify(val));
+}
+
+// ---------- Library rendering ----------
+function renderFilters() {
+  const cats = [...new Set(SOURCES.map(s => s.category))].sort((a, b) => {
+    if (a === 'NPR') return -1;
+    if (b === 'NPR') return 1;
+    return a.localeCompare(b);
+  });
+  const wrap = document.getElementById('cat-filters');
+  wrap.innerHTML = '';
+  const allChip = document.createElement('div');
+  allChip.className = 'cat-chip' + (activeCategory === null ? ' active' : '');
+  allChip.textContent = 'All';
+  allChip.onclick = () => { activeCategory = null; renderFilters(); renderLibrary(); };
+  wrap.appendChild(allChip);
+  cats.forEach(cat => {
+    const chip = document.createElement('div');
+    chip.className = 'cat-chip' + (activeCategory === cat ? ' active' : '');
+    chip.textContent = cat;
+    chip.onclick = () => { activeCategory = (activeCategory === cat ? null : cat); renderFilters(); renderLibrary(); };
+    wrap.appendChild(chip);
+  });
+}
+
+function renderLibrary() {
+  const list = document.getElementById('source-list');
+  list.innerHTML = '';
+  const q = searchText.trim().toLowerCase();
+  SOURCES
+    .filter(s => !activeCategory || s.category === activeCategory)
+    .filter(s => !q || s.name.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q))
+    .forEach(s => {
+      const card = document.createElement('div');
+      card.className = 'source-card';
+      card.draggable = true;
+      card.style.setProperty('--card-color', CATEGORY_COLORS[s.category] || '#4fb0ff');
+      const badgeText = s.feedStatus === 'verified' ? 'feed ok' : s.feedStatus === 'unverified' ? 'unverified' : 'no feed';
+      card.innerHTML = `
+        <div class="source-name">${s.name}</div>
+        <div class="source-meta">
+          <span class="tag">${s.category}</span>
+          <span class="tag">${s.cadence}</span>
+          <span class="tag">${s.flexible ? 'flexible length' : s.lengthMin + ' min'}</span>
+          <span class="feed-badge ${s.feedStatus}">${badgeText}</span>
+        </div>
+        <div class="source-desc">${s.desc}</div>
+      `;
+      card.addEventListener('dragstart', e => {
+        card.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', s.id);
+        e.dataTransfer.effectAllowed = 'copy';
+      });
+      card.addEventListener('dragend', () => card.classList.remove('dragging'));
+      list.appendChild(card);
+    });
+}
+
+// ---------- Timeline rendering ----------
+function renderTimeline() {
+  const el = document.getElementById('timeline');
+  el.innerHTML = '';
+  el.classList.toggle('empty', timelineBlocks.length === 0);
+
+  timelineBlocks.forEach((b, idx) => {
+    const src = SOURCES.find(s => s.id === b.sourceId);
+    const block = document.createElement('div');
+    block.className = 'block' + (typeof playerState !== 'undefined' && playerState.currentIndex === idx ? ' playing' : '');
+    block.draggable = true;
+    block.dataset.uid = b.uid;
+    block.style.setProperty('--card-color', CATEGORY_COLORS[b.category] || '#4fb0ff');
+    block.innerHTML = `
+      <div class="block-top">
+        <div class="block-index">${idx + 1}</div>
+        <div class="block-body">
+          <div class="block-name">${b.name}</div>
+          <div class="block-meta">${b.category} · ${src ? src.cadence : ''}</div>
+        </div>
+      </div>
+      <div class="block-bottom">
+        <div class="block-duration">
+          <input type="number" min="1" value="${b.lengthMin}" data-uid="${b.uid}" class="dur-input">
+          min
+        </div>
+        <button class="block-remove" data-uid="${b.uid}">✕</button>
+      </div>
+    `;
+    block.addEventListener('dragstart', e => {
+      block.classList.add('dragging');
+      e.dataTransfer.setData('text/x-reorder', b.uid);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    block.addEventListener('dragend', () => block.classList.remove('dragging'));
+    el.appendChild(block);
+  });
+
+  el.querySelectorAll('.dur-input').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const b = timelineBlocks.find(x => x.uid === inp.dataset.uid);
+      if (b) { b.lengthMin = Math.max(1, parseInt(inp.value) || 1); persistTimeline(); renderProgress(); }
+    });
+  });
+  el.querySelectorAll('.block-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      timelineBlocks = timelineBlocks.filter(x => x.uid !== btn.dataset.uid);
+      persistTimeline();
+      renderTimeline();
+      renderProgress();
+    });
+  });
+
+  renderProgress();
+}
+
+function renderProgress() {
+  const total = timelineBlocks.reduce((sum, b) => sum + b.lengthMin, 0);
+  const target = targetMinutes || 1;
+  const pct = Math.min(100, (total / target) * 100);
+  const fill = document.getElementById('progress-fill');
+  fill.style.width = pct + '%';
+  fill.style.background = total > target ? 'var(--bad)' : (pct > 90 ? 'var(--good)' : 'var(--accent)');
+  const h = Math.floor(total / 60), m = total % 60;
+  const th = Math.floor(target / 60), tm = target % 60;
+  document.getElementById('progress-label').textContent =
+    `${h}h ${m}m of ${th}h ${tm}m target` + (total > target ? ` — ${total - target} min over` : '');
+}
+
+function persistTimeline() { save('airtime_timeline_v1', timelineBlocks); }
+
+// ---------- Drop handling ----------
+const timelineEl = document.getElementById('timeline');
+
+timelineEl.addEventListener('dragover', e => {
+  e.preventDefault();
+  timelineEl.classList.add('drag-over');
+});
+timelineEl.addEventListener('dragleave', () => timelineEl.classList.remove('drag-over'));
+
+timelineEl.addEventListener('drop', e => {
+  e.preventDefault();
+  timelineEl.classList.remove('drag-over');
+
+  const reorderUid = e.dataTransfer.getData('text/x-reorder');
+  if (reorderUid) {
+    // reordering within the timeline: figure out drop target index by mouse position
+    const afterEl = getDragAfterElement(timelineEl, e.clientY);
+    const draggedIdx = timelineBlocks.findIndex(b => b.uid === reorderUid);
+    if (draggedIdx === -1) return;
+    const [dragged] = timelineBlocks.splice(draggedIdx, 1);
+    if (afterEl == null) {
+      timelineBlocks.push(dragged);
+    } else {
+      const afterUid = afterEl.dataset.uid;
+      const afterIdx = timelineBlocks.findIndex(b => b.uid === afterUid);
+      timelineBlocks.splice(afterIdx, 0, dragged);
+    }
+    persistTimeline();
+    renderTimeline();
+    return;
+  }
+
+  const sourceId = e.dataTransfer.getData('text/plain');
+  const src = SOURCES.find(s => s.id === sourceId);
+  if (!src) return;
+  timelineBlocks.push({
+    uid: 'b' + Date.now() + Math.random().toString(36).slice(2, 7),
+    sourceId: src.id,
+    name: src.name,
+    category: src.category,
+    lengthMin: src.flexible ? 30 : src.lengthMin,
+  });
+  persistTimeline();
+  renderTimeline();
+});
+
+function getDragAfterElement(container, y) {
+  const els = [...container.querySelectorAll('.block:not(.dragging)')];
+  return els.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset, element: child };
+    } else {
+      return closest;
+    }
+  }, { offset: -Infinity }).element;
+}
+
+// ---------- Controls ----------
+document.getElementById('search').addEventListener('input', e => {
+  searchText = e.target.value;
+  renderLibrary();
+});
+document.getElementById('target-hours').addEventListener('change', updateTarget);
+document.getElementById('target-mins').addEventListener('change', updateTarget);
+function updateTarget() {
+  const h = parseInt(document.getElementById('target-hours').value) || 0;
+  const m = parseInt(document.getElementById('target-mins').value) || 0;
+  targetMinutes = h * 60 + m;
+  save('airtime_target_v1', targetMinutes);
+  renderProgress();
+}
+
+// ---------- Podcast RSS fetching ----------
+// Podcast feeds almost never set Access-Control-Allow-Origin for browser JS, so we try direct
+// first, then fall back through public CORS proxies (same approach as dinner-planner's URL import).
+const CORS_PROXIES = [
+  url => url,
+  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
+
+async function fetchWithTimeout(url, opts, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...opts, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchTextWithProxies(url) {
+  let lastErr;
+  for (const wrap of CORS_PROXIES) {
+    try {
+      const res = await fetchWithTimeout(wrap(url), { cache: 'no-store' }, 8000);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      if (text && text.trim().length > 0) return text;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('All fetch attempts failed');
+}
+
+async function resolveArchiveOrgAudio(identifier) {
+  const res = await fetchWithTimeout('https://archive.org/metadata/' + identifier, {}, 8000);
+  if (!res.ok) throw new Error('Archive.org metadata lookup failed');
+  const data = await res.json();
+  const files = (data && data.files) || [];
+  const mp3 = files.find(f => (f.format || '').toUpperCase().includes('MP3') || (f.name || '').toLowerCase().endsWith('.mp3'));
+  if (!mp3) return null;
+  return `https://archive.org/download/${identifier}/${encodeURIComponent(mp3.name)}`;
+}
+
+async function fetchRandomArchiveItemAudio(identifier) {
+  const res = await fetchWithTimeout('https://archive.org/metadata/' + identifier, {}, 8000);
+  if (!res.ok) throw new Error('Archive.org metadata lookup failed');
+  const data = await res.json();
+  const files = (data.files || []).filter(f => (f.format || '').toUpperCase().includes('MP3'));
+  if (files.length === 0) throw new Error('No MP3 files found in this Archive.org item');
+  const pick = files[Math.floor(Math.random() * files.length)];
+  const title = pick.title || pick.name.replace(/\.mp3$/i, '').trim();
+  return { audioUrl: `https://archive.org/download/${identifier}/${encodeURIComponent(pick.name)}`, title };
+}
+
+async function fetchLatestEpisode(feedUrl) {
+  if (feedUrl.startsWith('archive-item:')) {
+    return fetchRandomArchiveItemAudio(feedUrl.slice('archive-item:'.length));
+  }
+  const xmlText = await fetchTextWithProxies(feedUrl);
+  const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+  if (doc.querySelector('parsererror')) throw new Error('Feed did not parse as XML');
+  const item = doc.querySelector('item') || doc.querySelector('entry');
+  if (!item) throw new Error('Feed has no episodes');
+  let audioUrl = null;
+  const enclosure = item.querySelector('enclosure');
+  if (enclosure && enclosure.getAttribute('url')) {
+    audioUrl = enclosure.getAttribute('url');
+  }
+  if (!audioUrl) {
+    const mediaContent = item.getElementsByTagNameNS('*', 'content')[0];
+    if (mediaContent && mediaContent.getAttribute('url')) audioUrl = mediaContent.getAttribute('url');
+  }
+  if (!audioUrl) {
+    // Internet Archive collection feeds link to an item details page rather than an enclosure —
+    // resolve the actual audio file via Archive.org's metadata API.
+    const linkEl = item.querySelector('link');
+    const link = linkEl ? linkEl.textContent : '';
+    const m = link.match(/archive\.org\/details\/([^/?#]+)/);
+    if (m) audioUrl = await resolveArchiveOrgAudio(m[1]);
+  }
+  if (!audioUrl) throw new Error('No audio enclosure found in latest episode');
+  const titleEl = item.querySelector('title');
+  const title = titleEl ? titleEl.textContent : 'Latest episode';
+  return { audioUrl, title };
+}
+
+// ---------- Spotify integration (Authorization Code + PKCE, Web Playback SDK) ----------
+const SPOTIFY_REDIRECT_URI = location.origin + location.pathname;
+const SPOTIFY_SCOPES = 'streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state';
+
+let spotifyState = {
+  clientId: load('airtime_spotify_client_id', null),
+  token: load('airtime_spotify_token', null),
+  deviceId: null,
+  player: null,
+};
+
+document.getElementById('redirect-uri-display').textContent = SPOTIFY_REDIRECT_URI;
+
+function base64UrlEncode(bytes) {
+  let str = '';
+  bytes.forEach(b => str += String.fromCharCode(b));
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+async function sha256(plain) {
+  const data = new TextEncoder().encode(plain);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return new Uint8Array(hash);
+}
+function randomString(len) {
+  const arr = new Uint8Array(len);
+  crypto.getRandomValues(arr);
+  return base64UrlEncode(arr).slice(0, len);
+}
+
+async function startSpotifyAuth(clientId) {
+  const verifier = randomString(64);
+  save('airtime_spotify_verifier', verifier);
+  save('airtime_spotify_client_id', clientId);
+  const challenge = base64UrlEncode(await sha256(verifier));
+  const params = new URLSearchParams({
+    client_id: clientId,
+    response_type: 'code',
+    redirect_uri: SPOTIFY_REDIRECT_URI,
+    scope: SPOTIFY_SCOPES,
+    code_challenge_method: 'S256',
+    code_challenge: challenge,
+  });
+  location.href = 'https://accounts.spotify.com/authorize?' + params.toString();
+}
+
+async function handleSpotifyRedirect() {
+  const params = new URLSearchParams(location.search);
+  const code = params.get('code');
+  if (!code) return;
+  const verifier = load('airtime_spotify_verifier', null);
+  const clientId = load('airtime_spotify_client_id', null);
+  history.replaceState({}, '', SPOTIFY_REDIRECT_URI);
+  if (!verifier || !clientId) return;
+  try {
+    const res = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: SPOTIFY_REDIRECT_URI,
+        code_verifier: verifier,
+      }),
+    });
+    const data = await res.json();
+    if (data.access_token) {
+      spotifyState.clientId = clientId;
+      spotifyState.token = {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_at: Date.now() + data.expires_in * 1000,
+      };
+      save('airtime_spotify_token', spotifyState.token);
+    } else {
+      console.error('Spotify token exchange failed', data);
+    }
+  } catch (e) {
+    console.error('Spotify token exchange failed', e);
+  }
+}
+
+async function ensureFreshToken() {
+  if (!spotifyState.token) throw new Error('Not connected to Spotify');
+  if (Date.now() < spotifyState.token.expires_at - 30000) return spotifyState.token.access_token;
+  const res = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: spotifyState.clientId,
+      grant_type: 'refresh_token',
+      refresh_token: spotifyState.token.refresh_token,
+    }),
+  });
+  const data = await res.json();
+  if (!data.access_token) throw new Error('Could not refresh Spotify token');
+  spotifyState.token.access_token = data.access_token;
+  spotifyState.token.expires_at = Date.now() + data.expires_in * 1000;
+  if (data.refresh_token) spotifyState.token.refresh_token = data.refresh_token;
+  save('airtime_spotify_token', spotifyState.token);
+  return spotifyState.token.access_token;
+}
+
+function loadSpotifySdk() {
+  return new Promise(resolve => {
+    if (window.Spotify) return resolve();
+    window.onSpotifyWebPlaybackSDKReady = resolve;
+    const s = document.createElement('script');
+    s.src = 'https://sdk.scdn.co/spotify-player.js';
+    document.head.appendChild(s);
+  });
+}
+
+async function initSpotifyPlayer() {
+  if (!spotifyState.token) return;
+  updateSpotifyButton();
+  await loadSpotifySdk();
+  const player = new Spotify.Player({
+    name: 'Airtime',
+    getOAuthToken: cb => ensureFreshToken().then(cb),
+    volume: 0.8,
+  });
+  player.addListener('ready', ({ device_id }) => {
+    spotifyState.deviceId = device_id;
+    updateSpotifyButton();
+  });
+  player.addListener('not_ready', () => { spotifyState.deviceId = null; updateSpotifyButton(); });
+  player.addListener('initialization_error', ({ message }) => console.error('Spotify init error', message));
+  player.addListener('authentication_error', ({ message }) => console.error('Spotify auth error', message));
+  player.addListener('account_error', ({ message }) => console.error('Spotify account error (Premium required)', message));
+  await player.connect();
+  spotifyState.player = player;
+}
+
+function updateSpotifyButton() {
+  const btn = document.getElementById('spotify-connect-btn');
+  btn.textContent = spotifyState.deviceId ? 'Spotify connected' : (spotifyState.token ? 'Spotify: connecting device…' : 'Connect Spotify');
+}
+
+async function spotifyApi(path, opts = {}) {
+  const token = await ensureFreshToken();
+  const res = await fetchWithTimeout('https://api.spotify.com/v1' + path, {
+    ...opts,
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers || {}) },
+  }, 10000);
+  if (res.status === 204) return null;
+  if (!res.ok) throw new Error('Spotify API error ' + res.status);
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+async function buildSpotifyQueue(query, lengthMin) {
+  const data = await spotifyApi('/search?' + new URLSearchParams({ q: query, type: 'track', limit: '50' }));
+  const tracks = (data && data.tracks && data.tracks.items) ? data.tracks.items.filter(t => t && t.uri) : [];
+  if (tracks.length === 0) throw new Error('No tracks found for ' + query);
+  for (let i = tracks.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
+  }
+  const budgetMs = lengthMin * 60 * 1000;
+  let totalMs = 0;
+  const uris = [];
+  for (const t of tracks) {
+    if (totalMs >= budgetMs) break;
+    uris.push(t.uri);
+    totalMs += t.duration_ms;
+  }
+  if (uris.length === 0) uris.push(tracks[0].uri);
+  return uris;
+}
+
+async function spotifyPlay(uris) {
+  if (!spotifyState.deviceId) throw new Error('Spotify device not ready yet');
+  await spotifyApi('/me/player/play?device_id=' + spotifyState.deviceId, {
+    method: 'PUT',
+    body: JSON.stringify({ uris }),
+  });
+}
+async function spotifyPause() {
+  if (!spotifyState.deviceId) return;
+  await spotifyApi('/me/player/pause?device_id=' + spotifyState.deviceId, { method: 'PUT' });
+}
+async function spotifyResume() {
+  if (!spotifyState.deviceId) return;
+  await spotifyApi('/me/player/play?device_id=' + spotifyState.deviceId, { method: 'PUT' });
+}
+
+document.getElementById('spotify-connect-btn').addEventListener('click', () => {
+  if (spotifyState.token) return;
+  document.getElementById('spotify-client-id').value = spotifyState.clientId || '';
+  document.getElementById('spotify-modal').classList.add('open');
+});
+document.getElementById('spotify-modal-cancel').addEventListener('click', () => {
+  document.getElementById('spotify-modal').classList.remove('open');
+});
+document.getElementById('spotify-modal-connect').addEventListener('click', () => {
+  const clientId = document.getElementById('spotify-client-id').value.trim();
+  if (!clientId) return;
+  startSpotifyAuth(clientId);
+});
+
+// ---------- Sequencer: walks the timeline, plays podcasts and Spotify blocks in order ----------
+let playerState = {
+  playing: false,
+  currentIndex: -1,
+  mode: null, // 'audio' | 'spotify'
+  blockTimer: null,
+  tickTimer: null,
+  blockStartedAt: null,
+  blockBudgetSec: 0,
+};
+const audioEl = new Audio();
+audioEl.addEventListener('ended', () => {
+  if (playerState.mode === 'audio' && playerState.playing) advanceBlock();
+});
+
+function setNowPlaying(name, episode, statusText) {
+  document.getElementById('now-playing').classList.add('active');
+  document.getElementById('np-name').textContent = name;
+  document.getElementById('np-episode').textContent = episode || '';
+  document.getElementById('np-status').textContent = statusText || '';
+}
+
+function updateScrub(frac) {
+  document.getElementById('np-scrub-fill').style.width = Math.min(100, Math.max(0, frac * 100)) + '%';
+}
+
+function startTick() {
+  clearInterval(playerState.tickTimer);
+  playerState.tickTimer = setInterval(() => {
+    if (!playerState.blockStartedAt || !playerState.blockBudgetSec) return;
+    const elapsed = (Date.now() - playerState.blockStartedAt) / 1000;
+    updateScrub(elapsed / playerState.blockBudgetSec);
+    if (elapsed >= playerState.blockBudgetSec) advanceBlock();
+  }, 1000);
+}
+function stopTick() { clearInterval(playerState.tickTimer); }
+
+function updatePlayButtonLabel() {
+  const btn = document.getElementById('play-broadcast-btn');
+  if (playerState.currentIndex === -1) { btn.textContent = '▶ Play Broadcast'; return; }
+  btn.textContent = playerState.playing ? '⏸ Pause' : '▶ Resume';
+}
+
+async function playBroadcastFromStart() {
+  if (timelineBlocks.length === 0) { alert('Add some blocks to your timeline first.'); return; }
+  playerState.playing = true;
+  await playBlockAt(0);
+}
+
+async function playBlockAt(index) {
+  clearTimeout(playerState.blockTimer);
+  stopTick();
+  audioEl.pause();
+  if (spotifyState.deviceId) { try { await spotifyPause(); } catch (e) {} }
+
+  if (index >= timelineBlocks.length) {
+    playerState.playing = false;
+    playerState.currentIndex = -1;
+    setNowPlaying('Broadcast finished', '', '');
+    updatePlayButtonLabel();
+    renderTimeline();
+    return;
+  }
+
+  playerState.currentIndex = index;
+  const block = timelineBlocks[index];
+  const src = SOURCES.find(s => s.id === block.sourceId);
+  renderTimeline();
+  updatePlayButtonLabel();
+
+  if (!src) { advanceBlock(); return; }
+
+  if (src.sourceType === 'podcast-rss' || src.sourceType === 'archive') {
+    if (!src.feedUrl) {
+      setNowPlaying(block.name, '', 'No working feed for this source — skipping in 2s…');
+      playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
+      return;
+    }
+    setNowPlaying(block.name, 'Loading latest episode…', '');
+    try {
+      const { audioUrl, title } = await fetchLatestEpisode(src.feedUrl);
+      if (playerState.currentIndex !== index) return;
+      audioEl.src = audioUrl;
+      playerState.mode = 'audio';
+      playerState.blockStartedAt = Date.now();
+      playerState.blockBudgetSec = block.lengthMin * 60;
+      await audioEl.play();
+      setNowPlaying(block.name, title, `Playing (feed status: ${src.feedStatus})`);
+      startTick();
+    } catch (err) {
+      setNowPlaying(block.name, '', 'Could not load this feed (' + err.message + ') — skipping in 2s…');
+      playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
+    }
+  } else if (src.sourceType === 'spotify-genre' || src.sourceType === 'spotify-decade') {
+    if (!spotifyState.token || !spotifyState.deviceId) {
+      setNowPlaying(block.name, '', 'Spotify not connected — skipping in 2s…');
+      playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
+      return;
+    }
+    setNowPlaying(block.name, 'Finding tracks…', '');
+    try {
+      const uris = await buildSpotifyQueue(src.spotifyQuery, block.lengthMin);
+      if (playerState.currentIndex !== index) return;
+      await spotifyPlay(uris);
+      playerState.mode = 'spotify';
+      playerState.blockStartedAt = Date.now();
+      playerState.blockBudgetSec = block.lengthMin * 60;
+      setNowPlaying(block.name, uris.length + ' tracks queued', 'Playing via Spotify');
+      startTick();
+    } catch (err) {
+      setNowPlaying(block.name, '', 'Spotify playback failed (' + err.message + ') — skipping in 2s…');
+      playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
+    }
+  } else {
+    advanceBlock();
+  }
+}
+
+function advanceBlock() {
+  stopTick();
+  if (!playerState.playing) return;
+  playBlockAt(playerState.currentIndex + 1);
+}
+
+function togglePlayPause() {
+  if (playerState.currentIndex === -1) { playBroadcastFromStart(); return; }
+  if (playerState.mode === 'audio') {
+    if (audioEl.paused) { audioEl.play(); playerState.playing = true; } else { audioEl.pause(); playerState.playing = false; }
+  } else if (playerState.mode === 'spotify') {
+    if (playerState.playing) { spotifyPause(); playerState.playing = false; } else { spotifyResume(); playerState.playing = true; }
+  }
+  updatePlayButtonLabel();
+}
+
+function stopBroadcast() {
+  playerState.playing = false;
+  clearTimeout(playerState.blockTimer);
+  stopTick();
+  audioEl.pause();
+  audioEl.removeAttribute('src');
+  if (spotifyState.deviceId) spotifyPause().catch(() => {});
+  playerState.currentIndex = -1;
+  document.getElementById('now-playing').classList.remove('active');
+  updatePlayButtonLabel();
+  renderTimeline();
+}
+
+document.getElementById('play-broadcast-btn').addEventListener('click', () => {
+  if (playerState.currentIndex === -1) playBroadcastFromStart();
+  else togglePlayPause();
+});
+document.getElementById('np-playpause').addEventListener('click', togglePlayPause);
+document.getElementById('np-next').addEventListener('click', () => { playerState.playing = true; playBlockAt(playerState.currentIndex + 1); });
+document.getElementById('np-prev').addEventListener('click', () => { playerState.playing = true; playBlockAt(Math.max(0, playerState.currentIndex - 1)); });
+document.getElementById('np-stop').addEventListener('click', stopBroadcast);
+
+// ---------- Init ----------
+renderFilters();
+renderLibrary();
+renderTimeline();
+updateSpotifyButton();
+(async function initSpotifyOnLoad() {
+  await handleSpotifyRedirect();
+  updateSpotifyButton();
+  if (spotifyState.token) {
+    try { await initSpotifyPlayer(); } catch (e) { console.error(e); }
+  }
+})();
+</script>
+</body>
+</html>
