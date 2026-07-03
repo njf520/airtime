@@ -466,8 +466,10 @@ const SOURCES = [
   { id: 'stardate',        name: 'StarDate',                         category: 'Science',   cadence: 'Daily',  lengthMin: 2,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://stardate.org/feeds/podcast.xml', feedStatus: 'verified', desc: 'Daily stargazing tip from McDonald Observatory.' },
   { id: 'slowdown',        name: 'The Slowdown',                     category: 'Poetry',     cadence: 'Daily',  lengthMin: 5,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.publicradio.org/public_feeds/the-slowdown/rss/rss.rss', feedStatus: 'verified', desc: 'Daily poem with a short reflection, hosted by a US Poet Laureate.' },
   { id: 'poetry-unbound',  name: 'On Being: Poetry Unbound',         category: 'Poetry',     cadence: 'Weekly', lengthMin: 15,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/p9JRgDEG', feedStatus: 'verified', desc: 'A poem read and unpacked, one per episode.' },
+  { id: 'writers-almanac', name: 'The Writer\'s Almanac',            category: 'Poetry',     cadence: 'Daily',  lengthMin: 5,   flexible: false, sourceType: 'archive', feedUrl: 'date-archive:writers-almanac', feedStatus: 'verified', desc: 'Garrison Keillor: a poem and this-day-in-history — no longer produced, but plays the archived edition for today\'s calendar date from whichever year (1993-2016) is available.' },
   { id: 'foc',             name: 'BBC From Our Own Correspondent',   category: 'News',       cadence: 'Weekly', lengthMin: 28,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcasts.files.bbci.co.uk/p02nrtpm.rss', feedStatus: 'verified', desc: 'Foreign correspondents\' personal essays.' },
   { id: 'otr-drama',       name: 'Old-Time Radio Drama',             category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:SUSPENSE_Radio_Digitally_Restored_Collection', feedStatus: 'verified', desc: 'A random episode of the classic "Suspense" radio drama series (Internet Archive, public domain, 460 episodes).' },
+  { id: 'phc-full-show',   name: 'A Prairie Home Companion (full show)', category: 'Storytelling', cadence: 'Anytime', lengthMin: 120, flexible: false, sourceType: 'archive', feedUrl: 'date-archive:prairie-home-companion', feedStatus: 'verified', desc: 'The full ~2-hour variety show (incl. the "News from Lake Wobegon" monologue somewhere within it — it was never released as a standalone clip) for today\'s calendar date, whichever year (1980-2016) is available.' },
   { id: 'spotify-jazz',    name: 'Jazz (Spotify)',                   category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'genre:jazz', feedStatus: 'verified', desc: 'Spotify jazz genre mix, length you set.' },
   { id: 'spotify-80s',     name: '1980s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:1980-1989', feedStatus: 'verified', desc: 'Spotify 1980s decade mix, length you set.' },
 ];
@@ -754,9 +756,74 @@ async function fetchRandomArchiveItemAudio(identifier) {
   return { audioUrl: `https://archive.org/download/${identifier}/${encodeURIComponent(pick.name)}`, title };
 }
 
+function yearsDescending(startYear, endYear) {
+  const arr = [];
+  for (let y = endYear; y >= startYear; y--) arr.push(y);
+  return arr;
+}
+
+// Shows that ran daily/weekly for years but no longer produce new episodes still have real
+// archived audio filed under their *original* broadcast date. For "today's edition," we build
+// one candidate URL per year the show existed (for today's month+day) and try them newest-first —
+// see tryLoadAudio(), which uses the <audio> element's own success/error events to probe, since a
+// separate existence-check fetch() would hit the same CORS wall as everything else.
+function buildWritersAlmanacCandidates() {
+  const now = new Date();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const monthName = now.toLocaleString('en-US', { month: 'long' });
+  return yearsDescending(1993, 2016).map(y => ({
+    audioUrl: `https://download.publicradio.org/podcast/writers_almanac/${y}/${mm}/twa_${y}${mm}${dd}_64.mp3`,
+    title: `The Writer's Almanac for ${monthName} ${now.getDate()}, ${y}`,
+  }));
+}
+
+function buildPrairieHomeCompanionCandidates() {
+  const now = new Date();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const monthName = now.toLocaleString('en-US', { month: 'long' });
+  return yearsDescending(1980, 2016).map(y => ({
+    audioUrl: `https://play.publicradio.org/api-2.0.1/o/phc/${y}/${mm}/${dd}/phc_${y}${mm}${dd}_128.mp3`,
+    title: `A Prairie Home Companion, full show — ${monthName} ${now.getDate()}, ${y}`,
+  }));
+}
+
+// Tries each candidate in order using the audio element's own load events (avoids a separate
+// CORS-sensitive existence check) — returns the first one that actually loads.
+async function tryLoadAudio(candidates, perAttemptTimeoutMs = 6000) {
+  for (const c of candidates) {
+    const ok = await new Promise(resolve => {
+      let settled = false;
+      const finish = (result) => { if (settled) return; settled = true; cleanup(); resolve(result); };
+      const onError = () => finish(false);
+      const onReady = () => finish(true);
+      const timer = setTimeout(() => finish(false), perAttemptTimeoutMs);
+      function cleanup() {
+        audioEl.removeEventListener('error', onError);
+        audioEl.removeEventListener('loadedmetadata', onReady);
+        clearTimeout(timer);
+      }
+      audioEl.addEventListener('error', onError, { once: true });
+      audioEl.addEventListener('loadedmetadata', onReady, { once: true });
+      audioEl.src = c.audioUrl;
+      audioEl.load();
+    });
+    if (ok) return c;
+  }
+  throw new Error(`No working audio found among ${candidates.length} date candidates`);
+}
+
 async function fetchLatestEpisode(feedUrl) {
   if (feedUrl.startsWith('archive-item:')) {
-    return fetchRandomArchiveItemAudio(feedUrl.slice('archive-item:'.length));
+    const r = await fetchRandomArchiveItemAudio(feedUrl.slice('archive-item:'.length));
+    return { candidates: [r] };
+  }
+  if (feedUrl === 'date-archive:writers-almanac') {
+    return { candidates: buildWritersAlmanacCandidates() };
+  }
+  if (feedUrl === 'date-archive:prairie-home-companion') {
+    return { candidates: buildPrairieHomeCompanionCandidates() };
   }
   const xmlText = await fetchTextWithProxies(feedUrl);
   const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
@@ -783,7 +850,7 @@ async function fetchLatestEpisode(feedUrl) {
   if (!audioUrl) throw new Error('No audio enclosure found in latest episode');
   const titleEl = item.querySelector('title');
   const title = titleEl ? titleEl.textContent : 'Latest episode';
-  return { audioUrl, title };
+  return { candidates: [{ audioUrl, title }] };
 }
 
 // ---------- Spotify integration (Authorization Code + PKCE, Web Playback SDK) ----------
@@ -1067,14 +1134,16 @@ async function playBlockAt(index) {
     }
     setNowPlaying(block.name, 'Loading latest episode…', '');
     try {
-      const { audioUrl, title } = await fetchLatestEpisode(src.feedUrl);
+      const { candidates } = await fetchLatestEpisode(src.feedUrl);
       if (playerState.currentIndex !== index) return;
-      audioEl.src = audioUrl;
+      if (candidates.length > 1) setNowPlaying(block.name, 'Checking for a working recording…', '');
+      const winner = await tryLoadAudio(candidates);
+      if (playerState.currentIndex !== index) return;
       playerState.mode = 'audio';
       playerState.blockStartedAt = Date.now();
       playerState.blockBudgetSec = block.lengthMin * 60;
       await audioEl.play();
-      setNowPlaying(block.name, title, `Playing (feed status: ${src.feedStatus})`);
+      setNowPlaying(block.name, winner.title, `Playing (feed status: ${src.feedStatus})`);
       startTick();
     } catch (err) {
       setNowPlaying(block.name, '', 'Could not load this feed (' + err.message + ') — skipping in 2s…');

@@ -11,7 +11,7 @@ Live at **https://njf520.github.io/airtime/**.
 
 ## What works right now
 
-- Browse the source catalog (~31 shows), filter by category (NPR pinned
+- Browse the source catalog (~33 shows), filter by category (NPR pinned
   first), drag onto a timeline, adjust flexible-length blocks (Spotify
   genre/decade), see running total vs. target length.
 - **Hit "Play Broadcast" and it plays for real**: each podcast/archive block
@@ -68,7 +68,7 @@ just use InPrivate every time).
 
 ## Source catalog
 
-`SOURCES` in `index.html` lists ~31 audio sources, each tagged with
+`SOURCES` in `index.html` lists ~33 audio sources, each tagged with
 category, cadence, typical length, `sourceType`, and `feedStatus`:
 
 - `verified` — fetched and confirmed working (from either the dev sandbox or
@@ -97,18 +97,39 @@ listing, and per BBC's own distribution details it is only ever broadcast
 live or streamed on-demand via BBC Sounds — never packaged as discrete,
 independently-fetchable episodes with a permanent feed.
 
-Three other sources were removed outright (not just marked unavailable)
-because the underlying show/organization no longer produces new audio at
-all: **CBS News Radio** (the network shut down entirely on 2026-05-22 after
-99 years), **The Writer's Almanac** (Garrison Keillor now publishes it as a
-newsletter/website only, no audio), and **News from Lake Wobegon** (A
-Prairie Home Companion ended production in 2016; only scattered archived
-monologues remain, no clean feed).
+**CBS News Radio was removed outright** — the network shut down entirely on
+2026-05-22 after 99 years, so no archive exists to fall back to, unlike the
+two below.
+
+**The Writer's Almanac is back**, despite no longer producing new episodes,
+because it's a show organized by *calendar date* rather than a rolling feed
+— a listener wants "the July 3rd edition," not literally today in the
+current year. Real archived audio still exists at
+`download.publicradio.org/podcast/writers_almanac/YYYY/MM/twa_YYYYMMDD_64.mp3`
+for every day the show aired (1993–2016). `writers-almanac` now builds one
+candidate URL per year for today's month+day and tries them newest-first
+using the `<audio>` element's own load success/failure events (no separate
+CORS-sensitive existence check needed) until one actually plays.
+
+**News from Lake Wobegon stays removed, but differently:** the monologue
+itself was never released as a standalone audio file — it only exists
+embedded inside the full ~2-hour *Prairie Home Companion* broadcast, with no
+timestamp data to jump to it, so it can't be isolated without transcribing/
+detecting the segment ourselves (out of scope). Rather than fake a "12-minute
+Lake Wobegon" block that's actually a random slice of a variety show, added
+**`phc-full-show`** instead — the complete broadcast for today's date (same
+year-fallback trick, 1980–2016, hosted at
+`play.publicradio.org/api-2.0.1/o/phc/YYYY/MM/DD/phc_YYYYMMDD_128.mp3`),
+honestly labeled as the full ~2-hour show rather than just the segment.
 
 The Internet Archive's old-time-radio *collection* feed points at item
 detail pages rather than direct audio — `otr-drama` is wired instead to a
 specific, well-organized Archive.org item (the "Suspense" series, 460
-individual episode files) and picks one at random each play.
+individual episode files) and picks one at random each play. All three
+date/random-fallback sources (`writers-almanac`, `phc-full-show`,
+`otr-drama`) share `fetchLatestEpisode`'s candidate-list contract: it
+returns `{ candidates: [...] }`, and `tryLoadAudio()` walks the list using
+the `<audio>` element's real load events until one succeeds.
 
 ## Known limitations / next steps
 
