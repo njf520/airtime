@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Airtime — build your own broadcast</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f1115'/%3E%3Cpath d='M20 20 Q32 8 44 20' stroke='%234fb0ff' stroke-width='3.5' fill='none' stroke-linecap='round'/%3E%3Cpath d='M13 15 Q32 -4 51 15' stroke='%234fb0ff' stroke-width='3.5' fill='none' stroke-linecap='round' opacity='0.55'/%3E%3Ccircle cx='32' cy='38' r='19' fill='%234fb0ff'/%3E%3Cpath d='M27 29 L27 47 L42 38 Z' fill='%230f1115'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0f1115">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
   :root {
     --bg: #0f1115;
@@ -62,12 +68,25 @@
   }
   main {
     display: grid;
-    grid-template-columns: 340px 1fr;
+    grid-template-columns: var(--library-width, 340px) 6px 1fr;
     gap: 0;
     min-height: calc(100vh - 65px);
   }
+  #pane-divider {
+    cursor: col-resize;
+    background: var(--border);
+    position: relative;
+  }
+  #pane-divider:hover, #pane-divider.dragging {
+    background: var(--accent);
+  }
+  #pane-divider::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    left: -4px; right: -4px;
+  }
   #library {
-    border-right: 1px solid var(--border);
     padding: 16px;
     overflow-y: auto;
     max-height: calc(100vh - 65px);
@@ -383,6 +402,8 @@
     <div class="cat-filters" id="length-filters"></div>
     <div id="source-list"></div>
   </section>
+
+  <div id="pane-divider"></div>
 
   <section id="timeline-col">
     <div id="now-playing">
@@ -735,6 +756,36 @@ function updateTarget() {
   save('airtime_target_v1', targetMinutes);
   renderProgress();
 }
+
+// ---------- Resizable panes ----------
+(function initPaneResize() {
+  const divider = document.getElementById('pane-divider');
+  const MIN_WIDTH = 220;
+  const MAX_WIDTH = 640;
+  const saved = load('airtime_library_width_v1', null);
+  if (saved) document.documentElement.style.setProperty('--library-width', saved + 'px');
+
+  let dragging = false;
+  divider.addEventListener('mousedown', e => {
+    dragging = true;
+    divider.classList.add('dragging');
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const mainRect = document.querySelector('main').getBoundingClientRect();
+    let width = e.clientX - mainRect.left;
+    width = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, width));
+    document.documentElement.style.setProperty('--library-width', width + 'px');
+  });
+  window.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    divider.classList.remove('dragging');
+    const width = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--library-width'));
+    save('airtime_library_width_v1', width);
+  });
+})();
 
 // ---------- Podcast RSS fetching ----------
 // Podcast feeds almost never set Access-Control-Allow-Origin for browser JS, so we try direct
@@ -1286,6 +1337,12 @@ updateSpotifyButton();
     try { await initSpotifyPlayer(); } catch (e) { console.error(e); }
   }
 })();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(e => console.error('Service worker registration failed', e));
+  });
+}
 </script>
 </body>
 </html>
