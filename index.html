@@ -662,7 +662,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.4.0';
+const VERSION = '2.5.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
@@ -1928,8 +1928,19 @@ function startTick() {
   playerState.tickTimer = setInterval(() => {
     if (!playerState.blockStartedAt || !playerState.blockBudgetSec) return;
     const elapsed = (Date.now() - playerState.blockStartedAt) / 1000;
-    updateScrub(elapsed / playerState.blockBudgetSec);
-    if (elapsed >= playerState.blockBudgetSec) advanceBlock();
+    // For fixed content, show progress against the real duration once known (more accurate than
+    // the assigned estimate), falling back to the estimate before metadata loads.
+    const realDuration = playerState.mode === 'audio' && isFinite(audioEl.duration) ? audioEl.duration : null;
+    const scrubDenominator = (!playerState.blockIsFlexible && realDuration) ? realDuration : playerState.blockBudgetSec;
+    updateScrub(elapsed / scrubDenominator);
+    if (playerState.blockIsFlexible) {
+      if (elapsed >= playerState.blockBudgetSec) advanceBlock();
+    } else if (elapsed >= playerState.blockBudgetSec * 2 + 300) {
+      // Safety net only -- fixed content normally ends via the 'ended' event, not this tick. If
+      // we're here, something stalled (e.g. a stream that never fires 'ended'); don't hang the
+      // rest of the broadcast forever waiting for it.
+      advanceBlock();
+    }
   }, 1000);
 }
 function stopTick() { clearInterval(playerState.tickTimer); }
@@ -2015,6 +2026,12 @@ async function playBlockAt(index) {
       const winner = await tryLoadAudio(candidates, myGen);
       if (myGen !== playGeneration) return;
       playerState.mode = 'audio';
+      // Fixed-length content (a podcast/OTR episode with a real end) should play to its natural
+      // finish rather than being cut off at the assigned estimate -- a "5 min" news update that's
+      // actually 5:22 shouldn't get faded out 22 seconds early. Internet radio streams are the
+      // opposite: they're infinite and marked flexible in the catalog, so the budget cutoff is the
+      // whole point there, same as Spotify.
+      playerState.blockIsFlexible = !!src.flexible;
       playerState.blockStartedAt = Date.now();
       playerState.blockBudgetSec = block.lengthMin * 60;
       await audioEl.play();
@@ -2051,6 +2068,7 @@ async function playBlockAt(index) {
       await spotifyPlay(uris);
       if (myGen !== playGeneration) return;
       playerState.mode = 'spotify';
+      playerState.blockIsFlexible = true; // an endless queue -- cutting it off at the budget is the point
       playerState.blockStartedAt = Date.now();
       playerState.blockBudgetSec = block.lengthMin * 60;
       setNowPlaying(block.name, uris.length + ' tracks queued', 'Playing via Spotify');

@@ -330,6 +330,23 @@ block-to-block cuts:
   live: volume measurably drops mid-transition, then the next block starts
   at the restored target volume.
 
+**Follow-up fix**: the fade/cutoff above was originally tied to the
+block's *assigned* length estimate for every source type — meaning a fixed
+5-minute news show that's actually 5:22 got faded out 22 seconds early,
+mid-sentence (reported live). Fixed content (podcasts, OTR) should play to
+its natural end regardless of the estimate; only genuinely open-ended
+sources (Spotify queues, live internet radio) should get cut off at the
+budget, since that's the whole point there. Now branches on the catalog's
+own `flexible` field: fixed sources rely on the `<audio>` element's real
+`ended` event (with a generous 2x+5min safety-net cutoff only in case
+something stalls and never fires it), while flexible sources keep the
+original hard budget cutoff. The scrub bar also now tracks the real audio
+duration for fixed content once metadata loads, instead of the assigned
+estimate. Tested both directions live: a 1-minute-budget podcast block
+kept playing 65+ seconds in with no natural end yet, then correctly
+advanced the moment `ended` fired; a 1-minute-budget radio stream still
+cut off right at 61 seconds as before.
+
 ## PWA / mobile install
 
 Installable on Android (and desktop) as a home-screen app: `manifest.json`
