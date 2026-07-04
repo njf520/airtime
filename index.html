@@ -224,6 +224,11 @@
     padding: 1px 6px;
     border-radius: 4px;
   }
+  .tag-network {
+    background: rgba(79,176,255,0.12);
+    color: var(--accent);
+    font-weight: 600;
+  }
   .source-desc {
     font-size: 11.5px;
     color: var(--text-dim);
@@ -558,9 +563,10 @@
 <main>
   <section id="library">
     <h2>Source library</h2>
-    <input type="text" id="search" placeholder="Search sources...">
+    <input type="text" id="search" placeholder="Search by name or network (e.g. BBC)...">
     <div class="cat-filters" id="cat-filters"></div>
     <div class="cat-filters" id="length-filters"></div>
+    <div class="cat-filters" id="format-filters"></div>
     <div id="custom-spotify-form">
       <input type="text" id="custom-spotify-query" placeholder="Any Spotify search — an artist, mood, era…">
       <button class="btn" id="custom-spotify-add">+ Custom channel</button>
@@ -638,7 +644,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.1.0';
+const VERSION = '2.2.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
@@ -777,6 +783,49 @@ const CATEGORY_COLORS = {
 let customSpotifySources = load('airtime_custom_sources_v1', []);
 customSpotifySources.forEach(cs => SOURCES.push(cs));
 
+// Which publisher/network produced each source — shown as its own tag on the card and searchable,
+// so e.g. typing "BBC" surfaces every BBC show regardless of category. Listed explicitly for
+// anything not covered by the id-prefix fallbacks below (spotify-*, soma-* share one network).
+const NETWORK_MAP = {
+  'npr-hourly': 'NPR', 'up-first': 'NPR', 'indicator': 'NPR', 'waitwait': 'NPR', 'fresh-air': 'NPR',
+  'hiddenbrain': 'NPR', 'planetmoney': 'NPR', 'howibuiltthis': 'NPR',
+  'bbc-world-news': 'BBC', 'bbc-global-news': 'BBC', 'witness-history': 'BBC', 'thought-for-day': 'BBC', 'foc': 'BBC',
+  'ap-hourly': 'AP',
+  'abc-hourly': 'ABC News',
+  'marketplace': 'American Public Media', 'slowdown': 'American Public Media', 'phc-full-show': 'American Public Media',
+  'nyt-daily': 'The New York Times', 'ezraklein': 'The New York Times',
+  'dw-news': 'Deutsche Welle',
+  'nhk-newsline': 'NHK',
+  'as-it-happens': 'CBC', 'quirks': 'CBC',
+  'radiolab': 'WNYC Studios',
+  'tal': 'This American Life / WBEZ',
+  'the-moth': 'PRX', 'says-you': 'PRX', 'ninetyninepi': 'PRX',
+  'moment-science': 'Indiana Public Media',
+  'sciam-quickly': 'Scientific American',
+  'stardate': 'McDonald Observatory',
+  'poetry-unbound': 'On Being Studios',
+  'freakonomics': 'Freakonomics Radio Network',
+  'syskshouldknow': 'iHeartPodcasts',
+  'crimejunkie': 'audiochuck',
+  'smartless': 'SmartLess Media',
+  'podsaveamerica': 'Crooked Media',
+  'armchairexpert': 'Armchair Umbrella',
+  'revisionisthist': 'Pushkin Industries',
+  'nosuchthing': 'QI',
+  'sixtyminutes': 'CBS',
+  'otr-suspense': 'Internet Archive', 'otr-dragnet': 'Internet Archive', 'otr-gunsmoke': 'Internet Archive',
+  'otr-shadow': 'Internet Archive', 'otr-holmes': 'Internet Archive',
+  'rp-main': 'Radio Paradise', 'rp-mellow': 'Radio Paradise', 'rp-rock': 'Radio Paradise', 'rp-global': 'Radio Paradise', 'rp-beyond': 'Radio Paradise',
+  'kexp': 'KEXP',
+};
+SOURCES.forEach(s => {
+  if (s.network) return;
+  if (NETWORK_MAP[s.id]) { s.network = NETWORK_MAP[s.id]; return; }
+  if (s.id.startsWith('spotify-') || s.id.startsWith('custom-')) { s.network = 'Spotify'; return; }
+  if (s.id.startsWith('soma-')) { s.network = 'SomaFM'; return; }
+  s.network = 'Independent';
+});
+
 function addCustomSpotifyChannel(query) {
   const trimmed = query.trim();
   if (!trimmed) return;
@@ -803,6 +852,7 @@ function addCustomSpotifyChannel(query) {
 // ---------- State ----------
 let activeCategory = null;
 let activeLengthBucket = null;
+let activeFormat = null;
 let searchText = '';
 let timelineBlocks = load('airtime_timeline_v1', []);
 let targetMinutes = load('airtime_target_v1', 120);
@@ -826,6 +876,21 @@ const LENGTH_BUCKETS = [
   { id: '5to20',  label: '5-20 min',    test: len => len >= 5 && len <= 20 },
   { id: 'over20', label: '20+ min',     test: len => len > 20 },
 ];
+
+// A "Podcast" bucket wouldn't be useful as a genre category (it'd match ~80 of 113 sources), but
+// it's a genuinely useful independent filter dimension alongside category/length — distinguishing
+// delivery format (episodic RSS feed vs. always-on radio stream vs. Spotify) rather than subject.
+const FORMAT_GROUPS = [
+  { id: 'podcast', label: 'Podcast', test: s => s.sourceType === 'podcast-rss' || s.sourceType === 'archive' },
+  { id: 'radio',   label: 'Internet Radio', test: s => s.sourceType === 'internet-radio' },
+  { id: 'spotify', label: 'Spotify', test: s => s.sourceType.startsWith('spotify-') },
+];
+
+function matchesFormat(s) {
+  if (!activeFormat) return true;
+  const group = FORMAT_GROUPS.find(g => g.id === activeFormat);
+  return group ? group.test(s) : true;
+}
 
 function matchesLengthBucket(s) {
   if (!activeLengthBucket) return true;
@@ -869,6 +934,21 @@ function renderFilters() {
     chip.onclick = () => { activeLengthBucket = (activeLengthBucket === b.id ? null : b.id); renderFilters(); renderLibrary(); };
     lengthWrap.appendChild(chip);
   });
+
+  const formatWrap = document.getElementById('format-filters');
+  formatWrap.innerHTML = '';
+  const allFormatChip = document.createElement('div');
+  allFormatChip.className = 'cat-chip' + (activeFormat === null ? ' active' : '');
+  allFormatChip.textContent = 'Any format';
+  allFormatChip.onclick = () => { activeFormat = null; renderFilters(); renderLibrary(); };
+  formatWrap.appendChild(allFormatChip);
+  FORMAT_GROUPS.forEach(g => {
+    const chip = document.createElement('div');
+    chip.className = 'cat-chip' + (activeFormat === g.id ? ' active' : '');
+    chip.textContent = g.label;
+    chip.onclick = () => { activeFormat = (activeFormat === g.id ? null : g.id); renderFilters(); renderLibrary(); };
+    formatWrap.appendChild(chip);
+  });
 }
 
 function renderLibrary() {
@@ -878,7 +958,8 @@ function renderLibrary() {
   const matches = SOURCES
     .filter(s => !activeCategory || s.category === activeCategory)
     .filter(matchesLengthBucket)
-    .filter(s => !q || s.name.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q));
+    .filter(matchesFormat)
+    .filter(s => !q || s.name.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q) || s.network.toLowerCase().includes(q));
 
   if (matches.length === 0) {
     const empty = document.createElement('div');
@@ -900,6 +981,7 @@ function renderLibrary() {
           <button class="source-add-btn" title="Add to timeline" aria-label="Add ${s.name} to timeline" data-id="${s.id}">+</button>
         </div>
         <div class="source-meta">
+          <span class="tag tag-network">${s.network}</span>
           <span class="tag">${s.category}</span>
           <span class="tag">${s.cadence}</span>
           <span class="tag">${s.flexible ? 'flexible length' : s.lengthMin + ' min'}</span>

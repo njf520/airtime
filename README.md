@@ -254,6 +254,28 @@ Total catalog: **113 sources** (up from 37), spanning News, NPR, Business,
 Storytelling, Comedy, True Crime, Science, Poetry, Reflection, History,
 Drama, International, Weather, Radio, and Music.
 
+## Network tags and a Format filter
+
+Two follow-up questions worth answering directly:
+
+**"Shouldn't there be a Podcast category?"** — not as a *genre* category
+(it'd match ~80 of 113 sources, too broad to be a useful filter), but yes
+as an independent filter dimension distinguishing *delivery format* from
+*subject*. Added a **Format filter** (Podcast / Internet Radio / Spotify)
+alongside the existing category and length filters — `FORMAT_GROUPS`
+matches on `sourceType` under the hood.
+
+**"Can each source show which network/publisher it's from (e.g. a BBC
+tag)?"** — yes: every source now has a `network` field (NPR, BBC, AP, CBC,
+Internet Archive, SomaFM, Radio Paradise, KEXP, Spotify, or the specific
+publisher for independent shows like Pushkin Industries/Crooked Media/
+audiochuck/etc.), shown as its own accent-colored tag on the card, assigned
+via an explicit `NETWORK_MAP` lookup (with `spotify-`/`soma-` id-prefix
+fallbacks, and `"Independent"` as the final fallback) so it didn't require
+touching all 113 individual catalog entries by hand. The search box also
+now matches against network, so typing "BBC" surfaces all 5 BBC shows at
+once — tested and confirmed.
+
 ## PWA / mobile install
 
 Installable on Android (and desktop) as a home-screen app: `manifest.json`
