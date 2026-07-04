@@ -236,6 +236,17 @@ still available as a bonus on desktop:
   catalog now show a visible "source removed" badge instead of just
   silently skipping during playback with no on-screen explanation.
 
+**Separately, and more severely:** the two-pane layout itself had zero
+responsive handling — no media queries at all. Tested at 375px (phone
+width) and the library panel held its fixed 340px while the timeline column
+was squeezed to 48px, completely unusable. Added a `max-width: 768px` media
+query that stacks the panes vertically, hides the (meaningless-on-mobile)
+resize divider, lets the page scroll naturally instead of two independent
+fixed-height scroll panes, and wraps the header controls properly (the
+Play Broadcast button was overflowing the viewport by ~40px before a
+`flex-wrap` fix). Verified both the phone-width layout and that desktop
+(1280px) is unaffected.
+
 ## Versioning
 
 The header shows a version badge (e.g. `v1.1.0`) next to the title, driven

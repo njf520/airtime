@@ -442,6 +442,35 @@
     color: var(--text-dim);
     border-top: 1px solid var(--border);
   }
+  /* Native drag-and-drop and a fixed-width side panel both fall apart on phone-width screens —
+     stack library above timeline, hide the (meaningless-on-mobile) resize divider, and let the
+     whole page scroll naturally instead of two independently-scrolling fixed-height panes. */
+  @media (max-width: 768px) {
+    main {
+      grid-template-columns: 1fr;
+    }
+    #pane-divider { display: none; }
+    #library, #timeline-col {
+      max-height: none;
+      overflow-y: visible;
+    }
+    #library {
+      border-bottom: 1px solid var(--border);
+    }
+    header {
+      padding: 12px 16px;
+    }
+    .header-buttons {
+      width: 100%;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .target-controls {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
 </style>
 </head>
 <body>
@@ -539,7 +568,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '1.2.0';
+const VERSION = '1.2.1';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
