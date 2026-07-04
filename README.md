@@ -264,6 +264,24 @@ Play Broadcast button was overflowing the viewport by ~40px before a
 `flex-wrap` fix). Verified both the phone-width layout and that desktop
 (1280px) is unaffected.
 
+Also grew the icon-only buttons (add/move/remove) from 24-26px to 40-44px
+specifically under the mobile media query — comfortable with a mouse, but
+genuinely hard to tap precisely on a real phone screen otherwise.
+
+## Accessibility & new features
+
+- Added `aria-label`s to every icon-only button (transport controls,
+  add/move/remove) so screen readers announce something meaningful instead
+  of relying on `title` alone (inconsistent screen-reader support).
+- Added a **volume slider** in the now-playing bar, applied to both the
+  `<audio>` element and the Spotify Web Playback SDK's player, persisted
+  across sessions.
+- Fixed a gap in the Spotify OAuth handling: if the user denies consent (or
+  any other auth error), Spotify redirects back with `?error=...` instead of
+  `?code=...` — this was silently falling through with the error param stuck
+  in the URL bar. Now shown as a clear alert and the URL is cleaned up
+  either way.
+
 ## Versioning
 
 The header shows a version badge (e.g. `v1.1.0`) next to the title, driven
