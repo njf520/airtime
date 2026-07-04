@@ -117,6 +117,13 @@
     color: var(--text-dim);
     margin: 0 0 12px 0;
   }
+  .timeline-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .timeline-heading-row h2 { margin: 0; }
+  #clear-timeline-btn { font-size: 12px; padding: 5px 10px; }
   #search {
     width: 100%;
     padding: 8px 10px;
@@ -155,9 +162,29 @@
     padding: 10px 12px;
     margin-bottom: 8px;
     cursor: grab;
+    position: relative;
   }
   .source-card:active { cursor: grabbing; }
   .source-card.dragging { opacity: 0.4; }
+  .source-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .source-add-btn {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .source-add-btn:hover { border-color: var(--accent); }
   .source-name {
     font-size: 13.5px;
     font-weight: 600;
@@ -180,6 +207,12 @@
     font-size: 11.5px;
     color: var(--text-dim);
     line-height: 1.4;
+  }
+  .empty-state {
+    color: var(--text-dim);
+    font-size: 13px;
+    text-align: center;
+    padding: 30px 10px;
   }
   #timeline-col {
     padding: 16px 24px;
@@ -283,6 +316,19 @@
     padding: 2px 6px;
   }
   .block-remove:hover { color: var(--bad); }
+  .block-move {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 12px;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+  }
+  .block-move:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .block-move:disabled { opacity: 0.3; cursor: not-allowed; }
   .feed-badge {
     font-size: 9.5px;
     padding: 1px 6px;
@@ -458,7 +504,10 @@
       <div id="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
       <div id="progress-label"></div>
     </div>
-    <h2>Your timeline</h2>
+    <div class="timeline-heading-row">
+      <h2>Your timeline</h2>
+      <button class="btn" id="clear-timeline-btn">Clear all</button>
+    </div>
     <div id="timeline" class="empty"></div>
   </section>
 </main>
@@ -490,7 +539,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '1.1.3';
+const VERSION = '1.2.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
@@ -618,18 +667,30 @@ function renderLibrary() {
   const list = document.getElementById('source-list');
   list.innerHTML = '';
   const q = searchText.trim().toLowerCase();
-  SOURCES
+  const matches = SOURCES
     .filter(s => !activeCategory || s.category === activeCategory)
     .filter(matchesLengthBucket)
-    .filter(s => !q || s.name.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q))
-    .forEach(s => {
+    .filter(s => !q || s.name.toLowerCase().includes(q) || s.desc.toLowerCase().includes(q));
+
+  if (matches.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'No sources match your filters. Try clearing the category, length, or search filters.';
+    list.appendChild(empty);
+    return;
+  }
+
+  matches.forEach(s => {
       const card = document.createElement('div');
       card.className = 'source-card';
       card.draggable = true;
       card.style.setProperty('--card-color', CATEGORY_COLORS[s.category] || '#4fb0ff');
       const badgeText = s.feedStatus === 'verified' ? 'feed ok' : s.feedStatus === 'unverified' ? 'unverified' : 'no feed';
       card.innerHTML = `
-        <div class="source-name">${s.name}</div>
+        <div class="source-card-top">
+          <div class="source-name">${s.name}</div>
+          <button class="source-add-btn" title="Add to timeline" data-id="${s.id}">+</button>
+        </div>
         <div class="source-meta">
           <span class="tag">${s.category}</span>
           <span class="tag">${s.cadence}</span>
@@ -644,8 +705,12 @@ function renderLibrary() {
         e.dataTransfer.effectAllowed = 'copy';
       });
       card.addEventListener('dragend', () => card.classList.remove('dragging'));
+      card.querySelector('.source-add-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        addSourceToTimeline(s.id);
+      });
       list.appendChild(card);
-    });
+  });
 }
 
 // ---------- Timeline rendering ----------
@@ -666,7 +731,7 @@ function renderTimeline() {
         <div class="block-index">${idx + 1}</div>
         <div class="block-body">
           <div class="block-name">${b.name}</div>
-          <div class="block-meta">${b.category} · ${src ? src.cadence : ''}</div>
+          <div class="block-meta">${b.category} · ${src ? src.cadence : '<span class="feed-badge none">source removed</span>'}</div>
         </div>
       </div>
       <div class="block-bottom">
@@ -674,6 +739,8 @@ function renderTimeline() {
           <input type="number" min="1" value="${b.lengthMin}" data-uid="${b.uid}" class="dur-input">
           min
         </div>
+        <button class="block-move" data-uid="${b.uid}" data-dir="-1" title="Move up" ${idx === 0 ? 'disabled' : ''}>↑</button>
+        <button class="block-move" data-uid="${b.uid}" data-dir="1" title="Move down" ${idx === timelineBlocks.length - 1 ? 'disabled' : ''}>↓</button>
         <button class="block-remove" data-uid="${b.uid}">✕</button>
       </div>
     `;
@@ -686,6 +753,9 @@ function renderTimeline() {
     el.appendChild(block);
   });
 
+  el.querySelectorAll('.block-move').forEach(btn => {
+    btn.addEventListener('click', () => moveBlock(btn.dataset.uid, parseInt(btn.dataset.dir)));
+  });
   el.querySelectorAll('.dur-input').forEach(inp => {
     inp.addEventListener('change', () => {
       const b = timelineBlocks.find(x => x.uid === inp.dataset.uid);
@@ -751,7 +821,13 @@ timelineEl.addEventListener('drop', e => {
     return;
   }
 
-  const sourceId = e.dataTransfer.getData('text/plain');
+  addSourceToTimeline(e.dataTransfer.getData('text/plain'));
+});
+
+// Shared by both the drag-and-drop handler and the tap-to-add "+" button on each source card —
+// native HTML5 drag-and-drop doesn't fire on touchscreens at all, so the "+" button is the only
+// way to build a timeline on a phone.
+function addSourceToTimeline(sourceId) {
   const src = SOURCES.find(s => s.id === sourceId);
   if (!src) return;
   timelineBlocks.push({
@@ -763,7 +839,17 @@ timelineEl.addEventListener('drop', e => {
   });
   persistTimeline();
   renderTimeline();
-});
+}
+
+function moveBlock(uid, direction) {
+  const idx = timelineBlocks.findIndex(b => b.uid === uid);
+  if (idx === -1) return;
+  const newIdx = idx + direction;
+  if (newIdx < 0 || newIdx >= timelineBlocks.length) return;
+  [timelineBlocks[idx], timelineBlocks[newIdx]] = [timelineBlocks[newIdx], timelineBlocks[idx]];
+  persistTimeline();
+  renderTimeline();
+}
 
 function getDragAfterElement(container, y) {
   const els = [...container.querySelectorAll('.block:not(.dragging)')];
@@ -782,6 +868,14 @@ function getDragAfterElement(container, y) {
 document.getElementById('search').addEventListener('input', e => {
   searchText = e.target.value;
   renderLibrary();
+});
+document.getElementById('clear-timeline-btn').addEventListener('click', () => {
+  if (timelineBlocks.length === 0) return;
+  if (!confirm('Clear all ' + timelineBlocks.length + ' blocks from your timeline?')) return;
+  if (typeof stopBroadcast === 'function') stopBroadcast();
+  timelineBlocks = [];
+  persistTimeline();
+  renderTimeline();
 });
 document.getElementById('target-hours').addEventListener('change', updateTarget);
 document.getElementById('target-mins').addEventListener('change', updateTarget);
@@ -929,8 +1023,11 @@ function buildPrairieHomeCompanionCandidates() {
 
 // Tries each candidate in order using the audio element's own load events (avoids a separate
 // CORS-sensitive existence check) — returns the first one that actually loads.
-async function tryLoadAudio(candidates, perAttemptTimeoutMs = 12000) {
+async function tryLoadAudio(candidates, myGen, perAttemptTimeoutMs = 12000) {
   for (const c of candidates) {
+    if (myGen !== undefined && myGen !== playGeneration) {
+      throw new Error('Superseded by a newer playback request');
+    }
     const ok = await new Promise(resolve => {
       let settled = false;
       const finish = (result) => { if (settled) return; settled = true; cleanup(); resolve(result); };
@@ -1215,6 +1312,11 @@ document.getElementById('spotify-modal-connect').addEventListener('click', () =>
 });
 
 // ---------- Sequencer: walks the timeline, plays podcasts and Spotify blocks in order ----------
+// Incremented at the start of every playBlockAt() call. Async work (fetches, tryLoadAudio's
+// candidate loop, Spotify calls) checks this before touching shared state like audioEl.src, so a
+// user rapidly skipping/stopping can't have a stale in-flight request clobber the current block.
+let playGeneration = 0;
+
 let playerState = {
   playing: false,
   currentIndex: -1,
@@ -1264,10 +1366,12 @@ async function playBroadcastFromStart() {
 }
 
 async function playBlockAt(index) {
+  const myGen = ++playGeneration;
   clearTimeout(playerState.blockTimer);
   stopTick();
   audioEl.pause();
   if (spotifyState.deviceId) { try { await spotifyPause(); } catch (e) {} }
+  if (myGen !== playGeneration) return; // superseded while awaiting the pause above
 
   if (index >= timelineBlocks.length) {
     playerState.playing = false;
@@ -1295,17 +1399,19 @@ async function playBlockAt(index) {
     setNowPlaying(block.name, 'Loading latest episode…', '');
     try {
       const { candidates } = await fetchLatestEpisode(src.feedUrl);
-      if (playerState.currentIndex !== index) return;
+      if (myGen !== playGeneration) return;
       if (candidates.length > 1) setNowPlaying(block.name, 'Checking for a working recording…', '');
-      const winner = await tryLoadAudio(candidates);
-      if (playerState.currentIndex !== index) return;
+      const winner = await tryLoadAudio(candidates, myGen);
+      if (myGen !== playGeneration) return;
       playerState.mode = 'audio';
       playerState.blockStartedAt = Date.now();
       playerState.blockBudgetSec = block.lengthMin * 60;
       await audioEl.play();
+      if (myGen !== playGeneration) return;
       setNowPlaying(block.name, winner.title, `Playing (feed status: ${src.feedStatus})`);
       startTick();
     } catch (err) {
+      if (myGen !== playGeneration) return;
       setNowPlaying(block.name, '', 'Could not load this feed (' + err.message + ') — skipping in 2s…');
       playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
     }
@@ -1320,7 +1426,7 @@ async function playBlockAt(index) {
       // seconds to establish its device — give it a real chance instead of failing instantly.
       setNowPlaying(block.name, '', 'Waiting for Spotify device to come online…');
       const ready = await waitForSpotifyDevice(12000);
-      if (playerState.currentIndex !== index) return;
+      if (myGen !== playGeneration) return;
       if (!ready) {
         setNowPlaying(block.name, '', 'Spotify device never came online — skipping in 2s…');
         playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
@@ -1330,14 +1436,16 @@ async function playBlockAt(index) {
     setNowPlaying(block.name, 'Finding tracks…', '');
     try {
       const uris = await buildSpotifyQueue(src.spotifyQuery, block.lengthMin);
-      if (playerState.currentIndex !== index) return;
+      if (myGen !== playGeneration) return;
       await spotifyPlay(uris);
+      if (myGen !== playGeneration) return;
       playerState.mode = 'spotify';
       playerState.blockStartedAt = Date.now();
       playerState.blockBudgetSec = block.lengthMin * 60;
       setNowPlaying(block.name, uris.length + ' tracks queued', 'Playing via Spotify');
       startTick();
     } catch (err) {
+      if (myGen !== playGeneration) return;
       setNowPlaying(block.name, '', 'Spotify playback failed (' + err.message + ') — skipping in 2s…');
       playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
     }
@@ -1363,6 +1471,7 @@ function togglePlayPause() {
 }
 
 function stopBroadcast() {
+  playGeneration++; // invalidate any in-flight playBlockAt/tryLoadAudio work
   playerState.playing = false;
   clearTimeout(playerState.blockTimer);
   stopTick();

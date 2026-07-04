@@ -202,6 +202,39 @@ variable, clamped 220-640px, persisted in `localStorage`).
   response before accepting it, falling through to the next proxy
   otherwise — reproduced this exactly with StarDate, where the feed itself
   was fine but a bad proxy response poisoned the result.
+- **Race condition: rapidly skipping/stopping could let stale background
+  work clobber the current block** — `tryLoadAudio`'s candidate loop (and
+  the fetch/Spotify calls around it) only checked whether the user had moved
+  on *after* fully resolving, not during. If you skipped away from a block
+  whose feed was still being resolved (e.g. Writer's Almanac cycling through
+  candidate years), that old work kept running in the background and could
+  still write to `audioEl.src` after you'd moved elsewhere. Added a
+  `playGeneration` counter, bumped at the start of every `playBlockAt()`
+  call and checked at every await point (including inside `tryLoadAudio`'s
+  loop); anything from a superseded call now bails out immediately.
+  Reproduced and confirmed fixed: rapidly skipping past a block mid-fetch no
+  longer causes interference.
+
+## Mobile / touch support
+
+Native HTML5 drag-and-drop (`draggable="true"`, `dragstart`/`drop`) **does
+not fire at all on touchscreens** — Android Chrome, iOS Safari, none of
+them. Since the whole point of this app was Android use, that would have
+made the core interaction unusable on a phone despite the PWA install
+working fine. Added tap-based alternatives that work everywhere, with drag
+still available as a bonus on desktop:
+
+- Each source card has a **"+" button** that appends it to the end of the
+  timeline (`addSourceToTimeline()`, shared with the drop handler).
+- Each timeline block has **↑/↓ buttons** to reorder it (`moveBlock()`),
+  disabled at the ends of the list.
+- A **"Clear all"** button on the timeline (with a confirm prompt) to reset
+  without removing blocks one at a time.
+- An **empty-state message** when the library's filters/search combine to
+  match zero sources, instead of a silently blank panel.
+- Timeline blocks referencing a source that's since been removed from the
+  catalog now show a visible "source removed" badge instead of just
+  silently skipping during playback with no on-screen explanation.
 
 ## Versioning
 
