@@ -9,9 +9,55 @@ Premium account.
 
 Live at **https://njf520.github.io/airtime/**.
 
+## Scaling this to the public
+
+The user asked directly: what would it take to open this up to lots of
+people, not just one person's browser? Here's the honest breakdown.
+
+**Podcast/RSS/internet-radio sources scale to unlimited users for free.**
+There's no backend, no per-user state beyond `localStorage`, and GitHub
+Pages serves static files at effectively unlimited scale for free. The one
+real risk is the free public CORS proxies (`corsproxy.io`,
+`api.allorigins.win`, `api.codetabs.com`) — fine for one person, but a
+popular public site hammering them could get rate-limited or blocked
+outright. **Recommended hardening**: deploy a small dedicated Cloudflare
+Worker as a first-choice CORS proxy (falling back to the public ones), the
+same pattern already used for `dinner-planner`'s `worker.js` (which proxies
+GitHub + Anthropic calls) — a ~20-line Worker that just fetches a URL and
+adds CORS headers would remove the dependency on third-party proxy
+reliability entirely, and Cloudflare's free tier comfortably covers a
+public hobby project's traffic. I can draft this Worker on request; I
+can't deploy it myself since it needs your Cloudflare account.
+
+**Spotify is the real constraint, and it's a hard platform limit, not a
+code problem.** Spotify apps start in "Development Mode," capped at **25
+total users** who must be individually allowlisted by email in the
+developer dashboard — this applies per registered app (per Client ID), not
+per code deployment. Three realistic paths:
+1. **Friends-and-family scale (≤25 people)**: works today. You (as the app
+   owner) add each person's Spotify account email to the allowlist in your
+   existing app's dashboard. No code changes needed.
+2. **Request Extended Quota Mode from Spotify**: a real approval process
+   (business justification, app review) — not guaranteed, and Spotify has
+   gotten stricter post-2024. Worth trying if you want genuinely public
+   Spotify integration, but plan for it to possibly be denied or slow.
+3. **Lead with the new Radio category instead** (see below) — these need
+   zero per-user auth at all, so they're the actual path to "the masses"
+   for the music portion, with Spotify staying available as a bonus for
+   whoever connects their own account.
+
+**Legal footing is solid.** Every podcast source just links to the
+creator's own publicly-published RSS feed and audio file — this is exactly
+what every podcast app (Apple Podcasts, Overcast, Spotify itself) does, not
+redistribution. The internet radio stations are explicitly free/listener-
+supported services designed to be streamed. Spotify playback goes through
+their own official SDK under the user's own authorized account, same as
+any legitimate third-party Spotify app.
+
 ## What works right now
 
-- Browse the source catalog (~37 shows), filter by category (NPR pinned
+- Browse the source catalog (~113 shows/channels), filter by category (NPR
+  pinned
   first) and by typical length (under 5 min / 5-20 min / 20+ min — flexible
   Spotify blocks show up in every length bucket since their length is
   user-set), drag onto a timeline, adjust flexible-length blocks, see
@@ -70,8 +116,8 @@ just use InPrivate every time).
 
 ## Source catalog
 
-`SOURCES` in `index.html` lists ~33 audio sources, each tagged with
-category, cadence, typical length, `sourceType`, and `feedStatus`:
+`SOURCES` in `index.html` lists ~113 audio sources/channels, each tagged
+with category, cadence, typical length, `sourceType`, and `feedStatus`:
 
 - `verified` — fetched and confirmed working (from either the dev sandbox or
   a real browser)
@@ -151,6 +197,62 @@ five OTR series) share `fetchLatestEpisode`'s candidate-list contract: it
 returns `{ candidates: [...] }`, and `tryLoadAudio()` walks the list using
 the `<audio>` element's real load/error events until one succeeds — this
 also sidesteps a separate CORS-sensitive existence-check fetch.
+
+## Major catalog expansion — "most popular sources" + free radio + more Spotify
+
+Prompted by "what are the most popular ~50 sources, and should we add the
+ones we're missing" — checked 20 of the biggest English-language podcasts
+not yet covered, all with real WebFetch-verified feeds (not guessed):
+**Freakonomics Radio, 99% Invisible, Stuff You Should Know, Crime Junkie,
+SmartLess, How I Built This, Pod Save America, Armchair Expert, Hidden
+Brain, Revisionist History, You're Wrong About, Song Exploder, No Such
+Thing As A Fish, The Ezra Klein Show, Planet Money, and 60 Minutes** — 16
+added (Hardcore History's free feed is stuck at a 2020 episode with newer
+ones sold individually through Dan Carlin's store, so excluded as
+unsuitable for "plays the latest episode"; My Favorite Murder and Criminal
+couldn't be verified this pass — recent distribution changes, re-check
+before adding; WTF with Marc Maron ended permanently in Oct 2025, excluded
+as a dead show).
+
+**Added a "Free Internet Radio" category (33 channels) that needs zero
+per-user authentication at all** — the direct fix for "Spotify won't
+satisfy everyone" and for Spotify's user-cap scaling problem. **SomaFM**
+(27 channels: Groove Salad, Drone Zone, Metal Detector, Left Coast 70s,
+Reggae, and 22 more, covering ambient/metal/reggae/folk/lounge/vaporwave/
+and more), **Radio Paradise** (5: Main/Mellow/Rock/Global/Beyond mixes),
+and **KEXP**'s live stream — all nonprofit/listener-supported, commercial-
+free, and confirmed CORS-open (`Access-Control-Allow-Origin: *`).
+Real engineering catch here: SomaFM's per-channel `.pls` playlist filenames
+don't follow one consistent `{id}{bitrate}.pls` pattern (Metal Detector's
+highest-quality MP3 playlist is `metal.pls`, not `metal128.pls` — a guess
+based on the other 26 channels' naming would have silently broken this one
+specific channel). Fixed by resolving through SomaFM's authoritative
+`channels.json` API instead of hardcoding filenames — verified all 33
+channels resolve and stream correctly after the fix, where 1 had silently
+failed before it. Also confirmed the resolved `ice*.somafm.com` edge server
+actually did rotate between two test runs in this session (ice6 → ice4),
+validating the decision to resolve at play time rather than hardcode a
+specific edge server.
+
+**Expanded Spotify from 2 to ~26 preset channels** (15 genres: rock,
+hip-hop, classical, country, electronic, reggae, blues, folk, metal, R&B,
+indie, punk, latin, k-pop, funk; 6 decades: 60s-2010s; 6 moods: workout,
+chill, focus, party, sleep, road trip, love songs) plus a **custom channel
+feature** — type any artist/mood/era into a text box and it becomes a real
+timeline block, persisted across sessions. Also fixed a real quality
+issue while doing this: Spotify's Search API only supports genre filtering
+for *artist* search, not track search, so a plain keyword track search was
+just fuzzy-matching titles — mediocre results. `buildSpotifyQueue()` now
+searches for a curated official Spotify editorial playlist first (owner id
+`spotify`) and pulls its tracks, falling back to plain track search only if
+no decent playlist turns up — meaningfully better genre/mood accuracy.
+(Couldn't test this live myself — my sandbox browser was never Spotify-
+authenticated, only the live site was, from your account — worth
+confirming quality live.)
+
+Total catalog: **113 sources** (up from 37), spanning News, NPR, Business,
+Storytelling, Comedy, True Crime, Science, Poetry, Reflection, History,
+Drama, International, Weather, Radio, and Music.
 
 ## PWA / mobile install
 

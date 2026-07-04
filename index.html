@@ -135,6 +135,26 @@
     margin-bottom: 10px;
     font-size: 13px;
   }
+  #custom-spotify-form {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  #custom-spotify-query {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 9px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 12px;
+  }
+  #custom-spotify-add {
+    font-size: 12px;
+    padding: 6px 10px;
+    white-space: nowrap;
+  }
   .cat-filters {
     display: flex;
     flex-wrap: wrap;
@@ -525,6 +545,10 @@
     <input type="text" id="search" placeholder="Search sources...">
     <div class="cat-filters" id="cat-filters"></div>
     <div class="cat-filters" id="length-filters"></div>
+    <div id="custom-spotify-form">
+      <input type="text" id="custom-spotify-query" placeholder="Any Spotify search — an artist, mood, era…">
+      <button class="btn" id="custom-spotify-add">+ Custom channel</button>
+    </div>
     <div id="source-list"></div>
   </section>
 
@@ -593,11 +617,11 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '1.4.0';
+const VERSION = '2.0.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
-// sourceType: 'podcast-rss' | 'spotify-genre' | 'spotify-decade' | 'archive'
+// sourceType: 'podcast-rss' | 'spotify-genre' | 'spotify-decade' | 'spotify-mood' | 'spotify-custom' | 'archive'
 // feedStatus: 'verified' (fetched & confirmed working) | 'unverified' (documented feed, blocked/network error during our check
 //             but likely real — try it live) | 'none' (no working public feed exists, playback will skip this block)
 const SOURCES = [
@@ -630,6 +654,22 @@ const SOURCES = [
   { id: 'poetry-unbound',  name: 'On Being: Poetry Unbound',         category: 'Poetry',     cadence: 'Weekly', lengthMin: 15,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/p9JRgDEG', feedStatus: 'verified', desc: 'A poem read and unpacked, one per episode.' },
   { id: 'writers-almanac', name: 'The Writer\'s Almanac',            category: 'Poetry',     cadence: 'Daily',  lengthMin: 5,   flexible: false, sourceType: 'archive', feedUrl: 'date-archive:writers-almanac', feedStatus: 'verified', desc: 'Garrison Keillor: a poem and this-day-in-history — no longer produced, but plays the archived edition for today\'s calendar date from whichever year (1993-2016) is available.' },
   { id: 'foc',             name: 'BBC From Our Own Correspondent',   category: 'News',       cadence: 'Weekly', lengthMin: 28,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcasts.files.bbci.co.uk/p02nrtpm.rss', feedStatus: 'verified', desc: 'Foreign correspondents\' personal essays.' },
+  { id: 'freakonomics',    name: 'Freakonomics Radio',               category: 'Business',   cadence: 'Weekly', lengthMin: 40,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/Y8lFbOT4', feedStatus: 'verified', desc: 'The hidden side of everything, through an economics lens.' },
+  { id: 'ninetyninepi',    name: '99% Invisible',                    category: 'Storytelling', cadence: 'Weekly', lengthMin: 30, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/BqbsxVfO', feedStatus: 'verified', desc: 'The unnoticed architecture and design that shapes the world.' },
+  { id: 'syskshouldknow',  name: 'Stuff You Should Know',            category: 'Science',    cadence: '3x/week', lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/A91018A4-EA4F-4130-BF55-AE270180C327/44710ECC-10BB-48D1-93C7-AE270180C33E/podcast.rss', feedStatus: 'verified', desc: 'An explainer on just about anything.' },
+  { id: 'crimejunkie',     name: 'Crime Junkie',                     category: 'True Crime', cadence: 'Weekly', lengthMin: 40, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/qm_9xx0g', feedStatus: 'verified', desc: 'A true crime case, researched and told simply.' },
+  { id: 'smartless',       name: 'SmartLess',                        category: 'Comedy',     cadence: 'Weekly', lengthMin: 60, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/hNaFxXpO', feedStatus: 'verified', desc: 'Jason Bateman, Sean Hayes, and Will Arnett surprise-interview a guest.' },
+  { id: 'howibuiltthis',   name: 'How I Built This',                 category: 'Business',   cadence: 'Weekly', lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.art19.com/how-i-built-this', feedStatus: 'verified', desc: 'NPR\'s Guy Raz interviews founders on how they built their companies.' },
+  { id: 'podsaveamerica',  name: 'Pod Save America',                 category: 'News',       cadence: '3x/week', lengthMin: 70, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://audioboom.com/channels/5166624.rss', feedStatus: 'verified', desc: 'Former Obama staffers on politics and the news.' },
+  { id: 'armchairexpert',  name: 'Armchair Expert',                  category: 'Comedy',     cadence: '2x/week', lengthMin: 90, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.art19.com/armchair-expert', feedStatus: 'verified', desc: 'Dax Shepard\'s long-form interviews, "experts on being human."' },
+  { id: 'hiddenbrain',     name: 'Hidden Brain',                     category: 'Science',    cadence: 'Weekly', lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.npr.org/510308/podcast.xml', feedStatus: 'verified', desc: 'NPR\'s look at the unconscious patterns that drive human behavior.' },
+  { id: 'revisionisthist', name: 'Revisionist History',              category: 'Storytelling', cadence: 'Seasonal', lengthMin: 40, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/kwWc0lhf', feedStatus: 'verified', desc: 'Malcolm Gladwell revisits something misunderstood or overlooked.' },
+  { id: 'yourewrongabout', name: 'You\'re Wrong About',              category: 'History',    cadence: 'Weekly', lengthMin: 60, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.buzzsprout.com/1112270.rss', feedStatus: 'verified', desc: 'Debunking the popular myths around a historical event or moral panic.' },
+  { id: 'songexploder',   name: 'Song Exploder',                    category: 'Music',      cadence: 'Biweekly', lengthMin: 20, flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feed.songexploder.net/SongExploder', feedStatus: 'verified', desc: 'Musicians take apart one of their songs, piece by piece.' },
+  { id: 'nosuchthing',     name: 'No Such Thing As A Fish',          category: 'Comedy',     cadence: 'Weekly', lengthMin: 40, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://audioboom.com/channels/2399216.rss', feedStatus: 'verified', desc: 'QI\'s researchers share the week\'s most interesting facts.' },
+  { id: 'ezraklein',       name: 'The Ezra Klein Show',              category: 'News',       cadence: '3x/week', lengthMin: 75, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/kEKXbjuJ', feedStatus: 'verified', desc: 'The NYT columnist\'s long-form political and policy interviews.' },
+  { id: 'planetmoney',     name: 'Planet Money',                     category: 'Business',   cadence: '2-3x/week', lengthMin: 25, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.npr.org/510289/podcast.xml', feedStatus: 'verified', desc: 'NPR\'s narrative-driven show on how the economy works.' },
+  { id: 'sixtyminutes',    name: '60 Minutes',                       category: 'News',       cadence: 'Weekly', lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.amperwave.net/v2/feed/audacynetwork/4cbf0abf775be3cab2bd61a739939f1b', feedStatus: 'verified', desc: 'CBS\'s flagship news magazine, in podcast form.' },
   { id: 'otr-suspense',    name: 'Suspense (Old-Time Radio)',        category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:SUSPENSE_Radio_Digitally_Restored_Collection', feedStatus: 'verified', desc: 'A random episode of the classic "Suspense" radio drama series (Internet Archive, public domain, 460 episodes).' },
   { id: 'otr-dragnet',     name: 'Dragnet (Old-Time Radio)',         category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:dragnet', feedStatus: 'verified', desc: 'A random episode of the classic police-procedural drama (Internet Archive, public domain, 185 episodes).' },
   { id: 'otr-gunsmoke',    name: 'Gunsmoke (Old-Time Radio)',        category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:gunsmoke_radio_show_1952-1961_improved_audio_no_commercials', feedStatus: 'verified', desc: 'A random episode of the classic Western drama, 1952-1961 (Internet Archive, public domain, 274 episodes).' },
@@ -637,14 +677,107 @@ const SOURCES = [
   { id: 'otr-holmes',      name: 'Sherlock Holmes (Old-Time Radio)', category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:sherlockholmes_otr', feedStatus: 'verified', desc: 'A random episode starring Basil Rathbone and Nigel Bruce (Internet Archive, public domain, 107 episodes).' },
   { id: 'phc-full-show',   name: 'A Prairie Home Companion (full show)', category: 'Storytelling', cadence: 'Anytime', lengthMin: 120, flexible: false, sourceType: 'archive', feedUrl: 'date-archive:prairie-home-companion', feedStatus: 'verified', desc: 'The full ~2-hour variety show (incl. the "News from Lake Wobegon" monologue somewhere within it — it was never released as a standalone clip) for today\'s calendar date, whichever year (1980-2016) is available.' },
   { id: 'spotify-jazz',    name: 'Jazz (Spotify)',                   category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'jazz', feedStatus: 'verified', desc: 'Spotify jazz genre mix, length you set.' },
-  { id: 'spotify-80s',     name: '1980s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:1980-1989', feedStatus: 'verified', desc: 'Spotify 1980s decade mix, length you set.' },
+  { id: 'spotify-rock',    name: 'Rock (Spotify)',                   category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'rock', feedStatus: 'verified', desc: 'Spotify rock genre mix, length you set.' },
+  { id: 'spotify-hiphop',  name: 'Hip-Hop (Spotify)',                category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'hip hop', feedStatus: 'verified', desc: 'Spotify hip-hop genre mix, length you set.' },
+  { id: 'spotify-classical', name: 'Classical (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'classical', feedStatus: 'verified', desc: 'Spotify classical genre mix, length you set.' },
+  { id: 'spotify-country', name: 'Country (Spotify)',                category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'country', feedStatus: 'verified', desc: 'Spotify country genre mix, length you set.' },
+  { id: 'spotify-electronic', name: 'Electronic/Dance (Spotify)',    category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'electronic dance', feedStatus: 'verified', desc: 'Spotify electronic/dance genre mix, length you set.' },
+  { id: 'spotify-reggae',  name: 'Reggae (Spotify)',                 category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'reggae', feedStatus: 'verified', desc: 'Spotify reggae genre mix, length you set.' },
+  { id: 'spotify-blues',   name: 'Blues (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'blues', feedStatus: 'verified', desc: 'Spotify blues genre mix, length you set.' },
+  { id: 'spotify-folk',    name: 'Folk (Spotify)',                   category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'folk', feedStatus: 'verified', desc: 'Spotify folk genre mix, length you set.' },
+  { id: 'spotify-metal',   name: 'Metal (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'metal', feedStatus: 'verified', desc: 'Spotify metal genre mix, length you set.' },
+  { id: 'spotify-rnb',     name: 'R&B / Soul (Spotify)',             category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'r&b soul', feedStatus: 'verified', desc: 'Spotify R&B/soul genre mix, length you set.' },
+  { id: 'spotify-indie',   name: 'Indie (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'indie', feedStatus: 'verified', desc: 'Spotify indie genre mix, length you set.' },
+  { id: 'spotify-punk',    name: 'Punk (Spotify)',                   category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'punk', feedStatus: 'verified', desc: 'Spotify punk genre mix, length you set.' },
+  { id: 'spotify-latin',   name: 'Latin (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'latin', feedStatus: 'verified', desc: 'Spotify Latin genre mix, length you set.' },
+  { id: 'spotify-kpop',    name: 'K-Pop (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'k-pop', feedStatus: 'verified', desc: 'Spotify K-Pop genre mix, length you set.' },
+  { id: 'spotify-funk',    name: 'Funk (Spotify)',                   category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'funk', feedStatus: 'verified', desc: 'Spotify funk genre mix, length you set.' },
+  { id: 'spotify-60s',     name: '1960s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:1960-1969', spotifyPlaylistQuery: '60s hits', feedStatus: 'verified', desc: 'Spotify 1960s decade mix, length you set.' },
+  { id: 'spotify-70s',     name: '1970s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:1970-1979', spotifyPlaylistQuery: '70s hits', feedStatus: 'verified', desc: 'Spotify 1970s decade mix, length you set.' },
+  { id: 'spotify-80s',     name: '1980s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:1980-1989', spotifyPlaylistQuery: '80s hits', feedStatus: 'verified', desc: 'Spotify 1980s decade mix, length you set.' },
+  { id: 'spotify-90s',     name: '1990s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:1990-1999', spotifyPlaylistQuery: '90s hits', feedStatus: 'verified', desc: 'Spotify 1990s decade mix, length you set.' },
+  { id: 'spotify-2000s',   name: '2000s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:2000-2009', spotifyPlaylistQuery: '2000s hits', feedStatus: 'verified', desc: 'Spotify 2000s decade mix, length you set.' },
+  { id: 'spotify-2010s',   name: '2010s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:2010-2019', spotifyPlaylistQuery: '2010s hits', feedStatus: 'verified', desc: 'Spotify 2010s decade mix, length you set.' },
+  { id: 'spotify-workout', name: 'Workout (Spotify)',                category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-mood', spotifyQuery: 'workout', feedStatus: 'verified', desc: 'Spotify workout/energy mix, length you set.' },
+  { id: 'spotify-chill',   name: 'Chill (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-mood', spotifyQuery: 'chill', feedStatus: 'verified', desc: 'Spotify chill/relax mix, length you set.' },
+  { id: 'spotify-focus',   name: 'Focus (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-mood', spotifyQuery: 'focus', feedStatus: 'verified', desc: 'Spotify focus/study mix, length you set.' },
+  { id: 'spotify-party',   name: 'Party (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-mood', spotifyQuery: 'party', feedStatus: 'verified', desc: 'Spotify party mix, length you set.' },
+  { id: 'spotify-sleep',   name: 'Sleep (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-mood', spotifyQuery: 'sleep', feedStatus: 'verified', desc: 'Spotify sleep/ambient mix, length you set.' },
+  { id: 'spotify-roadtrip', name: 'Road Trip (Spotify)',             category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-mood', spotifyQuery: 'road trip', feedStatus: 'verified', desc: 'Spotify road trip mix, length you set.' },
+  { id: 'spotify-love',    name: 'Love Songs (Spotify)',             category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-mood', spotifyQuery: 'love songs', feedStatus: 'verified', desc: 'Spotify love songs mix, length you set.' },
+  // Free, commercial-free, no-signup internet radio -- unlike Spotify these need zero per-user
+  // auth at all, so they scale to any number of users with no platform-imposed cap.
+  { id: 'rp-main',         name: 'Radio Paradise: Main Mix',         category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/mp3-192', feedStatus: 'verified', desc: 'Eclectic hand-curated rock/pop/electronic, no ads, listener-supported.' },
+  { id: 'rp-mellow',       name: 'Radio Paradise: Mellow Mix',       category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/mellow-128', feedStatus: 'verified', desc: 'Chill/acoustic/downtempo, no ads, listener-supported.' },
+  { id: 'rp-rock',         name: 'Radio Paradise: Rock Mix',         category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/rock-128', feedStatus: 'verified', desc: 'Rock-focused mix, no ads, listener-supported.' },
+  { id: 'rp-global',       name: 'Radio Paradise: Global Mix',       category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/global-128', feedStatus: 'verified', desc: 'World/eclectic mix, no ads, listener-supported.' },
+  { id: 'rp-beyond',       name: 'Radio Paradise: Beyond',           category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/beyond-128', feedStatus: 'verified', desc: 'Radio Paradise\'s experimental/deep-cut channel, no ads.' },
+  { id: 'kexp',            name: 'KEXP Live Stream',                 category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://kexp.streamguys1.com/kexp160.aac', feedStatus: 'verified', desc: 'Seattle listener-supported station, live DJ-programmed eclectic/indie/alternative, no ads.' },
+  { id: 'soma-groovesalad', name: 'SomaFM: Groove Salad',            category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:groovesalad', feedStatus: 'verified', desc: 'Ambient/downtempo chill, nonprofit listener-supported, no ads.' },
+  { id: 'soma-dronezone',  name: 'SomaFM: Drone Zone',               category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:dronezone', feedStatus: 'verified', desc: 'Atmospheric ambient, minimal beats, no ads.' },
+  { id: 'soma-spacestation', name: 'SomaFM: Space Station Soma',     category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:spacestation', feedStatus: 'verified', desc: 'Ambient/mid-tempo electronica, no ads.' },
+  { id: 'soma-secretagent', name: 'SomaFM: Secret Agent',            category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:secretagent', feedStatus: 'verified', desc: 'Spy-lounge soundtrack vibe, no ads.' },
+  { id: 'soma-metal',      name: 'SomaFM: Metal Detector',           category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:metal', feedStatus: 'verified', desc: 'Black/doom/prog/sludge metal, no ads.' },
+  { id: 'soma-indiepop',   name: 'SomaFM: Indie Pop Rocks!',         category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:indiepop', feedStatus: 'verified', desc: 'Indie pop, no ads.' },
+  { id: 'soma-u80s',       name: 'SomaFM: Underground 80s',          category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:u80s', feedStatus: 'verified', desc: 'Early-80s UK synthpop/new wave, no ads.' },
+  { id: 'soma-seventies',  name: 'SomaFM: Left Coast 70s',           category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:seventies', feedStatus: 'verified', desc: 'Mellow 70s album rock, no ads.' },
+  { id: 'soma-reggae',     name: 'SomaFM: Heavyweight Reggae',       category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:reggae', feedStatus: 'verified', desc: 'Reggae/ska/rocksteady, no ads.' },
+  { id: 'soma-sonicuniverse', name: 'SomaFM: Sonic Universe',        category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:sonicuniverse', feedStatus: 'verified', desc: 'Avant-garde jazz, no ads.' },
+  { id: 'soma-thetrip',    name: 'SomaFM: The Trip',                 category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:thetrip', feedStatus: 'verified', desc: 'Progressive house/trance, no ads.' },
+  { id: 'soma-beatblender', name: 'SomaFM: Beat Blender',            category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:beatblender', feedStatus: 'verified', desc: 'Deep house/downtempo, no ads.' },
+  { id: 'soma-lush',       name: 'SomaFM: Lush',                     category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:lush', feedStatus: 'verified', desc: 'Mellow female vocals, electronic-tinged, no ads.' },
+  { id: 'soma-poptron',    name: 'SomaFM: PopTron',                  category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:poptron', feedStatus: 'verified', desc: 'Electropop/indie dance, no ads.' },
+  { id: 'soma-vaporwaves', name: 'SomaFM: Vaporwaves',               category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:vaporwaves', feedStatus: 'verified', desc: 'All vaporwave, no ads.' },
+  { id: 'soma-illstreet',  name: 'SomaFM: Illinois Street Lounge',   category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:illstreet', feedStatus: 'verified', desc: 'Bachelor-pad exotica, no ads.' },
+  { id: 'soma-suburbsofgoa', name: 'SomaFM: Suburbs of Goa',         category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:suburbsofgoa', feedStatus: 'verified', desc: 'Desi/Asian world beats, no ads.' },
+  { id: 'soma-thistle',    name: 'SomaFM: ThistleRadio',             category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:thistle', feedStatus: 'verified', desc: 'Celtic roots and branches, no ads.' },
+  { id: 'soma-bootliquor', name: 'SomaFM: Boot Liquor',              category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:bootliquor', feedStatus: 'verified', desc: 'Americana roots music, no ads.' },
+  { id: 'soma-cliqhop',    name: 'SomaFM: cliqhop idm',              category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:cliqhop', feedStatus: 'verified', desc: 'Intelligent dance music, no ads.' },
+  { id: 'soma-folkfwd',    name: 'SomaFM: Folk Forward',             category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:folkfwd', feedStatus: 'verified', desc: 'Indie/alt-folk, no ads.' },
+  { id: 'soma-covers',     name: 'SomaFM: Covers',                   category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:covers', feedStatus: 'verified', desc: 'Cover songs by lesser-known artists, no ads.' },
+  { id: 'soma-digitalis',  name: 'SomaFM: Digitalis',                category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:digitalis', feedStatus: 'verified', desc: 'Digitally-affected analog rock, no ads.' },
+  { id: 'soma-doomed',     name: 'SomaFM: Doomed',                   category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:doomed', feedStatus: 'verified', desc: 'Dark industrial/ambient, no ads.' },
+  { id: 'soma-fluid',      name: 'SomaFM: Fluid',                    category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:fluid', feedStatus: 'verified', desc: 'Instrumental hip-hop/future soul/liquid trap, no ads.' },
+  { id: 'soma-sf1033',     name: 'SomaFM: SF 10-33',                 category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:sf1033', feedStatus: 'verified', desc: 'Ambient mixed with SF public-safety radio chatter (novelty channel), no ads.' },
+  { id: 'soma-missioncontrol', name: 'SomaFM: Mission Control',      category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:missioncontrol', feedStatus: 'verified', desc: 'NASA/space-themed ambient, no ads.' },
 ];
 
 const CATEGORY_COLORS = {
   NPR: '#e05a5a', News: '#4fb0ff', International: '#3ec6cf', Business: '#3ecf8e',
   Storytelling: '#e0a233', Comedy: '#e05ac0', Science: '#7c8cff', Poetry: '#e0a233',
   Reflection: '#9aa0ab', History: '#c98a4a', Drama: '#c9564a', Weather: '#4fd1ff', Music: '#3ecf8e',
+  Radio: '#e08a3e', 'True Crime': '#c94f5c',
 };
+
+// User-created custom Spotify channels (any search query) are appended to SOURCES at runtime so
+// every existing code path (library rendering, filtering, playback lookup by id) treats them
+// identically to built-in sources with zero special-casing. Persisted separately so they survive
+// a reload, then re-merged into SOURCES on the next load.
+let customSpotifySources = load('airtime_custom_sources_v1', []);
+customSpotifySources.forEach(cs => SOURCES.push(cs));
+
+function addCustomSpotifyChannel(query) {
+  const trimmed = query.trim();
+  if (!trimmed) return;
+  const entry = {
+    id: 'custom-' + Date.now(),
+    name: trimmed + ' (Spotify)',
+    category: 'Music',
+    cadence: 'Anytime',
+    lengthMin: null,
+    flexible: true,
+    sourceType: 'spotify-custom',
+    spotifyQuery: trimmed,
+    feedStatus: 'verified',
+    desc: 'Custom Spotify search: "' + trimmed + '", length you set.',
+  };
+  SOURCES.push(entry);
+  customSpotifySources.push(entry);
+  save('airtime_custom_sources_v1', customSpotifySources);
+  renderFilters();
+  renderLibrary();
+  addSourceToTimeline(entry.id);
+}
 
 // ---------- State ----------
 let activeCategory = null;
@@ -940,6 +1073,14 @@ document.getElementById('clear-timeline-btn').addEventListener('click', () => {
   persistTimeline();
   renderTimeline();
 });
+document.getElementById('custom-spotify-add').addEventListener('click', () => {
+  const input = document.getElementById('custom-spotify-query');
+  addCustomSpotifyChannel(input.value);
+  input.value = '';
+});
+document.getElementById('custom-spotify-query').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('custom-spotify-add').click();
+});
 document.getElementById('export-timeline-btn').addEventListener('click', () => {
   if (timelineBlocks.length === 0) { alert('Your timeline is empty — nothing to export.'); return; }
   const payload = { airtimeExportVersion: 1, targetMinutes, blocks: timelineBlocks };
@@ -1076,6 +1217,35 @@ async function resolveArchiveOrgAudio(identifier) {
   return `https://archive.org/download/${identifier}/${encodeURIComponent(mp3.name)}`;
 }
 
+// SomaFM's per-channel .pls filenames don't follow one consistent {id}{bitrate}.pls pattern
+// (e.g. Metal Detector's highest-quality MP3 playlist is metal.pls, not metal128.pls) — safer to
+// look the channel up in their authoritative channel list and use whatever playlist URL it
+// actually publishes, rather than guessing a filename. Cached in-memory since it rarely changes
+// and every channel resolution would otherwise re-fetch the same ~46-channel JSON file.
+let somaFmChannelsCache = null;
+async function getSomaFmChannels() {
+  if (somaFmChannelsCache) return somaFmChannelsCache;
+  const res = await fetchWithTimeout('https://api.somafm.com/channels.json', {}, 10000);
+  if (!res.ok) throw new Error('SomaFM channel list lookup failed');
+  const data = await res.json();
+  somaFmChannelsCache = data.channels || [];
+  return somaFmChannelsCache;
+}
+
+async function resolveSomaFmStream(channelId) {
+  const channels = await getSomaFmChannels();
+  const channel = channels.find(c => c.id === channelId);
+  if (!channel) throw new Error('SomaFM channel "' + channelId + '" not found');
+  const playlist = (channel.playlists || []).find(p => p.format === 'mp3') || channel.playlists[0];
+  if (!playlist) throw new Error('No playlist published for SomaFM channel "' + channelId + '"');
+  const res = await fetchWithTimeout(playlist.url, {}, 10000);
+  if (!res.ok) throw new Error('SomaFM playlist file fetch failed');
+  const text = await res.text();
+  const match = text.match(/File1=(\S+)/i);
+  if (!match) throw new Error('Could not find a stream URL in SomaFM playlist file');
+  return { audioUrl: match[1].trim(), title: 'SomaFM: ' + channel.title };
+}
+
 async function fetchRandomArchiveItemAudio(identifier) {
   const res = await fetchWithTimeout('https://archive.org/metadata/' + identifier, {}, 12000);
   if (!res.ok) throw new Error('Archive.org metadata lookup failed');
@@ -1163,6 +1333,17 @@ async function fetchLatestEpisode(feedUrl) {
   }
   if (feedUrl === 'date-archive:prairie-home-companion') {
     return { candidates: buildPrairieHomeCompanionCandidates() };
+  }
+  if (feedUrl.startsWith('direct-stream:')) {
+    // Always-on internet radio streams with a permanent, stable URL (Radio Paradise, KEXP) —
+    // no feed to fetch or parse, just point <audio> straight at it.
+    return { candidates: [{ audioUrl: feedUrl.slice('direct-stream:'.length), title: 'Live stream' }] };
+  }
+  if (feedUrl.startsWith('somafm:')) {
+    // Resolved via SomaFM's channel-list API rather than a hardcoded .pls URL, since per-channel
+    // playlist filenames don't follow one consistent pattern (see resolveSomaFmStream).
+    const r = await resolveSomaFmStream(feedUrl.slice('somafm:'.length));
+    return { candidates: [r] };
   }
   const xmlText = await fetchTextWithProxies(feedUrl);
   const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
@@ -1371,10 +1552,40 @@ async function spotifyApi(path, opts = {}) {
   return text ? JSON.parse(text) : null;
 }
 
-async function buildSpotifyQueue(query, lengthMin) {
-  const data = await spotifyApi('/search?' + new URLSearchParams({ q: query, type: 'track', limit: '50' }));
-  const tracks = (data && data.tracks && data.tracks.items) ? data.tracks.items.filter(t => t && t.uri) : [];
-  if (tracks.length === 0) throw new Error('No tracks found for ' + query);
+// Spotify's Search API doesn't support a real "genre" filter for tracks (only for artist
+// search), so a plain keyword track search just fuzzy-matches track/artist/album titles —
+// mediocre quality. Searching for a curated official playlist (owner.id === 'spotify') and
+// pulling ITS tracks gives much better, actually-genre-accurate results. Falls back to plain
+// track search if no decent playlist turns up.
+async function findBestPlaylist(query) {
+  const data = await spotifyApi('/search?' + new URLSearchParams({ q: query, type: 'playlist', limit: '10' }));
+  const playlists = (data && data.playlists && data.playlists.items) ? data.playlists.items.filter(p => p && p.id) : [];
+  if (playlists.length === 0) return null;
+  return playlists.find(p => p.owner && p.owner.id === 'spotify') || playlists[0];
+}
+
+async function getPlaylistTracks(playlistId) {
+  const data = await spotifyApi('/playlists/' + playlistId + '/tracks?' + new URLSearchParams({
+    limit: '100',
+    fields: 'items(track(uri,duration_ms,is_playable))',
+  }));
+  const items = (data && data.items) ? data.items : [];
+  return items.map(it => it.track).filter(t => t && t.uri && t.is_playable !== false);
+}
+
+async function buildSpotifyQueue(src, lengthMin) {
+  let tracks = [];
+  try {
+    const playlist = await findBestPlaylist(src.spotifyPlaylistQuery || src.spotifyQuery);
+    if (playlist) tracks = await getPlaylistTracks(playlist.id);
+  } catch (e) { /* fall through to plain track search below */ }
+
+  if (tracks.length === 0) {
+    const data = await spotifyApi('/search?' + new URLSearchParams({ q: src.spotifyQuery, type: 'track', limit: '50' }));
+    tracks = (data && data.tracks && data.tracks.items) ? data.tracks.items.filter(t => t && t.uri) : [];
+  }
+  if (tracks.length === 0) throw new Error('No tracks found for ' + src.spotifyQuery);
+
   for (let i = tracks.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
@@ -1385,7 +1596,7 @@ async function buildSpotifyQueue(query, lengthMin) {
   for (const t of tracks) {
     if (totalMs >= budgetMs) break;
     uris.push(t.uri);
-    totalMs += t.duration_ms;
+    totalMs += t.duration_ms || 210000; // ~3.5 min fallback if duration is missing
   }
   if (uris.length === 0) uris.push(tracks[0].uri);
   return uris;
@@ -1510,7 +1721,7 @@ async function playBlockAt(index) {
 
   if (!src) { advanceBlock(); return; }
 
-  if (src.sourceType === 'podcast-rss' || src.sourceType === 'archive') {
+  if (src.sourceType === 'podcast-rss' || src.sourceType === 'archive' || src.sourceType === 'internet-radio') {
     if (!src.feedUrl) {
       setNowPlaying(block.name, '', 'No working feed for this source — skipping in 2s…');
       playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
@@ -1535,7 +1746,7 @@ async function playBlockAt(index) {
       setNowPlaying(block.name, '', 'Could not load this feed (' + err.message + ') — skipping in 2s…');
       playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
     }
-  } else if (src.sourceType === 'spotify-genre' || src.sourceType === 'spotify-decade') {
+  } else if (src.sourceType === 'spotify-genre' || src.sourceType === 'spotify-decade' || src.sourceType === 'spotify-mood' || src.sourceType === 'spotify-custom') {
     if (!spotifyState.token) {
       setNowPlaying(block.name, '', 'Spotify not connected — skipping in 2s…');
       playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
@@ -1555,7 +1766,7 @@ async function playBlockAt(index) {
     }
     setNowPlaying(block.name, 'Finding tracks…', '');
     try {
-      const uris = await buildSpotifyQueue(src.spotifyQuery, block.lengthMin);
+      const uris = await buildSpotifyQueue(src, block.lengthMin);
       if (myGen !== playGeneration) return;
       await spotifyPlay(uris);
       if (myGen !== playGeneration) return;
