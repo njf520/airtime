@@ -123,8 +123,17 @@
     justify-content: space-between;
   }
   .timeline-heading-row h2 { margin: 0; }
-  .timeline-heading-actions { display: flex; gap: 6px; }
+  .timeline-heading-actions { display: flex; gap: 6px; align-items: center; }
   .timeline-heading-actions .btn { font-size: 12px; padding: 5px 10px; }
+  #rundown-select {
+    font-size: 12px;
+    padding: 5px 8px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    max-width: 160px;
+  }
   #search {
     width: 100%;
     padding: 8px 10px;
@@ -605,6 +614,15 @@
       <div id="progress-label"></div>
     </div>
     <div class="timeline-heading-row">
+      <h2>Rundowns</h2>
+      <div class="timeline-heading-actions">
+        <select id="rundown-select"><option value="">Load a saved rundown…</option></select>
+        <button class="btn" id="rundown-load-btn">Load</button>
+        <button class="btn" id="rundown-save-btn">Save current as…</button>
+        <button class="btn" id="rundown-delete-btn" title="Delete the selected rundown">Delete</button>
+      </div>
+    </div>
+    <div class="timeline-heading-row">
       <h2>Your timeline</h2>
       <div class="timeline-heading-actions">
         <button class="btn" id="export-timeline-btn" title="Download this timeline as a JSON file">Export</button>
@@ -644,7 +662,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.3.0';
+const VERSION = '2.4.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
@@ -855,6 +873,7 @@ let activeLengthBucket = null;
 let activeFormat = null;
 let searchText = '';
 let timelineBlocks = load('airtime_timeline_v1', []);
+let rundowns = load('airtime_rundowns_v1', []);
 let targetMinutes = load('airtime_target_v1', 120);
 
 document.getElementById('target-hours').value = Math.floor(targetMinutes / 60);
@@ -1088,6 +1107,19 @@ function renderProgress() {
 
 function persistTimeline() { save('airtime_timeline_v1', timelineBlocks); }
 
+// "Rundowns" (broadcast-industry term for a planned segment lineup) are named, saved timeline
+// presets -- they store sourceId + lengthMin per block, NOT specific episodes, so loading one
+// later and hitting Play always grabs whatever's currently latest for date-sensitive/rolling
+// sources (e.g. "My 8am Commute" always plays *today's* NPR Hourly News, not the one from when it
+// was saved).
+function renderRundownSelect() {
+  const sel = document.getElementById('rundown-select');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Load a saved rundown…</option>' +
+    rundowns.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
+  if (rundowns.some(r => r.id === current)) sel.value = current;
+}
+
 // ---------- Drop handling ----------
 const timelineEl = document.getElementById('timeline');
 
@@ -1167,6 +1199,57 @@ function getDragAfterElement(container, y) {
 document.getElementById('search').addEventListener('input', e => {
   searchText = e.target.value;
   renderLibrary();
+});
+document.getElementById('rundown-save-btn').addEventListener('click', () => {
+  if (timelineBlocks.length === 0) { alert('Your timeline is empty — nothing to save.'); return; }
+  const name = prompt('Name this rundown (e.g. "My 8am Commute"):');
+  if (!name || !name.trim()) return;
+  const rundown = {
+    id: 'rundown-' + Date.now(),
+    name: name.trim(),
+    targetMinutes,
+    blocks: timelineBlocks.map(b => ({ sourceId: b.sourceId, lengthMin: b.lengthMin })),
+  };
+  rundowns.push(rundown);
+  save('airtime_rundowns_v1', rundowns);
+  renderRundownSelect();
+  document.getElementById('rundown-select').value = rundown.id;
+});
+document.getElementById('rundown-load-btn').addEventListener('click', () => {
+  const id = document.getElementById('rundown-select').value;
+  if (!id) { alert('Pick a saved rundown from the list first.'); return; }
+  const r = rundowns.find(x => x.id === id);
+  if (!r) return;
+  if (timelineBlocks.length > 0 && !confirm('Replace your current timeline with "' + r.name + '"?')) return;
+  if (typeof stopBroadcast === 'function') stopBroadcast();
+  // Fresh uids, and re-hydrate name/category from the CURRENT catalog rather than trusting a
+  // stale snapshot -- a source's display info (or existence) may have changed since this was saved.
+  timelineBlocks = r.blocks.map(b => {
+    const src = SOURCES.find(s => s.id === b.sourceId);
+    return {
+      uid: 'b' + Date.now() + Math.random().toString(36).slice(2, 7),
+      sourceId: b.sourceId,
+      name: src ? src.name : b.sourceId,
+      category: src ? src.category : '',
+      lengthMin: b.lengthMin,
+    };
+  });
+  targetMinutes = r.targetMinutes;
+  document.getElementById('target-hours').value = Math.floor(targetMinutes / 60);
+  document.getElementById('target-mins').value = targetMinutes % 60;
+  save('airtime_target_v1', targetMinutes);
+  persistTimeline();
+  renderTimeline();
+});
+document.getElementById('rundown-delete-btn').addEventListener('click', () => {
+  const id = document.getElementById('rundown-select').value;
+  if (!id) { alert('Pick a saved rundown from the list first.'); return; }
+  const r = rundowns.find(x => x.id === id);
+  if (!r) return;
+  if (!confirm('Delete the "' + r.name + '" rundown? This can\'t be undone.')) return;
+  rundowns = rundowns.filter(x => x.id !== id);
+  save('airtime_rundowns_v1', rundowns);
+  renderRundownSelect();
 });
 document.getElementById('clear-timeline-btn').addEventListener('click', () => {
   if (timelineBlocks.length === 0) return;
@@ -1863,13 +1946,39 @@ async function playBroadcastFromStart() {
   await playBlockAt(0);
 }
 
+// Abrupt cuts (audioEl.pause() with no warning) are jarring mid-song/mid-sentence -- professional
+// radio automation always fades. Quick ~1.2s volume fade-out before actually stopping, for
+// whichever source is currently playing; skipped entirely if nothing is playing yet (e.g. the
+// very first block of a broadcast).
+async function fadeOutCurrentAudio(myGen, durationMs = 1200) {
+  const steps = 12;
+  const stepMs = durationMs / steps;
+  const targetVolume = currentVolume / 100;
+  if (playerState.mode === 'audio' && !audioEl.paused) {
+    for (let i = 1; i <= steps; i++) {
+      if (myGen !== playGeneration) return; // superseded mid-fade -- let the newer call take over
+      await new Promise(r => setTimeout(r, stepMs));
+      audioEl.volume = Math.max(0, targetVolume * (1 - i / steps));
+    }
+    audioEl.pause();
+    audioEl.volume = targetVolume;
+  } else if (playerState.mode === 'spotify' && spotifyState.player) {
+    for (let i = 1; i <= steps; i++) {
+      if (myGen !== playGeneration) return;
+      await new Promise(r => setTimeout(r, stepMs));
+      try { await spotifyState.player.setVolume(Math.max(0, targetVolume * (1 - i / steps))); } catch (e) {}
+    }
+    try { await spotifyPause(); } catch (e) {}
+    try { await spotifyState.player.setVolume(targetVolume); } catch (e) {}
+  }
+}
+
 async function playBlockAt(index) {
   const myGen = ++playGeneration;
   clearTimeout(playerState.blockTimer);
   stopTick();
-  audioEl.pause();
-  if (spotifyState.deviceId) { try { await spotifyPause(); } catch (e) {} }
-  if (myGen !== playGeneration) return; // superseded while awaiting the pause above
+  await fadeOutCurrentAudio(myGen);
+  if (myGen !== playGeneration) return; // superseded while fading out
 
   if (index >= timelineBlocks.length) {
     playerState.playing = false;
@@ -1999,6 +2108,7 @@ document.getElementById('np-stop').addEventListener('click', stopBroadcast);
 renderFilters();
 renderLibrary();
 renderTimeline();
+renderRundownSelect();
 updateSpotifyButton();
 (async function initSpotifyOnLoad() {
   await handleSpotifyRedirect();

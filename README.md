@@ -49,13 +49,39 @@ per code deployment. Three realistic paths:
    for the music portion, with Spotify staying available as a bonus for
    whoever connects their own account.
 
-**Legal footing is solid.** Every podcast source just links to the
+**Legal footing is solid for podcasts and internet radio, but NOT for how
+Spotify is currently integrated — this is a real, current, and significant
+finding, not a hypothetical.** Every podcast source just links to the
 creator's own publicly-published RSS feed and audio file — this is exactly
 what every podcast app (Apple Podcasts, Overcast, Spotify itself) does, not
 redistribution. The internet radio stations are explicitly free/listener-
-supported services designed to be streamed. Spotify playback goes through
-their own official SDK under the user's own authorized account, same as
-any legitimate third-party Spotify app.
+supported services designed to be streamed. Spotify is different: verified
+directly against Spotify's current Developer Policy (Section III,
+"Some prohibited applications"), which explicitly states:
+
+> "Do not permit any device or system to segue, mix, re-mix, or overlap
+> any Spotify Content with any other audio content (including other
+> Spotify Content)."
+>
+> "Do not create any product or service which is integrated with streams
+> or content from another service."
+
+This describes Airtime's exact architecture — sequencing Spotify playback
+between podcast and internet-radio blocks in one continuous timeline. The
+app never touches raw Spotify audio (no extraction, no recording, just
+official SDK play/pause calls), but that doesn't cure the violation — the
+prohibition is about the user-facing experience of combining sources, not
+the technical method. **Practical read**: low enforcement risk for pure
+personal use (Spotify isn't auditing individual hobby projects), but this
+should NOT be part of any public-facing or scaled version of Airtime as
+currently designed, and would very likely be rejected if Extended Quota
+Mode were ever requested with this feature description. Real options if
+this matters going forward: (a) redesign Spotify blocks as a clearly
+separate, non-auto-segueing "player mode" with standard Spotify branding,
+(b) seek Spotify's prior written permission, or (c) drop Spotify Web
+Playback SDK integration for any public/scaled version and keep it as a
+personal-use-only feature, leading with podcasts + internet radio (which
+have no such restriction) for anything wider.
 
 ## What works right now
 
@@ -278,6 +304,31 @@ fallbacks, and `"Independent"` as the final fallback) so it didn't require
 touching all 113 individual catalog entries by hand. The search box also
 now matches against network, so typing "BBC" surfaces all 5 BBC shows at
 once — tested and confirmed.
+
+## Rundowns (saved broadcast presets) + fade transitions
+
+Prompted by feedback on an AI-generated competitive analysis of Airtime,
+which suggested a "Broadcast Profile" feature and criticized abrupt
+block-to-block cuts:
+
+- **Rundowns** — named, saved timeline presets (the term is real
+  broadcast-industry vocabulary for a planned segment lineup, chosen over
+  the analysis's proposed "Broadcast Profile"). Built on the existing
+  Export/Import foundation, but stored directly in `localStorage` under a
+  name rather than requiring a file download/upload each time. Critically,
+  a rundown stores `sourceId`/`lengthMin` per block, **not specific
+  episodes** — loading "My 8am Commute" next week grabs whatever's
+  currently latest for every date-sensitive/rolling source, not a stale
+  snapshot. Save/Load/Delete all tested directly, including that Load
+  re-hydrates block names/categories from the *current* catalog rather than
+  trusting the saved snapshot (in case a source's info changed since).
+- **Fade transitions** — block-to-block cuts were an abrupt
+  `audioEl.pause()`/`spotifyPause()` with zero warning, jarring mid-song or
+  mid-sentence. Added a ~1.2s volume fade-out before actually stopping,
+  for both the `<audio>` element and the Spotify SDK player (skipped
+  entirely if nothing is playing yet, e.g. the very first block). Tested
+  live: volume measurably drops mid-transition, then the next block starts
+  at the restored target volume.
 
 ## PWA / mobile install
 
