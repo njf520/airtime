@@ -284,6 +284,24 @@ variable, clamped 220-640px, persisted in `localStorage`).
   programmatic drag simulation, but not yet with a real mouse drag** in an
   actual browser — worth a manual pass.
 
+## Playback log
+
+Error/skip messages only appeared in the now-playing status line for the
+~2 seconds before the sequencer auto-advanced, making them impossible to
+read or copy in time (reported live: "StarDate errors out but the error is
+on screen for just a second so I can't copy it"). Every status message now
+also gets appended to a persistent, scrollable, copyable log
+(`#playback-log`) via a single hook in `setNowPlaying()` — no need to catch
+the toast in time anymore. Entries are color-coded (red if the message
+contains "skipping", which every failure/skip path ends with; green if it
+contains "playing") and mirrored to `console.error` for failures. A "Copy
+log" button copies the full session log as plain text, falling back to a
+selectable `prompt()` dialog if the Clipboard API is unavailable. Also
+fixed a related, worse gap while doing this: a timeline block whose source
+had been removed from the catalog skipped **completely silently** with no
+message at all, not even a flash — now shows and logs "This source no
+longer exists in the catalog."
+
 ## Bug fixes from live testing
 
 - **Timeouts were too strict** — a real playlist skipped its first two

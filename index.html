@@ -425,6 +425,22 @@
   }
   #np-scrub-fill { height: 100%; background: var(--accent); width: 0%; }
   #np-status { font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+  #playback-log {
+    max-height: 140px;
+    overflow-y: auto;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 16px;
+    font-size: 11.5px;
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  }
+  .log-entry { padding: 2px 0; color: var(--text-dim); }
+  .log-entry.log-error { color: var(--bad); }
+  .log-entry.log-ok { color: var(--good); }
+  .log-time { opacity: 0.6; margin-right: 6px; }
+  #copy-log-btn { font-size: 12px; padding: 5px 10px; }
   .modal-overlay {
     display: none;
     position: fixed;
@@ -573,6 +589,11 @@
       <div id="np-scrub"><div id="np-scrub-fill"></div></div>
       <div id="np-status"></div>
     </div>
+    <div class="timeline-heading-row">
+      <h2>Playback log</h2>
+      <button class="btn" id="copy-log-btn" title="Copy the full log to your clipboard">Copy log</button>
+    </div>
+    <div id="playback-log"><div class="empty-state">Nothing played yet this session.</div></div>
     <div id="progress-wrap">
       <div id="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
       <div id="progress-label"></div>
@@ -617,7 +638,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
@@ -1072,6 +1093,20 @@ document.getElementById('clear-timeline-btn').addEventListener('click', () => {
   timelineBlocks = [];
   persistTimeline();
   renderTimeline();
+});
+document.getElementById('copy-log-btn').addEventListener('click', async () => {
+  if (playbackLog.length === 0) { alert('Nothing in the log yet.'); return; }
+  const text = playbackLog.map(e => `[${e.time}] ${e.message}`).join('\n');
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = document.getElementById('copy-log-btn');
+    const original = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  } catch (e) {
+    // Clipboard API can be blocked (permissions, insecure context) -- fall back to a selectable prompt
+    prompt('Copy this log (Ctrl+A, Ctrl+C):', text);
+  }
 });
 document.getElementById('custom-spotify-add').addEventListener('click', () => {
   const input = document.getElementById('custom-spotify-query');
@@ -1667,6 +1702,29 @@ function setNowPlaying(name, episode, statusText) {
   document.getElementById('np-name').textContent = name;
   document.getElementById('np-episode').textContent = episode || '';
   document.getElementById('np-status').textContent = statusText || '';
+  // Status messages (including error/skip reasons) flash by for only ~2s on screen before the
+  // sequencer moves on, making them impossible to read or copy in time — every one also goes into
+  // a persistent, copyable log instead.
+  if (statusText) logPlayback(name + ': ' + statusText);
+}
+
+let playbackLog = [];
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function logPlayback(message) {
+  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  // Every failure/skip path in the sequencer ends its message with "skipping" (see playBlockAt) --
+  // simpler and more robust than trying to keyword-match every possible error phrasing.
+  const level = /skipping/i.test(message) ? 'error' : /playing/i.test(message) ? 'ok' : 'neutral';
+  playbackLog.push({ time, message, level });
+  if (playbackLog.length > 200) playbackLog.shift(); // cap unbounded growth over a long session
+  const el = document.getElementById('playback-log');
+  el.innerHTML = playbackLog.map(e =>
+    `<div class="log-entry log-${e.level}"><span class="log-time">${e.time}</span>${escapeHtml(e.message)}</div>`
+  ).join('');
+  el.scrollTop = el.scrollHeight;
+  if (level === 'error') console.error('[Airtime]', message);
 }
 
 function updateScrub(frac) {
@@ -1719,7 +1777,11 @@ async function playBlockAt(index) {
   renderTimeline();
   updatePlayButtonLabel();
 
-  if (!src) { advanceBlock(); return; }
+  if (!src) {
+    setNowPlaying(block.name, '', 'This source no longer exists in the catalog — skipping in 2s…');
+    playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
+    return;
+  }
 
   if (src.sourceType === 'podcast-rss' || src.sourceType === 'archive' || src.sourceType === 'internet-radio') {
     if (!src.feedUrl) {
