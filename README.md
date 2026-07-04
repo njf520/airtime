@@ -324,6 +324,31 @@ had been removed from the catalog skipped **completely silently** with no
 message at all, not even a flash — now shows and logs "This source no
 longer exists in the catalog."
 
+## Bug fixes from live testing (round 3)
+
+- **Free radio channels were invisible under the "Music" filter** — added
+  in the previous session under a separate "Radio" category instead of
+  "Music", so a user looking for free music channels under Music didn't
+  see them. Moved all 33 (SomaFM/Radio Paradise/KEXP) to `category: 'Music'`
+  — the Format filter (Podcast/Internet Radio/Spotify) already distinguishes
+  delivery format, so the separate category was redundant anyway. Confirmed
+  live: Music category now shows 63 entries including SomaFM/Radio
+  Paradise, and combining it with the Internet Radio format filter narrows
+  correctly to exactly 33.
+- **Spotify search intermittently rejected `limit=50` with a confusing
+  "Invalid limit" 400** — reported live, with the actual Spotify error
+  message visible thanks to the error-detail logging added earlier:
+  `Spotify API error 400: Invalid limit`. The exact same query worked with
+  a smaller limit elsewhere, and Spotify's documented max is 50 — root
+  cause unclear, but the fix doesn't need to be certain to be safe: try 20
+  first, retry once at 10 if that fails too, before giving up.
+- **A feed could fail with "possibly a proxy error page" on one machine
+  while working fine on another** (StarDate, reported live) — all 4 CORS
+  proxies returning bad content in the same pass is usually a transient,
+  shared issue (a rate-limit window, a momentary outage), not a dead feed.
+  Added one full retry pass after a 1.5s pause; confirmed the happy path
+  still resolves in ~1s with no added latency when the first pass succeeds.
+
 ## Bug fixes from live testing
 
 - **Timeouts were too strict** — a real playlist skipped its first two

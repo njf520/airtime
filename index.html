@@ -644,7 +644,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.2.0';
+const VERSION = '2.2.1';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
@@ -734,46 +734,46 @@ const SOURCES = [
   { id: 'spotify-love',    name: 'Love Songs (Spotify)',             category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-mood', spotifyQuery: 'love songs', feedStatus: 'verified', desc: 'Spotify love songs mix, length you set.' },
   // Free, commercial-free, no-signup internet radio -- unlike Spotify these need zero per-user
   // auth at all, so they scale to any number of users with no platform-imposed cap.
-  { id: 'rp-main',         name: 'Radio Paradise: Main Mix',         category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/mp3-192', feedStatus: 'verified', desc: 'Eclectic hand-curated rock/pop/electronic, no ads, listener-supported.' },
-  { id: 'rp-mellow',       name: 'Radio Paradise: Mellow Mix',       category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/mellow-128', feedStatus: 'verified', desc: 'Chill/acoustic/downtempo, no ads, listener-supported.' },
-  { id: 'rp-rock',         name: 'Radio Paradise: Rock Mix',         category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/rock-128', feedStatus: 'verified', desc: 'Rock-focused mix, no ads, listener-supported.' },
-  { id: 'rp-global',       name: 'Radio Paradise: Global Mix',       category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/global-128', feedStatus: 'verified', desc: 'World/eclectic mix, no ads, listener-supported.' },
-  { id: 'rp-beyond',       name: 'Radio Paradise: Beyond',           category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/beyond-128', feedStatus: 'verified', desc: 'Radio Paradise\'s experimental/deep-cut channel, no ads.' },
-  { id: 'kexp',            name: 'KEXP Live Stream',                 category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://kexp.streamguys1.com/kexp160.aac', feedStatus: 'verified', desc: 'Seattle listener-supported station, live DJ-programmed eclectic/indie/alternative, no ads.' },
-  { id: 'soma-groovesalad', name: 'SomaFM: Groove Salad',            category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:groovesalad', feedStatus: 'verified', desc: 'Ambient/downtempo chill, nonprofit listener-supported, no ads.' },
-  { id: 'soma-dronezone',  name: 'SomaFM: Drone Zone',               category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:dronezone', feedStatus: 'verified', desc: 'Atmospheric ambient, minimal beats, no ads.' },
-  { id: 'soma-spacestation', name: 'SomaFM: Space Station Soma',     category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:spacestation', feedStatus: 'verified', desc: 'Ambient/mid-tempo electronica, no ads.' },
-  { id: 'soma-secretagent', name: 'SomaFM: Secret Agent',            category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:secretagent', feedStatus: 'verified', desc: 'Spy-lounge soundtrack vibe, no ads.' },
-  { id: 'soma-metal',      name: 'SomaFM: Metal Detector',           category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:metal', feedStatus: 'verified', desc: 'Black/doom/prog/sludge metal, no ads.' },
-  { id: 'soma-indiepop',   name: 'SomaFM: Indie Pop Rocks!',         category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:indiepop', feedStatus: 'verified', desc: 'Indie pop, no ads.' },
-  { id: 'soma-u80s',       name: 'SomaFM: Underground 80s',          category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:u80s', feedStatus: 'verified', desc: 'Early-80s UK synthpop/new wave, no ads.' },
-  { id: 'soma-seventies',  name: 'SomaFM: Left Coast 70s',           category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:seventies', feedStatus: 'verified', desc: 'Mellow 70s album rock, no ads.' },
-  { id: 'soma-reggae',     name: 'SomaFM: Heavyweight Reggae',       category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:reggae', feedStatus: 'verified', desc: 'Reggae/ska/rocksteady, no ads.' },
-  { id: 'soma-sonicuniverse', name: 'SomaFM: Sonic Universe',        category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:sonicuniverse', feedStatus: 'verified', desc: 'Avant-garde jazz, no ads.' },
-  { id: 'soma-thetrip',    name: 'SomaFM: The Trip',                 category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:thetrip', feedStatus: 'verified', desc: 'Progressive house/trance, no ads.' },
-  { id: 'soma-beatblender', name: 'SomaFM: Beat Blender',            category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:beatblender', feedStatus: 'verified', desc: 'Deep house/downtempo, no ads.' },
-  { id: 'soma-lush',       name: 'SomaFM: Lush',                     category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:lush', feedStatus: 'verified', desc: 'Mellow female vocals, electronic-tinged, no ads.' },
-  { id: 'soma-poptron',    name: 'SomaFM: PopTron',                  category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:poptron', feedStatus: 'verified', desc: 'Electropop/indie dance, no ads.' },
-  { id: 'soma-vaporwaves', name: 'SomaFM: Vaporwaves',               category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:vaporwaves', feedStatus: 'verified', desc: 'All vaporwave, no ads.' },
-  { id: 'soma-illstreet',  name: 'SomaFM: Illinois Street Lounge',   category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:illstreet', feedStatus: 'verified', desc: 'Bachelor-pad exotica, no ads.' },
-  { id: 'soma-suburbsofgoa', name: 'SomaFM: Suburbs of Goa',         category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:suburbsofgoa', feedStatus: 'verified', desc: 'Desi/Asian world beats, no ads.' },
-  { id: 'soma-thistle',    name: 'SomaFM: ThistleRadio',             category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:thistle', feedStatus: 'verified', desc: 'Celtic roots and branches, no ads.' },
-  { id: 'soma-bootliquor', name: 'SomaFM: Boot Liquor',              category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:bootliquor', feedStatus: 'verified', desc: 'Americana roots music, no ads.' },
-  { id: 'soma-cliqhop',    name: 'SomaFM: cliqhop idm',              category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:cliqhop', feedStatus: 'verified', desc: 'Intelligent dance music, no ads.' },
-  { id: 'soma-folkfwd',    name: 'SomaFM: Folk Forward',             category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:folkfwd', feedStatus: 'verified', desc: 'Indie/alt-folk, no ads.' },
-  { id: 'soma-covers',     name: 'SomaFM: Covers',                   category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:covers', feedStatus: 'verified', desc: 'Cover songs by lesser-known artists, no ads.' },
-  { id: 'soma-digitalis',  name: 'SomaFM: Digitalis',                category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:digitalis', feedStatus: 'verified', desc: 'Digitally-affected analog rock, no ads.' },
-  { id: 'soma-doomed',     name: 'SomaFM: Doomed',                   category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:doomed', feedStatus: 'verified', desc: 'Dark industrial/ambient, no ads.' },
-  { id: 'soma-fluid',      name: 'SomaFM: Fluid',                    category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:fluid', feedStatus: 'verified', desc: 'Instrumental hip-hop/future soul/liquid trap, no ads.' },
-  { id: 'soma-sf1033',     name: 'SomaFM: SF 10-33',                 category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:sf1033', feedStatus: 'verified', desc: 'Ambient mixed with SF public-safety radio chatter (novelty channel), no ads.' },
-  { id: 'soma-missioncontrol', name: 'SomaFM: Mission Control',      category: 'Radio', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:missioncontrol', feedStatus: 'verified', desc: 'NASA/space-themed ambient, no ads.' },
+  { id: 'rp-main',         name: 'Radio Paradise: Main Mix',         category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/mp3-192', feedStatus: 'verified', desc: 'Eclectic hand-curated rock/pop/electronic, no ads, listener-supported.' },
+  { id: 'rp-mellow',       name: 'Radio Paradise: Mellow Mix',       category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/mellow-128', feedStatus: 'verified', desc: 'Chill/acoustic/downtempo, no ads, listener-supported.' },
+  { id: 'rp-rock',         name: 'Radio Paradise: Rock Mix',         category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/rock-128', feedStatus: 'verified', desc: 'Rock-focused mix, no ads, listener-supported.' },
+  { id: 'rp-global',       name: 'Radio Paradise: Global Mix',       category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/global-128', feedStatus: 'verified', desc: 'World/eclectic mix, no ads, listener-supported.' },
+  { id: 'rp-beyond',       name: 'Radio Paradise: Beyond',           category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/beyond-128', feedStatus: 'verified', desc: 'Radio Paradise\'s experimental/deep-cut channel, no ads.' },
+  { id: 'kexp',            name: 'KEXP Live Stream',                 category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://kexp.streamguys1.com/kexp160.aac', feedStatus: 'verified', desc: 'Seattle listener-supported station, live DJ-programmed eclectic/indie/alternative, no ads.' },
+  { id: 'soma-groovesalad', name: 'SomaFM: Groove Salad',            category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:groovesalad', feedStatus: 'verified', desc: 'Ambient/downtempo chill, nonprofit listener-supported, no ads.' },
+  { id: 'soma-dronezone',  name: 'SomaFM: Drone Zone',               category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:dronezone', feedStatus: 'verified', desc: 'Atmospheric ambient, minimal beats, no ads.' },
+  { id: 'soma-spacestation', name: 'SomaFM: Space Station Soma',     category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:spacestation', feedStatus: 'verified', desc: 'Ambient/mid-tempo electronica, no ads.' },
+  { id: 'soma-secretagent', name: 'SomaFM: Secret Agent',            category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:secretagent', feedStatus: 'verified', desc: 'Spy-lounge soundtrack vibe, no ads.' },
+  { id: 'soma-metal',      name: 'SomaFM: Metal Detector',           category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:metal', feedStatus: 'verified', desc: 'Black/doom/prog/sludge metal, no ads.' },
+  { id: 'soma-indiepop',   name: 'SomaFM: Indie Pop Rocks!',         category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:indiepop', feedStatus: 'verified', desc: 'Indie pop, no ads.' },
+  { id: 'soma-u80s',       name: 'SomaFM: Underground 80s',          category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:u80s', feedStatus: 'verified', desc: 'Early-80s UK synthpop/new wave, no ads.' },
+  { id: 'soma-seventies',  name: 'SomaFM: Left Coast 70s',           category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:seventies', feedStatus: 'verified', desc: 'Mellow 70s album rock, no ads.' },
+  { id: 'soma-reggae',     name: 'SomaFM: Heavyweight Reggae',       category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:reggae', feedStatus: 'verified', desc: 'Reggae/ska/rocksteady, no ads.' },
+  { id: 'soma-sonicuniverse', name: 'SomaFM: Sonic Universe',        category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:sonicuniverse', feedStatus: 'verified', desc: 'Avant-garde jazz, no ads.' },
+  { id: 'soma-thetrip',    name: 'SomaFM: The Trip',                 category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:thetrip', feedStatus: 'verified', desc: 'Progressive house/trance, no ads.' },
+  { id: 'soma-beatblender', name: 'SomaFM: Beat Blender',            category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:beatblender', feedStatus: 'verified', desc: 'Deep house/downtempo, no ads.' },
+  { id: 'soma-lush',       name: 'SomaFM: Lush',                     category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:lush', feedStatus: 'verified', desc: 'Mellow female vocals, electronic-tinged, no ads.' },
+  { id: 'soma-poptron',    name: 'SomaFM: PopTron',                  category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:poptron', feedStatus: 'verified', desc: 'Electropop/indie dance, no ads.' },
+  { id: 'soma-vaporwaves', name: 'SomaFM: Vaporwaves',               category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:vaporwaves', feedStatus: 'verified', desc: 'All vaporwave, no ads.' },
+  { id: 'soma-illstreet',  name: 'SomaFM: Illinois Street Lounge',   category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:illstreet', feedStatus: 'verified', desc: 'Bachelor-pad exotica, no ads.' },
+  { id: 'soma-suburbsofgoa', name: 'SomaFM: Suburbs of Goa',         category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:suburbsofgoa', feedStatus: 'verified', desc: 'Desi/Asian world beats, no ads.' },
+  { id: 'soma-thistle',    name: 'SomaFM: ThistleRadio',             category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:thistle', feedStatus: 'verified', desc: 'Celtic roots and branches, no ads.' },
+  { id: 'soma-bootliquor', name: 'SomaFM: Boot Liquor',              category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:bootliquor', feedStatus: 'verified', desc: 'Americana roots music, no ads.' },
+  { id: 'soma-cliqhop',    name: 'SomaFM: cliqhop idm',              category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:cliqhop', feedStatus: 'verified', desc: 'Intelligent dance music, no ads.' },
+  { id: 'soma-folkfwd',    name: 'SomaFM: Folk Forward',             category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:folkfwd', feedStatus: 'verified', desc: 'Indie/alt-folk, no ads.' },
+  { id: 'soma-covers',     name: 'SomaFM: Covers',                   category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:covers', feedStatus: 'verified', desc: 'Cover songs by lesser-known artists, no ads.' },
+  { id: 'soma-digitalis',  name: 'SomaFM: Digitalis',                category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:digitalis', feedStatus: 'verified', desc: 'Digitally-affected analog rock, no ads.' },
+  { id: 'soma-doomed',     name: 'SomaFM: Doomed',                   category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:doomed', feedStatus: 'verified', desc: 'Dark industrial/ambient, no ads.' },
+  { id: 'soma-fluid',      name: 'SomaFM: Fluid',                    category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:fluid', feedStatus: 'verified', desc: 'Instrumental hip-hop/future soul/liquid trap, no ads.' },
+  { id: 'soma-sf1033',     name: 'SomaFM: SF 10-33',                 category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:sf1033', feedStatus: 'verified', desc: 'Ambient mixed with SF public-safety radio chatter (novelty channel), no ads.' },
+  { id: 'soma-missioncontrol', name: 'SomaFM: Mission Control',      category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:missioncontrol', feedStatus: 'verified', desc: 'NASA/space-themed ambient, no ads.' },
 ];
 
 const CATEGORY_COLORS = {
   NPR: '#e05a5a', News: '#4fb0ff', International: '#3ec6cf', Business: '#3ecf8e',
   Storytelling: '#e0a233', Comedy: '#e05ac0', Science: '#7c8cff', Poetry: '#e0a233',
   Reflection: '#9aa0ab', History: '#c98a4a', Drama: '#c9564a', Weather: '#4fd1ff', Music: '#3ecf8e',
-  Radio: '#e08a3e', 'True Crime': '#c94f5c',
+  'True Crime': '#c94f5c',
 };
 
 // User-created custom Spotify channels (any search query) are appended to SOURCES at runtime so
@@ -1308,7 +1308,7 @@ function looksLikeXml(text) {
   return head.startsWith('<?xml') || /^<(rss|feed)[\s>]/i.test(head) || /<(rss|feed)[\s>]/i.test(head);
 }
 
-async function fetchTextWithProxies(url) {
+async function fetchTextWithProxiesOnce(url) {
   let lastErr;
   for (const wrap of CORS_PROXIES) {
     try {
@@ -1322,6 +1322,19 @@ async function fetchTextWithProxies(url) {
     }
   }
   throw lastErr || new Error('All fetch attempts failed');
+}
+
+// Every proxy failing in the same pass is usually transient (a shared rate-limit window, a
+// momentary outage) rather than a real dead feed — reported live: all 4 proxies returned bad
+// content on one machine while the same feed worked fine moments later elsewhere. One retry pass
+// after a short pause resolves most of these without the user needing to manually retry.
+async function fetchTextWithProxies(url) {
+  try {
+    return await fetchTextWithProxiesOnce(url);
+  } catch (e) {
+    await new Promise(r => setTimeout(r, 1500));
+    return await fetchTextWithProxiesOnce(url);
+  }
 }
 
 async function resolveArchiveOrgAudio(identifier) {
@@ -1698,8 +1711,18 @@ async function buildSpotifyQueue(src, lengthMin) {
   } catch (e) { /* fall through to plain track search below */ }
 
   if (tracks.length === 0) {
-    const data = await spotifyApi('/search?' + new URLSearchParams({ q: src.spotifyQuery, type: 'track', limit: '50' }));
-    tracks = (data && data.tracks && data.tracks.items) ? data.tracks.items.filter(t => t && t.uri) : [];
+    // Spotify's documented max is limit=50, but that's intermittently rejected with a genuinely
+    // confusing "Invalid limit" 400 for reasons that don't seem to depend on the query itself —
+    // reported live on one machine while the exact same query worked with a smaller limit
+    // elsewhere. Try 20 first (comfortably under any observed failure), then retry once at 10
+    // before giving up, rather than failing outright on the first quirky response.
+    for (const limit of [20, 10]) {
+      try {
+        const data = await spotifyApi('/search?' + new URLSearchParams({ q: src.spotifyQuery, type: 'track', limit: String(limit) }));
+        tracks = (data && data.tracks && data.tracks.items) ? data.tracks.items.filter(t => t && t.uri) : [];
+        if (tracks.length > 0) break;
+      } catch (e) { /* try the next smaller limit */ }
+    }
   }
   if (tracks.length === 0) throw new Error('No tracks found for ' + src.spotifyQuery);
 
