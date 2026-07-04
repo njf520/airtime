@@ -169,12 +169,18 @@ variable, clamped 220-640px, persisted in `localStorage`).
 
 ## Known limitations / next steps
 
-- **As It Happens, Quirks & Quarks, and Radiolab** remain unverified from
-  this dev environment specifically — worth testing live rather than
-  assuming broken.
-- **No real reordering test with actual mouse drags yet** — the drop zone
-  accepts reorders programmatically (verified), worth a manual pass in a
-  real browser.
+- **As It Happens, Quirks & Quarks, and Radiolab** consistently fail through
+  every CORS proxy tried (7 total across two rounds of testing, from both a
+  dev sandbox and a real browser) — the feeds themselves are real, but CBC
+  and WNYC most likely block proxy/datacenter traffic specifically. Not
+  fixable client-side without a real backend server, which is out of scope
+  for this no-build static app. Kept in the catalog (the shows are real and
+  active) with an honest note in the description rather than removed, and
+  the tap-to-add "+" / drag-and-drop still skip them gracefully at playback
+  time if they fail.
+- **Reordering has been tested via the tap-based ↑/↓ buttons and
+  programmatic drag simulation, but not yet with a real mouse drag** in an
+  actual browser — worth a manual pass.
 
 ## Bug fixes from live testing
 
@@ -214,6 +220,17 @@ variable, clamped 220-640px, persisted in `localStorage`).
   loop); anything from a superseded call now bails out immediately.
   Reproduced and confirmed fixed: rapidly skipping past a block mid-fetch no
   longer causes interference.
+- **Target-length inputs accepted negative/out-of-range values** — typing
+  `-5` for hours passed straight through into `targetMinutes`, breaking the
+  progress-bar math. Now clamps hours to >= 0 and minutes to 0-59, and
+  writes the clamped value back into the inputs so the UI doesn't silently
+  disagree with the stored state.
+- **Changing a block's duration while it's the one currently playing had no
+  effect** — the change handler updated the stored `lengthMin` but not
+  `playerState.blockBudgetSec`, so the old duration kept governing auto-
+  advance until the next play-through (which may never come, since each
+  block only plays once per pass). Now applies live if it's the active
+  block.
 
 ## Mobile / touch support
 

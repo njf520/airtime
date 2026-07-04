@@ -470,6 +470,19 @@
       width: 100%;
       justify-content: space-between;
     }
+    /* Touch targets under ~40px are notoriously hard to tap precisely on a phone — grow the
+       icon-only buttons instead of leaving them at their comfortable-with-a-mouse desktop size. */
+    .block-move, .block-remove, .source-add-btn {
+      width: 40px;
+      height: 40px;
+      font-size: 18px;
+    }
+    #np-controls button {
+      width: 44px;
+      height: 44px;
+      font-size: 18px;
+    }
+    .block-bottom { flex-wrap: wrap; }
   }
 </style>
 </head>
@@ -568,7 +581,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '1.2.1';
+const VERSION = '1.2.2';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
@@ -591,13 +604,13 @@ const SOURCES = [
   { id: 'nhk-newsline',    name: 'NHK World Radio Japan: English News', category: 'International', cadence: 'Daily', lengthMin: 20, flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://www3.nhk.or.jp/rj/podcast/rss/english.xml', feedStatus: 'verified', desc: 'NHK\'s English-language radio news from Japan (closest available feed to the TV show "NHK Newsline", which has no independent podcast feed).' },
   { id: 'witness-history', name: 'BBC Witness History',              category: 'History',   cadence: 'Daily',  lengthMin: 9,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcasts.files.bbci.co.uk/p004t1hd.rss', feedStatus: 'verified', desc: 'A historical event, told by someone who was there.' },
   { id: 'thought-for-day', name: 'BBC Thought for the Day',          category: 'Reflection', cadence: 'Daily',  lengthMin: 3,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcasts.files.bbci.co.uk/p00szxv6.rss', feedStatus: 'verified', desc: 'Short daily reflection from Radio 4\'s Today programme.' },
-  { id: 'as-it-happens',   name: 'CBC As It Happens',                category: 'News',       cadence: 'Daily',  lengthMin: 54,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.cbc.ca/podcasting/includes/asithappens.xml', feedStatus: 'unverified', desc: 'Canadian nightly news and interviews.' },
+  { id: 'as-it-happens',   name: 'CBC As It Happens',                category: 'News',       cadence: 'Daily',  lengthMin: 54,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.cbc.ca/podcasting/includes/asithappens.xml', feedStatus: 'unverified', desc: 'Canadian nightly news and interviews — feed is real but has failed through 7 different CORS proxies across multiple sessions; CBC likely blocks proxy/datacenter traffic specifically.' },
   { id: 'tal',             name: 'This American Life',               category: 'Storytelling', cadence: 'Weekly', lengthMin: 59, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.thisamericanlife.org/podcast/rss.xml', feedStatus: 'verified', desc: 'Weekly theme, told in a few first-person stories.' },
   { id: 'the-moth',        name: 'The Moth',                         category: 'Storytelling', cadence: 'Weekly', lengthMin: 10, flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feeds.themoth.org/themothpodcast', feedStatus: 'verified', desc: 'A single true story, told live, no notes.' },
-  { id: 'radiolab',        name: 'Radiolab',                         category: 'Science',   cadence: 'Weekly', lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feeds.wnyc.org/radiolab', feedStatus: 'unverified', desc: 'Sound-rich exploration of science and philosophy.' },
+  { id: 'radiolab',        name: 'Radiolab',                         category: 'Science',   cadence: 'Weekly', lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feeds.wnyc.org/radiolab', feedStatus: 'unverified', desc: 'Sound-rich exploration of science and philosophy — feed is real but consistently fails via CORS proxy; likely WNYC blocking proxy/datacenter traffic.' },
   { id: 'says-you',        name: 'Says You!',                        category: 'Comedy',     cadence: 'Weekly', lengthMin: 50,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://saysyou.libsyn.com/rss', feedStatus: 'verified', desc: 'A word game, bluffing quiz show, PRX — now airing reruns, feed still playable.' },
   { id: 'startalk',        name: 'StarTalk Radio',                   category: 'Science',   cadence: 'Weekly', lengthMin: 40,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/4T39_jAj', feedStatus: 'verified', desc: 'Neil deGrasse Tyson on science and pop culture.' },
-  { id: 'quirks',          name: 'CBC Quirks & Quarks',              category: 'Science',   cadence: 'Weekly', lengthMin: 54,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.cbc.ca/podcasting/includes/quirksaio.xml', feedStatus: 'unverified', desc: 'Canadian weekly science radio show.' },
+  { id: 'quirks',          name: 'CBC Quirks & Quarks',              category: 'Science',   cadence: 'Weekly', lengthMin: 54,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.cbc.ca/podcasting/includes/quirksaio.xml', feedStatus: 'unverified', desc: 'Canadian weekly science radio show — feed is real but consistently fails via CORS proxy; CBC likely blocks proxy/datacenter traffic specifically.' },
   { id: 'moment-science',  name: 'A Moment of Science',              category: 'Science',   cadence: 'Daily',  lengthMin: 2,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://f.prxu.org/4317/feed-rss.xml', feedStatus: 'verified', desc: 'Two-minute daily science tidbit, Indiana Public Media.' },
   { id: 'sciam-quickly',   name: 'Scientific American: Science Quickly', category: 'Science', cadence: 'Weekly', lengthMin: 8, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/SAM8799470961', feedStatus: 'verified', desc: 'Short science news bites.' },
   { id: 'stardate',        name: 'StarDate',                         category: 'Science',   cadence: 'Daily',  lengthMin: 2,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://stardate.org/feeds/podcast.xml', feedStatus: 'verified', desc: 'Daily stargazing tip from McDonald Observatory.' },
@@ -787,8 +800,17 @@ function renderTimeline() {
   });
   el.querySelectorAll('.dur-input').forEach(inp => {
     inp.addEventListener('change', () => {
-      const b = timelineBlocks.find(x => x.uid === inp.dataset.uid);
-      if (b) { b.lengthMin = Math.max(1, parseInt(inp.value) || 1); persistTimeline(); renderProgress(); }
+      const idx = timelineBlocks.findIndex(x => x.uid === inp.dataset.uid);
+      if (idx === -1) return;
+      const b = timelineBlocks[idx];
+      b.lengthMin = Math.max(1, parseInt(inp.value) || 1);
+      persistTimeline();
+      renderProgress();
+      // If this is the block currently playing, apply the new length live instead of only on
+      // the next play-through (which may never come, since each block only plays once per pass).
+      if (typeof playerState !== 'undefined' && playerState.currentIndex === idx && playerState.blockStartedAt) {
+        playerState.blockBudgetSec = b.lengthMin * 60;
+      }
     });
   });
   el.querySelectorAll('.block-remove').forEach(btn => {
@@ -909,8 +931,10 @@ document.getElementById('clear-timeline-btn').addEventListener('click', () => {
 document.getElementById('target-hours').addEventListener('change', updateTarget);
 document.getElementById('target-mins').addEventListener('change', updateTarget);
 function updateTarget() {
-  const h = parseInt(document.getElementById('target-hours').value) || 0;
-  const m = parseInt(document.getElementById('target-mins').value) || 0;
+  const h = Math.max(0, parseInt(document.getElementById('target-hours').value) || 0);
+  const m = Math.max(0, Math.min(59, parseInt(document.getElementById('target-mins').value) || 0));
+  document.getElementById('target-hours').value = h;
+  document.getElementById('target-mins').value = m;
   targetMinutes = h * 60 + m;
   save('airtime_target_v1', targetMinutes);
   renderProgress();
