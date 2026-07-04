@@ -123,7 +123,8 @@
     justify-content: space-between;
   }
   .timeline-heading-row h2 { margin: 0; }
-  #clear-timeline-btn { font-size: 12px; padding: 5px 10px; }
+  .timeline-heading-actions { display: flex; gap: 6px; }
+  .timeline-heading-actions .btn { font-size: 12px; padding: 5px 10px; }
   #search {
     width: 100%;
     padding: 8px 10px;
@@ -554,7 +555,12 @@
     </div>
     <div class="timeline-heading-row">
       <h2>Your timeline</h2>
-      <button class="btn" id="clear-timeline-btn">Clear all</button>
+      <div class="timeline-heading-actions">
+        <button class="btn" id="export-timeline-btn" title="Download this timeline as a JSON file">Export</button>
+        <button class="btn" id="import-timeline-btn" title="Load a previously exported timeline">Import</button>
+        <input type="file" id="import-timeline-input" accept="application/json" style="display:none">
+        <button class="btn" id="clear-timeline-btn">Clear all</button>
+      </div>
     </div>
     <div id="timeline" class="empty"></div>
   </section>
@@ -587,7 +593,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
@@ -933,6 +939,45 @@ document.getElementById('clear-timeline-btn').addEventListener('click', () => {
   timelineBlocks = [];
   persistTimeline();
   renderTimeline();
+});
+document.getElementById('export-timeline-btn').addEventListener('click', () => {
+  if (timelineBlocks.length === 0) { alert('Your timeline is empty — nothing to export.'); return; }
+  const payload = { airtimeExportVersion: 1, targetMinutes, blocks: timelineBlocks };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'airtime-broadcast-' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+document.getElementById('import-timeline-btn').addEventListener('click', () => {
+  document.getElementById('import-timeline-input').click();
+});
+document.getElementById('import-timeline-input').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  e.target.value = ''; // allow re-importing the same filename later
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data || !Array.isArray(data.blocks)) throw new Error('File doesn\'t look like an Airtime export (missing "blocks" array)');
+    const valid = data.blocks.every(b => b && typeof b.sourceId === 'string' && typeof b.lengthMin === 'number');
+    if (!valid) throw new Error('File doesn\'t look like an Airtime export (malformed block entries)');
+    if (timelineBlocks.length > 0 && !confirm('Replace your current ' + timelineBlocks.length + '-block timeline with the ' + data.blocks.length + ' blocks from this file?')) return;
+    if (typeof stopBroadcast === 'function') stopBroadcast();
+    timelineBlocks = data.blocks;
+    if (typeof data.targetMinutes === 'number' && data.targetMinutes >= 0) {
+      targetMinutes = data.targetMinutes;
+      document.getElementById('target-hours').value = Math.floor(targetMinutes / 60);
+      document.getElementById('target-mins').value = targetMinutes % 60;
+      save('airtime_target_v1', targetMinutes);
+    }
+    persistTimeline();
+    renderTimeline();
+  } catch (err) {
+    alert('Could not import this file: ' + err.message);
+  }
 });
 document.getElementById('target-hours').addEventListener('change', updateTarget);
 document.getElementById('target-mins').addEventListener('change', updateTarget);

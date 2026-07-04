@@ -281,6 +281,15 @@ genuinely hard to tap precisely on a real phone screen otherwise.
   `?code=...` — this was silently falling through with the error param stuck
   in the URL bar. Now shown as a clear alert and the URL is cleaned up
   either way.
+- Added **Export/Import** for the timeline — Export downloads the current
+  timeline + target length as a dated JSON file; Import reads one back in
+  (with a confirm prompt if you already have a non-empty timeline, so it
+  can't silently clobber work). Validates the file actually looks like an
+  Airtime export (a `blocks` array with well-formed entries) before
+  accepting it, and rejects malformed JSON/wrong-shape files with a clear
+  message rather than corrupting the timeline — tested all three failure
+  modes (invalid JSON syntax, valid JSON missing the `blocks` array, and a
+  `blocks` array with malformed entries) plus the valid round-trip.
 
 ## Versioning
 
