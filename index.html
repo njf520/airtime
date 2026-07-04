@@ -644,7 +644,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.2.1';
+const VERSION = '2.3.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
@@ -1281,9 +1281,13 @@ function updateTarget() {
 
 // ---------- Podcast RSS fetching ----------
 // Podcast feeds almost never set Access-Control-Allow-Origin for browser JS, so we try direct
-// first, then fall back through public CORS proxies (same approach as dinner-planner's URL import).
+// first, then our own dedicated Cloudflare Worker (cors-proxy-worker.js -- reliable since it's not
+// shared with the rest of the internet), then fall back to free public proxies as a last resort.
+// Note: the Worker only allows requests from the production origin (njf520.github.io), so it
+// won't work when testing locally on localhost -- that's intentional, not a bug.
 const CORS_PROXIES = [
   url => url,
+  url => `https://airtime-cors-proxy.njf520.workers.dev/?url=${encodeURIComponent(url)}`,
   url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
   url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,

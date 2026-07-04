@@ -4,8 +4,11 @@
 // apps, not browser JS. This is a small, dedicated proxy so Airtime doesn't have to depend on
 // free public CORS-proxy services (corsproxy.io, allorigins.win, codetabs.com), which have no
 // reliability guarantee and occasionally return their own error page instead of the real feed.
-// Deploy this as a Cloudflare Worker (same account as dinner-planner's worker.js), then add its
-// URL as the first entry in Airtime's CORS_PROXIES list in index.html.
+// Deployed as a Cloudflare Worker (same account as dinner-planner's worker.js) at
+// airtime-cors-proxy.njf520.workers.dev, wired in as the first entry in Airtime's CORS_PROXIES
+// list in index.html. If you ever need to redeploy from scratch: create a new Worker in the
+// Cloudflare dashboard ("Start with Hello World!"), paste this file's contents into its code
+// editor, and Deploy.
 //
 // GET /?url=<encoded target URL> -> fetches that URL server-side and returns it with CORS headers
 // added, so it's readable from https://njf520.github.io/airtime/'s browser JS.

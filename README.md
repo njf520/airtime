@@ -17,17 +17,20 @@ people, not just one person's browser? Here's the honest breakdown.
 **Podcast/RSS/internet-radio sources scale to unlimited users for free.**
 There's no backend, no per-user state beyond `localStorage`, and GitHub
 Pages serves static files at effectively unlimited scale for free. The one
-real risk is the free public CORS proxies (`corsproxy.io`,
+real risk was the free public CORS proxies (`corsproxy.io`,
 `api.allorigins.win`, `api.codetabs.com`) — fine for one person, but a
 popular public site hammering them could get rate-limited or blocked
-outright. **Recommended hardening**: deploy a small dedicated Cloudflare
-Worker as a first-choice CORS proxy (falling back to the public ones), the
-same pattern already used for `dinner-planner`'s `worker.js` (which proxies
-GitHub + Anthropic calls) — a ~20-line Worker that just fetches a URL and
-adds CORS headers would remove the dependency on third-party proxy
-reliability entirely, and Cloudflare's free tier comfortably covers a
-public hobby project's traffic. I can draft this Worker on request; I
-can't deploy it myself since it needs your Cloudflare account.
+outright, and they're the actual cause of the "StarDate works on one
+machine but not another" flakiness reported live. **Done**: deployed
+`cors-proxy-worker.js` as a dedicated Cloudflare Worker
+(`airtime-cors-proxy.njf520.workers.dev`, same account as `dinner-planner`'s
+`worker.js`) — tried first, before falling back to the free public ones.
+Verified directly via `curl` that it returns the real feed content with the
+correct CORS header for the production origin (and, as designed, refuses
+requests from any other origin — including this repo's local dev server,
+which is why testing locally still falls through to the free proxies).
+Cloudflare's free tier (100k requests/day) comfortably covers this app's
+traffic.
 
 **Spotify is the real constraint, and it's a hard platform limit, not a
 code problem.** Spotify apps start in "Development Mode," capped at **25
