@@ -11,6 +11,16 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script>
+// Set the theme before first paint (and before the <style> below is even parsed) so there's no
+// flash of the wrong theme on load. Falls back to the OS-level light/dark preference if the user
+// has never explicitly toggled it here.
+(function() {
+  var saved = localStorage.getItem('airtime_theme_v1');
+  var theme = saved || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  document.documentElement.dataset.theme = theme;
+})();
+</script>
 <style>
   :root {
     --bg: #0f1115;
@@ -23,7 +33,28 @@
     --good: #3ecf8e;
     --warn: #e0a233;
     --bad: #e05a5a;
+    /* Subtle overlay tints used for chips/stripes -- a light-on-dark tint reads as "faint" on a
+       dark surface but is nearly invisible on a light one, so this flips per theme rather than
+       being hardcoded at every call site. */
+    --tint-weak: rgba(255,255,255,0.06);
+    --tint-strong: rgba(255,255,255,0.12);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #f5f6f8;
+    --panel: #ffffff;
+    --panel-2: #f0f1f4;
+    --border: #dde1e8;
+    --text: #1c1f26;
+    --text-dim: #6b7280;
+    --accent: #2f7ee0;
+    --good: #1a9c62;
+    --warn: #a6690f;
+    --bad: #cf3f3f;
+    --tint-weak: rgba(15,17,21,0.05);
+    --tint-strong: rgba(15,17,21,0.09);
+    color-scheme: light;
   }
   * { box-sizing: border-box; }
   body {
@@ -63,7 +94,7 @@
     font-size: 11px;
     font-weight: 500;
     color: var(--text-dim);
-    background: rgba(255,255,255,0.06);
+    background: var(--tint-weak);
     padding: 2px 8px;
     border-radius: 999px;
     margin-left: 8px;
@@ -213,7 +244,7 @@
     margin-bottom: 4px;
   }
   .tag {
-    background: rgba(255,255,255,0.06);
+    background: var(--tint-weak);
     padding: 1px 6px;
     border-radius: 4px;
   }
@@ -287,8 +318,8 @@
   .block.flexible {
     background-image: repeating-linear-gradient(
       135deg,
-      rgba(255,255,255,0.05),
-      rgba(255,255,255,0.05) 8px,
+      var(--tint-weak),
+      var(--tint-weak) 8px,
       transparent 8px,
       transparent 16px
     );
@@ -332,6 +363,7 @@
     padding: 4px 6px;
     font-size: 12px;
   }
+  .dur-fixed { cursor: help; }
   .block-remove {
     background: none;
     border: none;
@@ -383,6 +415,16 @@
   .btn.primary:hover { opacity: 0.9; }
   .btn.danger:hover { border-color: var(--bad); color: var(--bad); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    line-height: 1;
+  }
   #now-playing {
     display: none;
     background: var(--panel-2);
@@ -441,6 +483,32 @@
   }
   #np-scrub-fill { height: 100%; background: var(--accent); width: 0%; }
   #np-status { font-size: 11px; color: var(--text-dim); margin-top: 6px; }
+  /* A raw always-visible log looks like debug output left in place -- tuck it behind a native
+     <details> disclosure instead, closed by default, so it's there when you want it without
+     cluttering the timeline view by default. */
+  #playback-log-wrap { margin-bottom: 16px; }
+  #playback-log-wrap > summary {
+    cursor: pointer;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+  }
+  #playback-log-wrap > summary::-webkit-details-marker { display: none; }
+  #playback-log-wrap > summary::before {
+    content: '▸';
+    font-size: 10px;
+    display: inline-block;
+    transition: transform 0.15s ease;
+  }
+  #playback-log-wrap[open] > summary::before { transform: rotate(90deg); }
+  #playback-log-wrap > summary:hover { color: var(--accent); }
+  .playback-log-toolbar { display: flex; justify-content: flex-end; margin: 10px 0 8px; }
   #playback-log {
     max-height: 140px;
     overflow-y: auto;
@@ -448,7 +516,6 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 8px 10px;
-    margin-bottom: 16px;
     font-size: 11.5px;
     font-family: ui-monospace, 'SF Mono', Consolas, monospace;
   }
@@ -562,6 +629,7 @@
     </div>
   </div>
   <div class="header-buttons">
+    <button class="btn icon-btn" id="theme-toggle-btn" title="Switch to light mode" aria-label="Switch to light mode">🌙</button>
     <button class="btn" id="spotify-connect-btn">Connect Spotify</button>
     <button class="btn primary" id="play-broadcast-btn">▶ Play Broadcast</button>
   </div>
@@ -606,11 +674,13 @@
       </div>
       <div id="np-status"></div>
     </div>
-    <div class="timeline-heading-row">
-      <h2>Playback log</h2>
-      <button class="btn" id="copy-log-btn" title="Copy the full log to your clipboard">Copy log</button>
-    </div>
-    <div id="playback-log"><div class="empty-state">Nothing played yet this session.</div></div>
+    <details id="playback-log-wrap">
+      <summary>Playback log</summary>
+      <div class="playback-log-toolbar">
+        <button class="btn" id="copy-log-btn" title="Copy the full log to your clipboard">Copy log</button>
+      </div>
+      <div id="playback-log"><div class="empty-state">Nothing played yet this session.</div></div>
+    </details>
     <div id="progress-wrap">
       <div id="progress-label"></div>
     </div>
@@ -663,8 +733,25 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.8.0';
+const VERSION = '2.9.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
+
+// ---------- Theme ----------
+// The actual theme attribute is already set pre-paint by the inline <script> in <head> (see
+// there for why) -- this just wires up the toggle button to flip it and keep the icon in sync.
+function applyThemeButton() {
+  const isLight = document.documentElement.dataset.theme === 'light';
+  const btn = document.getElementById('theme-toggle-btn');
+  btn.textContent = isLight ? '☀️' : '🌙';
+  btn.title = btn.ariaLabel = isLight ? 'Switch to dark mode' : 'Switch to light mode';
+}
+applyThemeButton();
+document.getElementById('theme-toggle-btn').addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('airtime_theme_v1', next);
+  applyThemeButton();
+});
 
 // ---------- Source catalog ----------
 // sourceType: 'podcast-rss' | 'spotify-genre' | 'spotify-decade' | 'spotify-mood' | 'spotify-custom' | 'archive'
@@ -1051,8 +1138,10 @@ function renderTimeline() {
       </div>
       <div class="block-bottom">
         <div class="block-duration">
-          <input type="number" min="1" value="${b.lengthMin}" data-uid="${b.uid}" class="dur-input">
-          min${isFlexible ? ' ~' : ''}
+          ${isFlexible
+            ? `<input type="number" min="1" value="${b.lengthMin}" data-uid="${b.uid}" class="dur-input" aria-label="Length in minutes for ${b.name}"> min`
+            : `<span class="dur-fixed" title="This plays to its own natural end automatically -- it can't be lengthened or shortened. Shown here only as an estimate for the running total.">~${b.lengthMin} min</span>`
+          }
         </div>
         <button class="block-move" data-uid="${b.uid}" data-dir="-1" title="Move up" aria-label="Move ${b.name} up" ${idx === 0 ? 'disabled' : ''}>↑</button>
         <button class="block-move" data-uid="${b.uid}" data-dir="1" title="Move down" aria-label="Move ${b.name} down" ${idx === timelineBlocks.length - 1 ? 'disabled' : ''}>↓</button>
