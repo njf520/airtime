@@ -425,6 +425,29 @@ variable, clamped 220-640px, persisted in `localStorage`).
   unaffected — it pauses/resumes normally since there's a real buffer to
   resume from.
 
+## UI polish: light/dark mode, log tucked away, honest duration fields
+
+- **Light/dark toggle** (🌙/☀️ button in the header). Every color in the app
+  was already a CSS custom property on `:root`, so a `:root[data-theme="light"]`
+  override block covers the whole UI; a couple of hardcoded translucent-white
+  overlays (chip backgrounds, the flexible-block stripe pattern) were pulled
+  into `--tint-weak`/`--tint-strong` variables too, since a white-based tint
+  is nearly invisible on a light background. Preference is read and applied
+  by an inline script in `<head>`, before the stylesheet is even parsed, so
+  there's no flash of the wrong theme on load; persisted in `localStorage`,
+  defaulting to the OS-level `prefers-color-scheme` if never toggled.
+- **Playback log tucked behind a collapsed `<details>` disclosure**, closed
+  by default. It's genuinely useful (per-block status history, copyable),
+  but sitting open by default read as debug output left in the UI.
+- **Fixed-length blocks (StarDate, podcasts, OTR, etc.) no longer show an
+  editable duration field.** That number never controlled their actual
+  playback length (they play to their own natural end regardless — see
+  "Let fixed-content shows finish naturally" above), so an editable-looking
+  input next to them was actively misleading. They now show a plain
+  `~N min` estimate with a tooltip explaining it's just for the running
+  total; only genuinely flexible sources (internet radio, Spotify) keep the
+  editable field, since that number really does set their cutoff.
+
 ## Known limitations / next steps
 
 - **As It Happens, Quirks & Quarks, and Radiolab** consistently fail through
