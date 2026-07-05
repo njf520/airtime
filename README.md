@@ -370,6 +370,19 @@ field just have it silently ignored on import rather than erroring.
   old-time-radio series ("Suspense (Old-Time Radio, archive)", etc.) — so
   it's clear upfront these are old episodes, not today's.
 
+## Visual time-blocking
+
+The timeline is no longer a linear text list — it's a wrapping row of blocks
+whose **width is proportional to how long they run** (clamped between
+120px and 320px so a 2-minute StarDate and a 2-hour PHC broadcast are both
+readable). Flexible sources (Spotify, internet radio) get a translucent
+diagonal-stripe pattern to signal they'll be cut off at whatever time is
+left, rather than running to a fixed natural length like a podcast episode.
+Drag-and-drop reordering was rewritten to do real 2D (x/y) hit-testing
+instead of just comparing vertical position, since blocks now wrap across
+multiple rows. On mobile (`max-width: 768px`), blocks fall back to full
+width in a simple stacked list — the proportional layout is desktop-only.
+
 ## PWA / mobile install
 
 Installable on Android (and desktop) as a home-screen app: `manifest.json`

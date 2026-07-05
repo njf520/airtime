@@ -250,30 +250,49 @@
     border: 2px dashed var(--border);
     border-radius: 10px;
     padding: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 8px;
   }
   #timeline.drag-over {
     border-color: var(--accent);
     background: rgba(79,176,255,0.05);
   }
   #timeline.empty::before {
-    content: "Drag sources here to build your broadcast, in order top to bottom.";
+    content: "Drag sources here to build your broadcast — block width shows how long each one runs.";
     color: var(--text-dim);
     font-size: 13px;
     display: block;
     text-align: center;
     padding: 40px 10px;
+    width: 100%;
   }
+  /* Visual time-blocking: each block's width is proportional to its length (see renderTimeline's
+     inline style), so the timeline reads like a real broadcast log/clock wheel at a glance. */
   .block {
     background: var(--panel-2);
     border: 1px solid var(--border);
     border-left: 4px solid var(--card-color, var(--accent));
     border-radius: 8px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
+    padding: 8px 10px;
+    box-sizing: border-box;
     cursor: grab;
   }
   .block.dragging { opacity: 0.4; }
   .block.playing { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  /* Flexible/open-ended blocks (Spotify, live internet radio) get a translucent diagonal-stripe
+     pattern -- a distinct visual signal that this one is dynamic/user-adjustable length, not a
+     fixed episode with a real runtime. */
+  .block.flexible {
+    background-image: repeating-linear-gradient(
+      135deg,
+      rgba(255,255,255,0.05),
+      rgba(255,255,255,0.05) 8px,
+      transparent 8px,
+      transparent 16px
+    );
+  }
   .block-top {
     display: flex;
     align-items: flex-start;
@@ -293,7 +312,8 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 6px;
     margin-top: 8px;
   }
   .block-duration {
@@ -516,7 +536,12 @@
       height: 44px;
       font-size: 18px;
     }
-    .block-bottom { flex-wrap: wrap; }
+    /* The proportional-width visual timeline is a desktop thing -- on a narrow phone screen there
+       isn't room for meaningful width differences anyway, so fall back to the simpler, already
+       touch-optimized full-width stacked list (same as before this feature existed). */
+    .block {
+      width: 100% !important;
+    }
   }
 </style>
 </head>
@@ -638,7 +663,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.6.0';
+const VERSION = '2.7.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
@@ -995,6 +1020,13 @@ function renderLibrary() {
 }
 
 // ---------- Timeline rendering ----------
+// Visual time-blocking: width scales with duration so the timeline reads like a real broadcast
+// log at a glance. Clamped so a 2-min StarDate stays tappable and a 2-hour PHC show doesn't
+// swallow the whole row.
+function blockWidthPx(lengthMin) {
+  return Math.max(120, Math.min(320, 40 + lengthMin * 2.5));
+}
+
 function renderTimeline() {
   const el = document.getElementById('timeline');
   el.innerHTML = '';
@@ -1002,11 +1034,13 @@ function renderTimeline() {
 
   timelineBlocks.forEach((b, idx) => {
     const src = SOURCES.find(s => s.id === b.sourceId);
+    const isFlexible = src ? !!src.flexible : false;
     const block = document.createElement('div');
-    block.className = 'block' + (typeof playerState !== 'undefined' && playerState.currentIndex === idx ? ' playing' : '');
+    block.className = 'block' + (isFlexible ? ' flexible' : '') + (typeof playerState !== 'undefined' && playerState.currentIndex === idx ? ' playing' : '');
     block.draggable = true;
     block.dataset.uid = b.uid;
     block.style.setProperty('--card-color', CATEGORY_COLORS[b.category] || '#4fb0ff');
+    block.style.width = blockWidthPx(b.lengthMin) + 'px';
     block.innerHTML = `
       <div class="block-top">
         <div class="block-index">${idx + 1}</div>
@@ -1018,7 +1052,7 @@ function renderTimeline() {
       <div class="block-bottom">
         <div class="block-duration">
           <input type="number" min="1" value="${b.lengthMin}" data-uid="${b.uid}" class="dur-input">
-          min
+          min${isFlexible ? ' ~' : ''}
         </div>
         <button class="block-move" data-uid="${b.uid}" data-dir="-1" title="Move up" aria-label="Move ${b.name} up" ${idx === 0 ? 'disabled' : ''}>↑</button>
         <button class="block-move" data-uid="${b.uid}" data-dir="1" title="Move down" aria-label="Move ${b.name} down" ${idx === timelineBlocks.length - 1 ? 'disabled' : ''}>↓</button>
@@ -1103,7 +1137,7 @@ timelineEl.addEventListener('drop', e => {
   const reorderUid = e.dataTransfer.getData('text/x-reorder');
   if (reorderUid) {
     // reordering within the timeline: figure out drop target index by mouse position
-    const afterEl = getDragAfterElement(timelineEl, e.clientY);
+    const afterEl = getDragAfterElement(timelineEl, e.clientX, e.clientY);
     const draggedIdx = timelineBlocks.findIndex(b => b.uid === reorderUid);
     if (draggedIdx === -1) return;
     const [dragged] = timelineBlocks.splice(draggedIdx, 1);
@@ -1149,17 +1183,24 @@ function moveBlock(uid, direction) {
   renderTimeline();
 }
 
-function getDragAfterElement(container, y) {
+// The timeline now wraps left-to-right like real text, not a strict vertical stack, so "where do I
+// drop this" needs both axes: find the closest block whose center is later in reading order (same
+// row and further right, or an earlier position in a later row) and insert before it.
+function getDragAfterElement(container, x, y) {
   const els = [...container.querySelectorAll('.block:not(.dragging)')];
-  return els.reduce((closest, child) => {
+  let closest = { distance: Infinity, element: null };
+  for (const child of els) {
     const box = child.getBoundingClientRect();
-    const offset = y - box.top - box.height / 2;
-    if (offset < 0 && offset > closest.offset) {
-      return { offset, element: child };
-    } else {
-      return closest;
-    }
-  }, { offset: -Infinity }).element;
+    const centerX = box.left + box.width / 2;
+    const centerY = box.top + box.height / 2;
+    const sameRow = Math.abs(centerY - y) <= box.height / 2;
+    const isAfterInFlow = centerY > y + 4 || (sameRow && centerX > x);
+    if (!isAfterInFlow) continue;
+    const dx = centerX - x, dy = centerY - y;
+    const distance = dx * dx + dy * dy;
+    if (distance < closest.distance) closest = { distance, element: child };
+  }
+  return closest.element;
 }
 
 // ---------- Controls ----------
