@@ -69,22 +69,6 @@
     margin-left: 8px;
     vertical-align: middle;
   }
-  .target-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    color: var(--text-dim);
-  }
-  .target-controls input {
-    width: 56px;
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 6px;
-    padding: 6px 8px;
-    font-size: 14px;
-  }
   main {
     display: grid;
     grid-template-columns: var(--library-width, 340px) 6px 1fr;
@@ -257,23 +241,9 @@
   #progress-wrap {
     margin-bottom: 18px;
   }
-  #progress-bar {
-    height: 10px;
-    border-radius: 6px;
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    overflow: hidden;
-    display: flex;
-  }
-  #progress-fill {
-    height: 100%;
-    background: var(--good);
-    transition: width 0.2s ease;
-  }
   #progress-label {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-dim);
-    margin-top: 6px;
   }
   #timeline {
     min-height: 200px;
@@ -430,7 +400,19 @@
     font-size: 14px;
   }
   #np-controls button:hover { border-color: var(--accent); }
+  #np-time-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #np-elapsed, #np-total {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
   #np-scrub {
+    flex: 1;
     height: 6px;
     border-radius: 4px;
     background: var(--panel);
@@ -522,10 +504,6 @@
       flex-wrap: wrap;
       gap: 8px;
     }
-    .target-controls {
-      width: 100%;
-      justify-content: space-between;
-    }
     /* Touch targets under ~40px are notoriously hard to tap precisely on a phone — grow the
        icon-only buttons instead of leaving them at their comfortable-with-a-mouse desktop size. */
     .block-move, .block-remove, .source-add-btn {
@@ -559,11 +537,6 @@
     </div>
   </div>
   <div class="header-buttons">
-    <div class="target-controls">
-      <label>Target length:</label>
-      <input type="number" id="target-hours" min="0" value="2"> h
-      <input type="number" id="target-mins" min="0" max="59" value="0"> m
-    </div>
     <button class="btn" id="spotify-connect-btn">Connect Spotify</button>
     <button class="btn primary" id="play-broadcast-btn">▶ Play Broadcast</button>
   </div>
@@ -601,7 +574,11 @@
           <button id="np-stop" title="Stop" aria-label="Stop broadcast">⏹</button>
         </div>
       </div>
-      <div id="np-scrub"><div id="np-scrub-fill"></div></div>
+      <div id="np-time-row">
+        <span id="np-elapsed">0:00</span>
+        <div id="np-scrub"><div id="np-scrub-fill"></div></div>
+        <span id="np-total">0:00</span>
+      </div>
       <div id="np-status"></div>
     </div>
     <div class="timeline-heading-row">
@@ -610,7 +587,6 @@
     </div>
     <div id="playback-log"><div class="empty-state">Nothing played yet this session.</div></div>
     <div id="progress-wrap">
-      <div id="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
       <div id="progress-label"></div>
     </div>
     <div class="timeline-heading-row">
@@ -662,7 +638,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.5.0';
+const VERSION = '2.6.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
@@ -697,7 +673,7 @@ const SOURCES = [
   { id: 'stardate',        name: 'StarDate',                         category: 'Science',   cadence: 'Daily',  lengthMin: 2,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://stardate.org/feeds/podcast.xml', feedStatus: 'verified', desc: 'Daily stargazing tip from McDonald Observatory.' },
   { id: 'slowdown',        name: 'The Slowdown',                     category: 'Poetry',     cadence: 'Daily',  lengthMin: 5,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.publicradio.org/public_feeds/the-slowdown/rss/rss.rss', feedStatus: 'verified', desc: 'Daily poem with a short reflection, hosted by a US Poet Laureate.' },
   { id: 'poetry-unbound',  name: 'On Being: Poetry Unbound',         category: 'Poetry',     cadence: 'Weekly', lengthMin: 15,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/p9JRgDEG', feedStatus: 'verified', desc: 'A poem read and unpacked, one per episode.' },
-  { id: 'writers-almanac', name: 'The Writer\'s Almanac',            category: 'Poetry',     cadence: 'Daily',  lengthMin: 5,   flexible: false, sourceType: 'archive', feedUrl: 'date-archive:writers-almanac', feedStatus: 'verified', desc: 'Garrison Keillor: a poem and this-day-in-history — no longer produced, but plays the archived edition for today\'s calendar date from whichever year (1993-2016) is available.' },
+  { id: 'writers-almanac', name: 'The Writer\'s Almanac (archive)', category: 'Poetry',     cadence: 'Daily',  lengthMin: 5,   flexible: false, sourceType: 'archive', feedUrl: 'date-archive:writers-almanac', feedStatus: 'verified', desc: 'Garrison Keillor: a poem and this-day-in-history — no longer produced, but plays the archived edition for today\'s calendar date from whichever year (1993-2016) is available.' },
   { id: 'foc',             name: 'BBC From Our Own Correspondent',   category: 'News',       cadence: 'Weekly', lengthMin: 28,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcasts.files.bbci.co.uk/p02nrtpm.rss', feedStatus: 'verified', desc: 'Foreign correspondents\' personal essays.' },
   { id: 'freakonomics',    name: 'Freakonomics Radio',               category: 'Business',   cadence: 'Weekly', lengthMin: 40,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/Y8lFbOT4', feedStatus: 'verified', desc: 'The hidden side of everything, through an economics lens.' },
   { id: 'ninetyninepi',    name: '99% Invisible',                    category: 'Storytelling', cadence: 'Weekly', lengthMin: 30, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/BqbsxVfO', feedStatus: 'verified', desc: 'The unnoticed architecture and design that shapes the world.' },
@@ -715,12 +691,12 @@ const SOURCES = [
   { id: 'ezraklein',       name: 'The Ezra Klein Show',              category: 'News',       cadence: '3x/week', lengthMin: 75, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/kEKXbjuJ', feedStatus: 'verified', desc: 'The NYT columnist\'s long-form political and policy interviews.' },
   { id: 'planetmoney',     name: 'Planet Money',                     category: 'Business',   cadence: '2-3x/week', lengthMin: 25, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.npr.org/510289/podcast.xml', feedStatus: 'verified', desc: 'NPR\'s narrative-driven show on how the economy works.' },
   { id: 'sixtyminutes',    name: '60 Minutes',                       category: 'News',       cadence: 'Weekly', lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.amperwave.net/v2/feed/audacynetwork/4cbf0abf775be3cab2bd61a739939f1b', feedStatus: 'verified', desc: 'CBS\'s flagship news magazine, in podcast form.' },
-  { id: 'otr-suspense',    name: 'Suspense (Old-Time Radio)',        category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:SUSPENSE_Radio_Digitally_Restored_Collection', feedStatus: 'verified', desc: 'A random episode of the classic "Suspense" radio drama series (Internet Archive, public domain, 460 episodes).' },
-  { id: 'otr-dragnet',     name: 'Dragnet (Old-Time Radio)',         category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:dragnet', feedStatus: 'verified', desc: 'A random episode of the classic police-procedural drama (Internet Archive, public domain, 185 episodes).' },
-  { id: 'otr-gunsmoke',    name: 'Gunsmoke (Old-Time Radio)',        category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:gunsmoke_radio_show_1952-1961_improved_audio_no_commercials', feedStatus: 'verified', desc: 'A random episode of the classic Western drama, 1952-1961 (Internet Archive, public domain, 274 episodes).' },
-  { id: 'otr-shadow',      name: 'The Shadow (Old-Time Radio)',      category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:the-shadow-radio-show-1937-1954-old-time-radio-all-available-episodes', feedStatus: 'verified', desc: 'A random episode of the classic pulp-mystery drama, original 1937-1954 broadcasts (Internet Archive, public domain, 164 episodes).' },
-  { id: 'otr-holmes',      name: 'Sherlock Holmes (Old-Time Radio)', category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:sherlockholmes_otr', feedStatus: 'verified', desc: 'A random episode starring Basil Rathbone and Nigel Bruce (Internet Archive, public domain, 107 episodes).' },
-  { id: 'phc-full-show',   name: 'A Prairie Home Companion (full show)', category: 'Storytelling', cadence: 'Anytime', lengthMin: 120, flexible: false, sourceType: 'archive', feedUrl: 'date-archive:prairie-home-companion', feedStatus: 'verified', desc: 'The full ~2-hour variety show (incl. the "News from Lake Wobegon" monologue somewhere within it — it was never released as a standalone clip) for today\'s calendar date, whichever year (1980-2016) is available.' },
+  { id: 'otr-suspense',    name: 'Suspense (Old-Time Radio, archive)',        category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:SUSPENSE_Radio_Digitally_Restored_Collection', feedStatus: 'verified', desc: 'A random episode of the classic "Suspense" radio drama series (Internet Archive, public domain, 460 episodes).' },
+  { id: 'otr-dragnet',     name: 'Dragnet (Old-Time Radio, archive)',         category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:dragnet', feedStatus: 'verified', desc: 'A random episode of the classic police-procedural drama (Internet Archive, public domain, 185 episodes).' },
+  { id: 'otr-gunsmoke',    name: 'Gunsmoke (Old-Time Radio, archive)',        category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:gunsmoke_radio_show_1952-1961_improved_audio_no_commercials', feedStatus: 'verified', desc: 'A random episode of the classic Western drama, 1952-1961 (Internet Archive, public domain, 274 episodes).' },
+  { id: 'otr-shadow',      name: 'The Shadow (Old-Time Radio, archive)',      category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:the-shadow-radio-show-1937-1954-old-time-radio-all-available-episodes', feedStatus: 'verified', desc: 'A random episode of the classic pulp-mystery drama, original 1937-1954 broadcasts (Internet Archive, public domain, 164 episodes).' },
+  { id: 'otr-holmes',      name: 'Sherlock Holmes (Old-Time Radio, archive)', category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:sherlockholmes_otr', feedStatus: 'verified', desc: 'A random episode starring Basil Rathbone and Nigel Bruce (Internet Archive, public domain, 107 episodes).' },
+  { id: 'phc-full-show',   name: 'A Prairie Home Companion (full show, archive)', category: 'Storytelling', cadence: 'Anytime', lengthMin: 120, flexible: false, sourceType: 'archive', feedUrl: 'date-archive:prairie-home-companion', feedStatus: 'verified', desc: 'The full ~2-hour variety show (incl. the "News from Lake Wobegon" monologue somewhere within it — it was never released as a standalone clip) for today\'s calendar date, whichever year (1980-2016) is available.' },
   { id: 'spotify-jazz',    name: 'Jazz (Spotify)',                   category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'jazz', feedStatus: 'verified', desc: 'Spotify jazz genre mix, length you set.' },
   { id: 'spotify-rock',    name: 'Rock (Spotify)',                   category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'rock', feedStatus: 'verified', desc: 'Spotify rock genre mix, length you set.' },
   { id: 'spotify-hiphop',  name: 'Hip-Hop (Spotify)',                category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'hip hop', feedStatus: 'verified', desc: 'Spotify hip-hop genre mix, length you set.' },
@@ -874,10 +850,6 @@ let activeFormat = null;
 let searchText = '';
 let timelineBlocks = load('airtime_timeline_v1', []);
 let rundowns = load('airtime_rundowns_v1', []);
-let targetMinutes = load('airtime_target_v1', 120);
-
-document.getElementById('target-hours').value = Math.floor(targetMinutes / 60);
-document.getElementById('target-mins').value = targetMinutes % 60;
 
 function load(key, fallback) {
   try {
@@ -1093,16 +1065,11 @@ function renderTimeline() {
 }
 
 function renderProgress() {
+  // No target length to pick or fill anymore -- just add blocks and see the running total.
   const total = timelineBlocks.reduce((sum, b) => sum + b.lengthMin, 0);
-  const target = targetMinutes || 1;
-  const pct = Math.min(100, (total / target) * 100);
-  const fill = document.getElementById('progress-fill');
-  fill.style.width = pct + '%';
-  fill.style.background = total > target ? 'var(--bad)' : (pct > 90 ? 'var(--good)' : 'var(--accent)');
   const h = Math.floor(total / 60), m = total % 60;
-  const th = Math.floor(target / 60), tm = target % 60;
   document.getElementById('progress-label').textContent =
-    `${h}h ${m}m of ${th}h ${tm}m target` + (total > target ? ` — ${total - target} min over` : '');
+    timelineBlocks.length === 0 ? 'Total broadcast time: 0m' : `Total broadcast time: ${h}h ${m}m`;
 }
 
 function persistTimeline() { save('airtime_timeline_v1', timelineBlocks); }
@@ -1207,7 +1174,6 @@ document.getElementById('rundown-save-btn').addEventListener('click', () => {
   const rundown = {
     id: 'rundown-' + Date.now(),
     name: name.trim(),
-    targetMinutes,
     blocks: timelineBlocks.map(b => ({ sourceId: b.sourceId, lengthMin: b.lengthMin })),
   };
   rundowns.push(rundown);
@@ -1234,10 +1200,6 @@ document.getElementById('rundown-load-btn').addEventListener('click', () => {
       lengthMin: b.lengthMin,
     };
   });
-  targetMinutes = r.targetMinutes;
-  document.getElementById('target-hours').value = Math.floor(targetMinutes / 60);
-  document.getElementById('target-mins').value = targetMinutes % 60;
-  save('airtime_target_v1', targetMinutes);
   persistTimeline();
   renderTimeline();
 });
@@ -1283,7 +1245,7 @@ document.getElementById('custom-spotify-query').addEventListener('keydown', e =>
 });
 document.getElementById('export-timeline-btn').addEventListener('click', () => {
   if (timelineBlocks.length === 0) { alert('Your timeline is empty — nothing to export.'); return; }
-  const payload = { airtimeExportVersion: 1, targetMinutes, blocks: timelineBlocks };
+  const payload = { airtimeExportVersion: 1, blocks: timelineBlocks };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1307,30 +1269,13 @@ document.getElementById('import-timeline-input').addEventListener('change', asyn
     if (!valid) throw new Error('File doesn\'t look like an Airtime export (malformed block entries)');
     if (timelineBlocks.length > 0 && !confirm('Replace your current ' + timelineBlocks.length + '-block timeline with the ' + data.blocks.length + ' blocks from this file?')) return;
     if (typeof stopBroadcast === 'function') stopBroadcast();
-    timelineBlocks = data.blocks;
-    if (typeof data.targetMinutes === 'number' && data.targetMinutes >= 0) {
-      targetMinutes = data.targetMinutes;
-      document.getElementById('target-hours').value = Math.floor(targetMinutes / 60);
-      document.getElementById('target-mins').value = targetMinutes % 60;
-      save('airtime_target_v1', targetMinutes);
-    }
+    timelineBlocks = data.blocks; // any legacy targetMinutes field in an old export is just ignored
     persistTimeline();
     renderTimeline();
   } catch (err) {
     alert('Could not import this file: ' + err.message);
   }
 });
-document.getElementById('target-hours').addEventListener('change', updateTarget);
-document.getElementById('target-mins').addEventListener('change', updateTarget);
-function updateTarget() {
-  const h = Math.max(0, parseInt(document.getElementById('target-hours').value) || 0);
-  const m = Math.max(0, Math.min(59, parseInt(document.getElementById('target-mins').value) || 0));
-  document.getElementById('target-hours').value = h;
-  document.getElementById('target-mins').value = m;
-  targetMinutes = h * 60 + m;
-  save('airtime_target_v1', targetMinutes);
-  renderProgress();
-}
 
 // ---------- Resizable panes ----------
 (function initPaneResize() {
@@ -1923,16 +1868,26 @@ function updateScrub(frac) {
   document.getElementById('np-scrub-fill').style.width = Math.min(100, Math.max(0, frac * 100)) + '%';
 }
 
+function formatTime(totalSeconds) {
+  const s = Math.max(0, Math.round(totalSeconds));
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return m + ':' + String(sec).padStart(2, '0');
+}
+
 function startTick() {
   clearInterval(playerState.tickTimer);
   playerState.tickTimer = setInterval(() => {
     if (!playerState.blockStartedAt || !playerState.blockBudgetSec) return;
     const elapsed = (Date.now() - playerState.blockStartedAt) / 1000;
     // For fixed content, show progress against the real duration once known (more accurate than
-    // the assigned estimate), falling back to the estimate before metadata loads.
+    // the assigned estimate), falling back to the estimate before metadata loads. This is always
+    // scoped to the CURRENT block only, never the whole broadcast.
     const realDuration = playerState.mode === 'audio' && isFinite(audioEl.duration) ? audioEl.duration : null;
     const scrubDenominator = (!playerState.blockIsFlexible && realDuration) ? realDuration : playerState.blockBudgetSec;
     updateScrub(elapsed / scrubDenominator);
+    document.getElementById('np-elapsed').textContent = formatTime(elapsed);
+    document.getElementById('np-total').textContent = formatTime(scrubDenominator);
     if (playerState.blockIsFlexible) {
       if (elapsed >= playerState.blockBudgetSec) advanceBlock();
     } else if (elapsed >= playerState.blockBudgetSec * 2 + 300) {
@@ -2109,6 +2064,9 @@ function stopBroadcast() {
   if (spotifyState.deviceId) spotifyPause().catch(() => {});
   playerState.currentIndex = -1;
   document.getElementById('now-playing').classList.remove('active');
+  document.getElementById('np-elapsed').textContent = '0:00';
+  document.getElementById('np-total').textContent = '0:00';
+  updateScrub(0);
   updatePlayButtonLabel();
   renderTimeline();
 }

@@ -347,6 +347,29 @@ kept playing 65+ seconds in with no natural end yet, then correctly
 advanced the moment `ended` fired; a 1-minute-budget radio stream still
 cut off right at 61 seconds as before.
 
+## No more target-length picker
+
+Removed the "target length" hours/minutes input entirely — you don't need
+to decide 2 hours vs 4 upfront, just add blocks and see the running total
+("Total broadcast time: 1h 15m"). Simpler mental model, and it was mostly
+vestigial once Rundowns existed anyway. `targetMinutes` is fully gone from
+new Rundowns/exports; old exported files with a stray `targetMinutes`
+field just have it silently ignored on import rather than erroring.
+
+## Now-playing time display + archive labeling
+
+- The now-playing bar shows elapsed/total time for the **current block
+  only** (e.g. "0:18 / 4:58"), never the whole broadcast. For fixed
+  content, "total" is the real audio duration once its metadata loads
+  (confirmed live: showed the actual 4:58 runtime of a specific episode,
+  not the assigned 5-minute estimate) — for flexible content it's the
+  budget you set.
+- Any source that plays from a fixed archive rather than a fresh/latest
+  episode is now labeled as such in its name — "The Writer's Almanac
+  (archive)", "A Prairie Home Companion (full show, archive)", and each
+  old-time-radio series ("Suspense (Old-Time Radio, archive)", etc.) — so
+  it's clear upfront these are old episodes, not today's.
+
 ## PWA / mobile install
 
 Installable on Android (and desktop) as a home-screen app: `manifest.json`
