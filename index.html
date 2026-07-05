@@ -128,12 +128,12 @@
     margin-bottom: 10px;
     font-size: 13px;
   }
-  #custom-spotify-form {
+  #custom-radio-form {
     display: flex;
     gap: 6px;
     margin-bottom: 14px;
   }
-  #custom-spotify-query {
+  #custom-radio-query {
     flex: 1;
     min-width: 0;
     padding: 7px 9px;
@@ -143,7 +143,7 @@
     color: var(--text);
     font-size: 12px;
   }
-  #custom-spotify-add {
+  #custom-radio-add {
     font-size: 12px;
     padding: 6px 10px;
     white-space: nowrap;
@@ -281,9 +281,9 @@
   }
   .block.dragging { opacity: 0.4; }
   .block.playing { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-  /* Flexible/open-ended blocks (Spotify, live internet radio) get a translucent diagonal-stripe
-     pattern -- a distinct visual signal that this one is dynamic/user-adjustable length, not a
-     fixed episode with a real runtime. */
+  /* Flexible/open-ended blocks (live internet radio, tag-based radio channels) get a translucent
+     diagonal-stripe pattern -- a distinct visual signal that this one is dynamic/user-adjustable
+     length, not a fixed episode with a real runtime. */
   .block.flexible {
     background-image: repeating-linear-gradient(
       135deg,
@@ -562,7 +562,6 @@
     </div>
   </div>
   <div class="header-buttons">
-    <button class="btn" id="spotify-connect-btn">Connect Spotify</button>
     <button class="btn primary" id="play-broadcast-btn">▶ Play Broadcast</button>
   </div>
 </header>
@@ -574,9 +573,9 @@
     <div class="cat-filters" id="cat-filters"></div>
     <div class="cat-filters" id="length-filters"></div>
     <div class="cat-filters" id="format-filters"></div>
-    <div id="custom-spotify-form">
-      <input type="text" id="custom-spotify-query" placeholder="Any Spotify search — an artist, mood, era…">
-      <button class="btn" id="custom-spotify-add">+ Custom channel</button>
+    <div id="custom-radio-form">
+      <input type="text" id="custom-radio-query" placeholder="Any genre, mood, or format — e.g. lofi, salsa, talk radio…">
+      <button class="btn" id="custom-radio-add">+ Custom channel</button>
     </div>
     <div id="source-list"></div>
   </section>
@@ -637,37 +636,20 @@
 </main>
 
 <footer>
-  Podcast blocks stream their real latest episode via public RSS feeds. Music blocks play through your own Spotify Premium account once connected. Some sources have no working public feed (marked in red) and will be skipped during playback.
+  Podcast blocks stream their real latest episode via public RSS feeds. Music blocks stream from free internet radio stations (via the Radio-Browser directory) — no account or sign-in needed. Some sources have no working public feed (marked in red) and will be skipped during playback.
 </footer>
-
-<div class="modal-overlay" id="spotify-modal">
-  <div class="modal">
-    <h3>Connect Spotify</h3>
-    <p>Playing Spotify genre/decade blocks requires your own free Spotify
-       Developer app (Spotify doesn't allow embedding a shared one). This takes
-       about a minute:</p>
-    <p>
-      1. Go to <code>developer.spotify.com/dashboard</code> and create an app.<br>
-      2. Add this exact Redirect URI to the app: <code id="redirect-uri-display"></code><br>
-      3. Copy the Client ID and paste it below.
-    </p>
-    <label>Spotify Client ID</label>
-    <input type="text" id="spotify-client-id" placeholder="e.g. 8f7a2b1c9d3e4f5a6b7c8d9e0f1a2b3c">
-    <div class="modal-actions">
-      <button class="btn" id="spotify-modal-cancel">Cancel</button>
-      <button class="btn primary" id="spotify-modal-connect">Connect</button>
-    </div>
-  </div>
-</div>
 
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.8.0';
+const VERSION = '2.9.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
-// sourceType: 'podcast-rss' | 'spotify-genre' | 'spotify-decade' | 'spotify-mood' | 'spotify-custom' | 'archive'
+// sourceType: 'podcast-rss' | 'internet-radio' | 'archive'
+// Music genre/decade/mood channels resolve live via the Radio-Browser API (a free, open directory
+// of internet radio stations) rather than Spotify -- see feedUrl 'radio-browser:tag:<tag>' and
+// fetchLatestEpisode(). No developer account, OAuth, or per-user auth needed at all.
 // feedStatus: 'verified' (fetched & confirmed working) | 'unverified' (documented feed, blocked/network error during our check
 //             but likely real — try it live) | 'none' (no working public feed exists, playback will skip this block)
 const SOURCES = [
@@ -722,37 +704,38 @@ const SOURCES = [
   { id: 'otr-shadow',      name: 'The Shadow (Old-Time Radio, archive)',      category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:the-shadow-radio-show-1937-1954-old-time-radio-all-available-episodes', feedStatus: 'verified', desc: 'A random episode of the classic pulp-mystery drama, original 1937-1954 broadcasts (Internet Archive, public domain, 164 episodes).' },
   { id: 'otr-holmes',      name: 'Sherlock Holmes (Old-Time Radio, archive)', category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:sherlockholmes_otr', feedStatus: 'verified', desc: 'A random episode starring Basil Rathbone and Nigel Bruce (Internet Archive, public domain, 107 episodes).' },
   { id: 'phc-full-show',   name: 'A Prairie Home Companion (full show, archive)', category: 'Storytelling', cadence: 'Anytime', lengthMin: 120, flexible: false, sourceType: 'archive', feedUrl: 'date-archive:prairie-home-companion', feedStatus: 'verified', desc: 'The full ~2-hour variety show (incl. the "News from Lake Wobegon" monologue somewhere within it — it was never released as a standalone clip) for today\'s calendar date, whichever year (1980-2016) is available.' },
-  { id: 'spotify-jazz',    name: 'Jazz (Spotify)',                   category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'jazz', feedStatus: 'verified', desc: 'Spotify jazz genre mix, length you set.' },
-  { id: 'spotify-rock',    name: 'Rock (Spotify)',                   category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'rock', feedStatus: 'verified', desc: 'Spotify rock genre mix, length you set.' },
-  { id: 'spotify-hiphop',  name: 'Hip-Hop (Spotify)',                category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'hip hop', feedStatus: 'verified', desc: 'Spotify hip-hop genre mix, length you set.' },
-  { id: 'spotify-classical', name: 'Classical (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'classical', feedStatus: 'verified', desc: 'Spotify classical genre mix, length you set.' },
-  { id: 'spotify-country', name: 'Country (Spotify)',                category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'country', feedStatus: 'verified', desc: 'Spotify country genre mix, length you set.' },
-  { id: 'spotify-electronic', name: 'Electronic/Dance (Spotify)',    category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'electronic dance', feedStatus: 'verified', desc: 'Spotify electronic/dance genre mix, length you set.' },
-  { id: 'spotify-reggae',  name: 'Reggae (Spotify)',                 category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'reggae', feedStatus: 'verified', desc: 'Spotify reggae genre mix, length you set.' },
-  { id: 'spotify-blues',   name: 'Blues (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'blues', feedStatus: 'verified', desc: 'Spotify blues genre mix, length you set.' },
-  { id: 'spotify-folk',    name: 'Folk (Spotify)',                   category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'folk', feedStatus: 'verified', desc: 'Spotify folk genre mix, length you set.' },
-  { id: 'spotify-metal',   name: 'Metal (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'metal', feedStatus: 'verified', desc: 'Spotify metal genre mix, length you set.' },
-  { id: 'spotify-rnb',     name: 'R&B / Soul (Spotify)',             category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'r&b soul', feedStatus: 'verified', desc: 'Spotify R&B/soul genre mix, length you set.' },
-  { id: 'spotify-indie',   name: 'Indie (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'indie', feedStatus: 'verified', desc: 'Spotify indie genre mix, length you set.' },
-  { id: 'spotify-punk',    name: 'Punk (Spotify)',                   category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'punk', feedStatus: 'verified', desc: 'Spotify punk genre mix, length you set.' },
-  { id: 'spotify-latin',   name: 'Latin (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'latin', feedStatus: 'verified', desc: 'Spotify Latin genre mix, length you set.' },
-  { id: 'spotify-kpop',    name: 'K-Pop (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'k-pop', feedStatus: 'verified', desc: 'Spotify K-Pop genre mix, length you set.' },
-  { id: 'spotify-funk',    name: 'Funk (Spotify)',                   category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-genre', spotifyQuery: 'funk', feedStatus: 'verified', desc: 'Spotify funk genre mix, length you set.' },
-  { id: 'spotify-60s',     name: '1960s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:1960-1969', spotifyPlaylistQuery: '60s hits', feedStatus: 'verified', desc: 'Spotify 1960s decade mix, length you set.' },
-  { id: 'spotify-70s',     name: '1970s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:1970-1979', spotifyPlaylistQuery: '70s hits', feedStatus: 'verified', desc: 'Spotify 1970s decade mix, length you set.' },
-  { id: 'spotify-80s',     name: '1980s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:1980-1989', spotifyPlaylistQuery: '80s hits', feedStatus: 'verified', desc: 'Spotify 1980s decade mix, length you set.' },
-  { id: 'spotify-90s',     name: '1990s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:1990-1999', spotifyPlaylistQuery: '90s hits', feedStatus: 'verified', desc: 'Spotify 1990s decade mix, length you set.' },
-  { id: 'spotify-2000s',   name: '2000s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:2000-2009', spotifyPlaylistQuery: '2000s hits', feedStatus: 'verified', desc: 'Spotify 2000s decade mix, length you set.' },
-  { id: 'spotify-2010s',   name: '2010s Music (Spotify)',            category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-decade', spotifyQuery: 'year:2010-2019', spotifyPlaylistQuery: '2010s hits', feedStatus: 'verified', desc: 'Spotify 2010s decade mix, length you set.' },
-  { id: 'spotify-workout', name: 'Workout (Spotify)',                category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-mood', spotifyQuery: 'workout', feedStatus: 'verified', desc: 'Spotify workout/energy mix, length you set.' },
-  { id: 'spotify-chill',   name: 'Chill (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-mood', spotifyQuery: 'chill', feedStatus: 'verified', desc: 'Spotify chill/relax mix, length you set.' },
-  { id: 'spotify-focus',   name: 'Focus (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-mood', spotifyQuery: 'focus', feedStatus: 'verified', desc: 'Spotify focus/study mix, length you set.' },
-  { id: 'spotify-party',   name: 'Party (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-mood', spotifyQuery: 'party', feedStatus: 'verified', desc: 'Spotify party mix, length you set.' },
-  { id: 'spotify-sleep',   name: 'Sleep (Spotify)',                  category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-mood', spotifyQuery: 'sleep', feedStatus: 'verified', desc: 'Spotify sleep/ambient mix, length you set.' },
-  { id: 'spotify-roadtrip', name: 'Road Trip (Spotify)',             category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-mood', spotifyQuery: 'road trip', feedStatus: 'verified', desc: 'Spotify road trip mix, length you set.' },
-  { id: 'spotify-love',    name: 'Love Songs (Spotify)',             category: 'Music',      cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'spotify-mood', spotifyQuery: 'love songs', feedStatus: 'verified', desc: 'Spotify love songs mix, length you set.' },
-  // Free, commercial-free, no-signup internet radio -- unlike Spotify these need zero per-user
-  // auth at all, so they scale to any number of users with no platform-imposed cap.
+  { id: 'rb-jazz',     name: 'Jazz (Radio)',            category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:jazz', feedStatus: 'verified', desc: 'Live jazz stations via Radio-Browser, length you set.' },
+  { id: 'rb-rock',     name: 'Rock (Radio)',            category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:rock', feedStatus: 'verified', desc: 'Live rock stations via Radio-Browser, length you set.' },
+  { id: 'rb-hiphop',   name: 'Hip-Hop (Radio)',         category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:hip hop', feedStatus: 'verified', desc: 'Live hip-hop stations via Radio-Browser, length you set.' },
+  { id: 'rb-classical', name: 'Classical (Radio)',      category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:classical', feedStatus: 'verified', desc: 'Live classical stations via Radio-Browser, length you set.' },
+  { id: 'rb-country',  name: 'Country (Radio)',         category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:country', feedStatus: 'verified', desc: 'Live country stations via Radio-Browser, length you set.' },
+  { id: 'rb-electronic', name: 'Electronic/Dance (Radio)', category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:electronic', feedStatus: 'verified', desc: 'Live electronic/dance stations via Radio-Browser, length you set.' },
+  { id: 'rb-reggae',   name: 'Reggae (Radio)',          category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:reggae', feedStatus: 'verified', desc: 'Live reggae stations via Radio-Browser, length you set.' },
+  { id: 'rb-blues',    name: 'Blues (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:blues', feedStatus: 'verified', desc: 'Live blues stations via Radio-Browser, length you set.' },
+  { id: 'rb-folk',     name: 'Folk (Radio)',            category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:folk', feedStatus: 'verified', desc: 'Live folk stations via Radio-Browser, length you set.' },
+  { id: 'rb-metal',    name: 'Metal (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:metal', feedStatus: 'verified', desc: 'Live metal stations via Radio-Browser, length you set.' },
+  { id: 'rb-rnb',      name: 'R&B / Soul (Radio)',      category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:rnb', feedStatus: 'verified', desc: 'Live R&B/soul stations via Radio-Browser, length you set.' },
+  { id: 'rb-indie',    name: 'Indie (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:indie', feedStatus: 'verified', desc: 'Live indie stations via Radio-Browser, length you set.' },
+  { id: 'rb-punk',     name: 'Punk (Radio)',            category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:punk', feedStatus: 'verified', desc: 'Live punk stations via Radio-Browser, length you set.' },
+  { id: 'rb-latin',    name: 'Latin (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:latin', feedStatus: 'verified', desc: 'Live Latin stations via Radio-Browser, length you set.' },
+  { id: 'rb-kpop',     name: 'K-Pop (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:kpop', feedStatus: 'verified', desc: 'Live K-Pop stations via Radio-Browser, length you set.' },
+  { id: 'rb-funk',     name: 'Funk (Radio)',            category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:funk', feedStatus: 'verified', desc: 'Live funk stations via Radio-Browser, length you set.' },
+  { id: 'rb-60s',      name: '1960s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:60s', feedStatus: 'verified', desc: 'Live 1960s stations via Radio-Browser, length you set.' },
+  { id: 'rb-70s',      name: '1970s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:70s', feedStatus: 'verified', desc: 'Live 1970s stations via Radio-Browser, length you set.' },
+  { id: 'rb-80s',      name: '1980s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:80s', feedStatus: 'verified', desc: 'Live 1980s stations via Radio-Browser, length you set.' },
+  { id: 'rb-90s',      name: '1990s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:90s', feedStatus: 'verified', desc: 'Live 1990s stations via Radio-Browser, length you set.' },
+  { id: 'rb-2000s',    name: '2000s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:2000s', feedStatus: 'verified', desc: 'Live 2000s stations via Radio-Browser, length you set.' },
+  { id: 'rb-2010s',    name: '2010s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:2010s', feedStatus: 'verified', desc: 'Live 2010s stations via Radio-Browser, length you set.' },
+  { id: 'rb-workout',  name: 'Workout (Radio)',         category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:workout', feedStatus: 'verified', desc: 'Live workout/energy stations via Radio-Browser, length you set.' },
+  { id: 'rb-chill',    name: 'Chill (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:chillout', feedStatus: 'verified', desc: 'Live chill/relax stations via Radio-Browser, length you set.' },
+  { id: 'rb-focus',    name: 'Focus (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:study', feedStatus: 'verified', desc: 'Live focus/study stations via Radio-Browser, length you set.' },
+  { id: 'rb-party',    name: 'Party (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:party', feedStatus: 'verified', desc: 'Live party stations via Radio-Browser, length you set.' },
+  { id: 'rb-sleep',    name: 'Sleep (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:sleep', feedStatus: 'verified', desc: 'Live sleep/ambient stations via Radio-Browser, length you set.' },
+  { id: 'rb-roadtrip', name: 'Road Trip (Radio)',       category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:roadtrip', feedStatus: 'verified', desc: 'Live road-trip stations via Radio-Browser, length you set.' },
+  { id: 'rb-love',     name: 'Love Songs (Radio)',      category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:romantic', feedStatus: 'verified', desc: 'Live love-songs/romantic stations via Radio-Browser, length you set.' },
+  // Free, commercial-free, no-signup internet radio -- these need zero per-user auth at all
+  // (Radio-Browser's tag search above is the same story), so all of Music scales to any number of
+  // users with no platform-imposed cap.
   { id: 'rp-main',         name: 'Radio Paradise: Main Mix',         category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/mp3-192', feedStatus: 'verified', desc: 'Eclectic hand-curated rock/pop/electronic, no ads, listener-supported.' },
   { id: 'rp-mellow',       name: 'Radio Paradise: Mellow Mix',       category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/mellow-128', feedStatus: 'verified', desc: 'Chill/acoustic/downtempo, no ads, listener-supported.' },
   { id: 'rp-rock',         name: 'Radio Paradise: Rock Mix',         category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/rock-128', feedStatus: 'verified', desc: 'Rock-focused mix, no ads, listener-supported.' },
@@ -795,16 +778,16 @@ const CATEGORY_COLORS = {
   'True Crime': '#c94f5c',
 };
 
-// User-created custom Spotify channels (any search query) are appended to SOURCES at runtime so
-// every existing code path (library rendering, filtering, playback lookup by id) treats them
-// identically to built-in sources with zero special-casing. Persisted separately so they survive
-// a reload, then re-merged into SOURCES on the next load.
-let customSpotifySources = load('airtime_custom_sources_v1', []);
-customSpotifySources.forEach(cs => SOURCES.push(cs));
+// User-created custom radio channels (any Radio-Browser tag/name search) are appended to SOURCES
+// at runtime so every existing code path (library rendering, filtering, playback lookup by id)
+// treats them identically to built-in sources with zero special-casing. Persisted separately so
+// they survive a reload, then re-merged into SOURCES on the next load.
+let customRadioSources = load('airtime_custom_sources_v1', []);
+customRadioSources.forEach(cs => SOURCES.push(cs));
 
 // Which publisher/network produced each source — shown as its own tag on the card and searchable,
 // so e.g. typing "BBC" surfaces every BBC show regardless of category. Listed explicitly for
-// anything not covered by the id-prefix fallbacks below (spotify-*, soma-* share one network).
+// anything not covered by the id-prefix fallbacks below (rb-*, soma-* share one network).
 const NETWORK_MAP = {
   'npr-hourly': 'NPR', 'up-first': 'NPR', 'indicator': 'NPR', 'waitwait': 'NPR', 'fresh-air': 'NPR',
   'hiddenbrain': 'NPR', 'planetmoney': 'NPR', 'howibuiltthis': 'NPR',
@@ -840,29 +823,29 @@ const NETWORK_MAP = {
 SOURCES.forEach(s => {
   if (s.network) return;
   if (NETWORK_MAP[s.id]) { s.network = NETWORK_MAP[s.id]; return; }
-  if (s.id.startsWith('spotify-') || s.id.startsWith('custom-')) { s.network = 'Spotify'; return; }
+  if (s.id.startsWith('rb-') || s.id.startsWith('custom-')) { s.network = 'Radio-Browser'; return; }
   if (s.id.startsWith('soma-')) { s.network = 'SomaFM'; return; }
   s.network = 'Independent';
 });
 
-function addCustomSpotifyChannel(query) {
+function addCustomRadioChannel(query) {
   const trimmed = query.trim();
   if (!trimmed) return;
   const entry = {
     id: 'custom-' + Date.now(),
-    name: trimmed + ' (Spotify)',
+    name: trimmed + ' (Radio)',
     category: 'Music',
     cadence: 'Anytime',
     lengthMin: null,
     flexible: true,
-    sourceType: 'spotify-custom',
-    spotifyQuery: trimmed,
+    sourceType: 'internet-radio',
+    feedUrl: 'radio-browser:tag:' + trimmed.toLowerCase(),
     feedStatus: 'verified',
-    desc: 'Custom Spotify search: "' + trimmed + '", length you set.',
+    desc: 'Custom Radio-Browser search: "' + trimmed + '", length you set.',
   };
   SOURCES.push(entry);
-  customSpotifySources.push(entry);
-  save('airtime_custom_sources_v1', customSpotifySources);
+  customRadioSources.push(entry);
+  save('airtime_custom_sources_v1', customRadioSources);
   renderFilters();
   renderLibrary();
   addSourceToTimeline(entry.id);
@@ -895,11 +878,10 @@ const LENGTH_BUCKETS = [
 
 // A "Podcast" bucket wouldn't be useful as a genre category (it'd match ~80 of 113 sources), but
 // it's a genuinely useful independent filter dimension alongside category/length — distinguishing
-// delivery format (episodic RSS feed vs. always-on radio stream vs. Spotify) rather than subject.
+// delivery format (episodic RSS feed vs. always-on radio stream) rather than subject.
 const FORMAT_GROUPS = [
   { id: 'podcast', label: 'Podcast', test: s => s.sourceType === 'podcast-rss' || s.sourceType === 'archive' },
   { id: 'radio',   label: 'Internet Radio', test: s => s.sourceType === 'internet-radio' },
-  { id: 'spotify', label: 'Spotify', test: s => s.sourceType.startsWith('spotify-') },
 ];
 
 function matchesFormat(s) {
@@ -1276,13 +1258,13 @@ document.getElementById('copy-log-btn').addEventListener('click', async () => {
     prompt('Copy this log (Ctrl+A, Ctrl+C):', text);
   }
 });
-document.getElementById('custom-spotify-add').addEventListener('click', () => {
-  const input = document.getElementById('custom-spotify-query');
-  addCustomSpotifyChannel(input.value);
+document.getElementById('custom-radio-add').addEventListener('click', () => {
+  const input = document.getElementById('custom-radio-query');
+  addCustomRadioChannel(input.value);
   input.value = '';
 });
-document.getElementById('custom-spotify-query').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('custom-spotify-add').click();
+document.getElementById('custom-radio-query').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('custom-radio-add').click();
 });
 document.getElementById('export-timeline-btn').addEventListener('click', () => {
   if (timelineBlocks.length === 0) { alert('Your timeline is empty — nothing to export.'); return; }
@@ -1449,6 +1431,53 @@ async function resolveSomaFmStream(channelId) {
   return { audioUrl: match[1].trim(), title: 'SomaFM: ' + channel.title };
 }
 
+// Radio-Browser (radio-browser.info) is a free, open, community-run directory of internet radio
+// stations -- no developer account, API key, or per-user auth needed, unlike Spotify. Its official
+// entry point (all.api.radio-browser.info) DNS-round-robins across whichever mirror servers are
+// currently healthy; de1/de2 are listed as explicit fallbacks in case that entry point itself is
+// ever unreachable from a given network. If both of those ever go stale, the current mirror list
+// can be found by resolving all.api.radio-browser.info or checking api.radio-browser.info.
+const RADIO_BROWSER_HOSTS = [
+  'https://all.api.radio-browser.info',
+  'https://de1.api.radio-browser.info',
+  'https://de2.api.radio-browser.info',
+];
+
+// Tries a tag search first (genre/mood/decade -- what every built-in Music source uses), then
+// falls back to a name search (so a custom channel typed as a station or artist name still has a
+// chance of matching something), trying each mirror host in turn like the CORS proxy fallback
+// chain elsewhere in this file.
+async function radioBrowserSearch(query, limit = 15) {
+  const commonParams = { limit: String(limit), hidebroken: 'true', order: 'clickcount', reverse: 'true' };
+  for (const host of RADIO_BROWSER_HOSTS) {
+    try {
+      const tagRes = await fetchWithTimeout(host + '/json/stations/search?' + new URLSearchParams({ ...commonParams, tag: query }), {}, 8000);
+      if (tagRes.ok) {
+        const stations = await tagRes.json();
+        if (Array.isArray(stations) && stations.length > 0) return stations;
+      }
+    } catch (e) { /* try the name search below, then the next mirror */ }
+    try {
+      const nameRes = await fetchWithTimeout(host + '/json/stations/search?' + new URLSearchParams({ ...commonParams, name: query }), {}, 8000);
+      if (nameRes.ok) {
+        const stations = await nameRes.json();
+        if (Array.isArray(stations) && stations.length > 0) return stations;
+      }
+    } catch (e) { /* try the next mirror */ }
+  }
+  return [];
+}
+
+// Radio-Browser's own health-checker follows playlist-wrapper (.pls/.m3u) redirects and stores the
+// actual resolved stream URL in url_resolved -- prefer that over the raw url field. Also filter out
+// HLS streams (.m3u8): plain <audio src> can't play those in Chrome/Firefox (only Safari supports
+// HLS natively), and this app has no MSE/hls.js player to handle them.
+function radioBrowserStationsToCandidates(stations) {
+  return stations
+    .filter(s => s.hls !== 1 && s.url_resolved && !/\.(m3u8?|pls)(\?|$)/i.test(s.url_resolved))
+    .map(s => ({ audioUrl: s.url_resolved, title: s.name + (s.country ? ' — ' + s.country : '') }));
+}
+
 async function fetchRandomArchiveItemAudio(identifier) {
   const res = await fetchWithTimeout('https://archive.org/metadata/' + identifier, {}, 12000);
   if (!res.ok) throw new Error('Archive.org metadata lookup failed');
@@ -1556,6 +1585,17 @@ async function fetchLatestEpisode(feedUrl) {
     const r = await resolveSomaFmStream(feedUrl.slice('somafm:'.length));
     return { candidates: [r] };
   }
+  if (feedUrl.startsWith('radio-browser:tag:')) {
+    // Every Music genre/decade/mood source and every user-added custom channel resolves live via
+    // Radio-Browser rather than a fixed station -- return every matching station as a candidate so
+    // tryLoadAudio's existing probing skips over any that are dead/broken/unplayable, same as the
+    // date-archive candidate lists above.
+    const tag = feedUrl.slice('radio-browser:tag:'.length);
+    const stations = await radioBrowserSearch(tag);
+    const candidates = radioBrowserStationsToCandidates(stations);
+    if (candidates.length === 0) throw new Error('No working "' + tag + '" stations found via Radio-Browser');
+    return { candidates };
+  }
   const xmlText = await fetchTextWithProxies(feedUrl);
   const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
   if (doc.querySelector('parsererror')) throw new Error('Feed did not parse as XML');
@@ -1584,285 +1624,15 @@ async function fetchLatestEpisode(feedUrl) {
   return { candidates: [{ audioUrl, title }] };
 }
 
-// ---------- Spotify integration (Authorization Code + PKCE, Web Playback SDK) ----------
-const SPOTIFY_REDIRECT_URI = location.origin + location.pathname;
-const SPOTIFY_SCOPES = 'streaming user-read-email user-read-private user-modify-playback-state user-read-playback-state';
-
-let spotifyState = {
-  clientId: load('airtime_spotify_client_id', null),
-  token: load('airtime_spotify_token', null),
-  deviceId: null,
-  player: null,
-};
-
-document.getElementById('redirect-uri-display').textContent = SPOTIFY_REDIRECT_URI;
-
-function base64UrlEncode(bytes) {
-  let str = '';
-  bytes.forEach(b => str += String.fromCharCode(b));
-  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-async function sha256(plain) {
-  const data = new TextEncoder().encode(plain);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return new Uint8Array(hash);
-}
-function randomString(len) {
-  const arr = new Uint8Array(len);
-  crypto.getRandomValues(arr);
-  return base64UrlEncode(arr).slice(0, len);
-}
-
-async function startSpotifyAuth(clientId) {
-  const verifier = randomString(64);
-  save('airtime_spotify_verifier', verifier);
-  save('airtime_spotify_client_id', clientId);
-  const challenge = base64UrlEncode(await sha256(verifier));
-  const params = new URLSearchParams({
-    client_id: clientId,
-    response_type: 'code',
-    redirect_uri: SPOTIFY_REDIRECT_URI,
-    scope: SPOTIFY_SCOPES,
-    code_challenge_method: 'S256',
-    code_challenge: challenge,
-  });
-  location.href = 'https://accounts.spotify.com/authorize?' + params.toString();
-}
-
-async function handleSpotifyRedirect() {
-  const params = new URLSearchParams(location.search);
-  const error = params.get('error');
-  if (error) {
-    history.replaceState({}, '', SPOTIFY_REDIRECT_URI);
-    alert('Spotify authorization failed: ' + error + '. Click "Connect Spotify" to try again.');
-    return;
-  }
-  const code = params.get('code');
-  if (!code) return;
-  const verifier = load('airtime_spotify_verifier', null);
-  const clientId = load('airtime_spotify_client_id', null);
-  history.replaceState({}, '', SPOTIFY_REDIRECT_URI);
-  if (!verifier || !clientId) return;
-  try {
-    const res = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: clientId,
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: SPOTIFY_REDIRECT_URI,
-        code_verifier: verifier,
-      }),
-    });
-    const data = await res.json();
-    if (data.access_token) {
-      spotifyState.clientId = clientId;
-      spotifyState.token = {
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-        expires_at: Date.now() + data.expires_in * 1000,
-      };
-      save('airtime_spotify_token', spotifyState.token);
-    } else {
-      console.error('Spotify token exchange failed', data);
-    }
-  } catch (e) {
-    console.error('Spotify token exchange failed', e);
-  }
-}
-
-async function ensureFreshToken() {
-  if (!spotifyState.token) throw new Error('Not connected to Spotify');
-  if (Date.now() < spotifyState.token.expires_at - 30000) return spotifyState.token.access_token;
-  const res = await fetch('https://accounts.spotify.com/api/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: spotifyState.clientId,
-      grant_type: 'refresh_token',
-      refresh_token: spotifyState.token.refresh_token,
-    }),
-  });
-  const data = await res.json();
-  if (!data.access_token) throw new Error('Could not refresh Spotify token');
-  spotifyState.token.access_token = data.access_token;
-  spotifyState.token.expires_at = Date.now() + data.expires_in * 1000;
-  if (data.refresh_token) spotifyState.token.refresh_token = data.refresh_token;
-  save('airtime_spotify_token', spotifyState.token);
-  return spotifyState.token.access_token;
-}
-
-function loadSpotifySdk() {
-  return new Promise(resolve => {
-    if (window.Spotify) return resolve();
-    window.onSpotifyWebPlaybackSDKReady = resolve;
-    const s = document.createElement('script');
-    s.src = 'https://sdk.scdn.co/spotify-player.js';
-    document.head.appendChild(s);
-  });
-}
-
-async function initSpotifyPlayer() {
-  if (!spotifyState.token) return;
-  updateSpotifyButton();
-  await loadSpotifySdk();
-  const player = new Spotify.Player({
-    name: 'Airtime',
-    getOAuthToken: cb => ensureFreshToken().then(cb),
-    volume: currentVolume / 100,
-  });
-  player.addListener('ready', ({ device_id }) => {
-    spotifyState.deviceId = device_id;
-    updateSpotifyButton();
-  });
-  player.addListener('not_ready', () => { spotifyState.deviceId = null; updateSpotifyButton(); });
-  player.addListener('initialization_error', ({ message }) => console.error('Spotify init error', message));
-  player.addListener('authentication_error', ({ message }) => console.error('Spotify auth error', message));
-  player.addListener('account_error', ({ message }) => console.error('Spotify account error (Premium required)', message));
-  await player.connect();
-  spotifyState.player = player;
-}
-
-function updateSpotifyButton() {
-  const btn = document.getElementById('spotify-connect-btn');
-  btn.textContent = spotifyState.deviceId ? 'Spotify connected' : (spotifyState.token ? 'Spotify: connecting device…' : 'Connect Spotify');
-}
-
-async function waitForSpotifyDevice(timeoutMs) {
-  const start = Date.now();
-  while (!spotifyState.deviceId) {
-    if (Date.now() - start > timeoutMs) return false;
-    await new Promise(r => setTimeout(r, 300));
-  }
-  return true;
-}
-
-async function spotifyApi(path, opts = {}) {
-  const token = await ensureFreshToken();
-  const res = await fetchWithTimeout('https://api.spotify.com/v1' + path, {
-    ...opts,
-    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', ...(opts.headers || {}) },
-  }, 15000);
-  if (res.status === 204) return null;
-  if (!res.ok) {
-    const rawBody = await res.text().catch(() => '');
-    let detail = '';
-    try {
-      const body = JSON.parse(rawBody);
-      detail = body && body.error && body.error.message ? body.error.message
-             : body && body.error_description ? body.error_description
-             : rawBody.slice(0, 200);
-    } catch (e) {
-      detail = rawBody.slice(0, 200);
-    }
-    console.error('Spotify API call failed', res.status, path, rawBody);
-    throw new Error('Spotify API error ' + res.status + (detail ? ': ' + detail : '') + ' [' + path + ']');
-  }
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
-}
-
-// Spotify's Search API doesn't support a real "genre" filter for tracks (only for artist
-// search), so a plain keyword track search just fuzzy-matches track/artist/album titles —
-// mediocre quality. Searching for a curated official playlist (owner.id === 'spotify') and
-// pulling ITS tracks gives much better, actually-genre-accurate results. Falls back to plain
-// track search if no decent playlist turns up.
-async function findBestPlaylist(query) {
-  const data = await spotifyApi('/search?' + new URLSearchParams({ q: query, type: 'playlist', limit: '10' }));
-  const playlists = (data && data.playlists && data.playlists.items) ? data.playlists.items.filter(p => p && p.id) : [];
-  if (playlists.length === 0) return null;
-  return playlists.find(p => p.owner && p.owner.id === 'spotify') || playlists[0];
-}
-
-async function getPlaylistTracks(playlistId) {
-  const data = await spotifyApi('/playlists/' + playlistId + '/tracks?' + new URLSearchParams({
-    limit: '100',
-    fields: 'items(track(uri,duration_ms,is_playable))',
-  }));
-  const items = (data && data.items) ? data.items : [];
-  return items.map(it => it.track).filter(t => t && t.uri && t.is_playable !== false);
-}
-
-async function buildSpotifyQueue(src, lengthMin) {
-  let tracks = [];
-  try {
-    const playlist = await findBestPlaylist(src.spotifyPlaylistQuery || src.spotifyQuery);
-    if (playlist) tracks = await getPlaylistTracks(playlist.id);
-  } catch (e) { /* fall through to plain track search below */ }
-
-  if (tracks.length === 0) {
-    // Spotify's documented max is limit=50, but that's intermittently rejected with a genuinely
-    // confusing "Invalid limit" 400 for reasons that don't seem to depend on the query itself —
-    // reported live on one machine while the exact same query worked with a smaller limit
-    // elsewhere. Try 20 first (comfortably under any observed failure), then retry once at 10
-    // before giving up, rather than failing outright on the first quirky response.
-    for (const limit of [20, 10]) {
-      try {
-        const data = await spotifyApi('/search?' + new URLSearchParams({ q: src.spotifyQuery, type: 'track', limit: String(limit) }));
-        tracks = (data && data.tracks && data.tracks.items) ? data.tracks.items.filter(t => t && t.uri) : [];
-        if (tracks.length > 0) break;
-      } catch (e) { /* try the next smaller limit */ }
-    }
-  }
-  if (tracks.length === 0) throw new Error('No tracks found for ' + src.spotifyQuery);
-
-  for (let i = tracks.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
-  }
-  const budgetMs = lengthMin * 60 * 1000;
-  let totalMs = 0;
-  const uris = [];
-  for (const t of tracks) {
-    if (totalMs >= budgetMs) break;
-    uris.push(t.uri);
-    totalMs += t.duration_ms || 210000; // ~3.5 min fallback if duration is missing
-  }
-  if (uris.length === 0) uris.push(tracks[0].uri);
-  return uris;
-}
-
-async function spotifyPlay(uris) {
-  if (!spotifyState.deviceId) throw new Error('Spotify device not ready yet');
-  await spotifyApi('/me/player/play?device_id=' + spotifyState.deviceId, {
-    method: 'PUT',
-    body: JSON.stringify({ uris }),
-  });
-}
-async function spotifyPause() {
-  if (!spotifyState.deviceId) return;
-  await spotifyApi('/me/player/pause?device_id=' + spotifyState.deviceId, { method: 'PUT' });
-}
-async function spotifyResume() {
-  if (!spotifyState.deviceId) return;
-  await spotifyApi('/me/player/play?device_id=' + spotifyState.deviceId, { method: 'PUT' });
-}
-
-document.getElementById('spotify-connect-btn').addEventListener('click', () => {
-  if (spotifyState.token) return;
-  document.getElementById('spotify-client-id').value = spotifyState.clientId || '';
-  document.getElementById('spotify-modal').classList.add('open');
-});
-document.getElementById('spotify-modal-cancel').addEventListener('click', () => {
-  document.getElementById('spotify-modal').classList.remove('open');
-});
-document.getElementById('spotify-modal-connect').addEventListener('click', () => {
-  const clientId = document.getElementById('spotify-client-id').value.trim();
-  if (!clientId) return;
-  startSpotifyAuth(clientId);
-});
-
-// ---------- Sequencer: walks the timeline, plays podcasts and Spotify blocks in order ----------
+// ---------- Sequencer: walks the timeline, playing each block through the audio element in order ----------
 // Incremented at the start of every playBlockAt() call. Async work (fetches, tryLoadAudio's
-// candidate loop, Spotify calls) checks this before touching shared state like audioEl.src, so a
-// user rapidly skipping/stopping can't have a stale in-flight request clobber the current block.
+// candidate loop) checks this before touching shared state like audioEl.src, so a user rapidly
+// skipping/stopping can't have a stale in-flight request clobber the current block.
 let playGeneration = 0;
 
 let playerState = {
   playing: false,
   currentIndex: -1,
-  mode: null, // 'audio' | 'spotify'
   blockTimer: null,
   tickTimer: null,
   blockStartedAt: null,
@@ -1874,14 +1644,14 @@ let currentVolume = load('airtime_volume_v1', 80);
 const audioEl = new Audio();
 audioEl.volume = currentVolume / 100;
 audioEl.addEventListener('ended', () => {
-  if (playerState.mode === 'audio' && playerState.playing) advanceBlock();
+  if (playerState.playing) advanceBlock();
 });
 // Fires for network drops and unsupported/undecodable formats (e.g. a codec Safari iOS can't
 // play) once a block is actually playing -- not just during tryLoadAudio's own candidate probing,
 // which owns 'error' during that phase via probingAudio and handles it separately.
 audioEl.addEventListener('error', () => {
   if (probingAudio) return;
-  if (playerState.mode !== 'audio' || !playerState.playing) return;
+  if (!playerState.playing) return;
   const myGen = playGeneration;
   const name = timelineBlocks[playerState.currentIndex]?.name || '';
   stopTick();
@@ -1895,7 +1665,6 @@ document.getElementById('np-volume').addEventListener('input', e => {
   currentVolume = parseInt(e.target.value) || 0;
   save('airtime_volume_v1', currentVolume);
   audioEl.volume = currentVolume / 100;
-  if (spotifyState.player) spotifyState.player.setVolume(currentVolume / 100).catch(() => {});
 });
 
 function setNowPlaying(name, episode, statusText) {
@@ -1947,7 +1716,7 @@ function startTick() {
     // For fixed content, show progress against the real duration once known (more accurate than
     // the assigned estimate), falling back to the estimate before metadata loads. This is always
     // scoped to the CURRENT block only, never the whole broadcast.
-    const realDuration = playerState.mode === 'audio' && isFinite(audioEl.duration) ? audioEl.duration : null;
+    const realDuration = isFinite(audioEl.duration) ? audioEl.duration : null;
     const scrubDenominator = (!playerState.blockIsFlexible && realDuration) ? realDuration : playerState.blockBudgetSec;
     updateScrub(elapsed / scrubDenominator);
     document.getElementById('np-elapsed').textContent = formatTime(elapsed);
@@ -1984,7 +1753,7 @@ async function fadeOutCurrentAudio(myGen, durationMs = 1200) {
   const steps = 12;
   const stepMs = durationMs / steps;
   const targetVolume = currentVolume / 100;
-  if (playerState.mode === 'audio' && !audioEl.paused) {
+  if (!audioEl.paused) {
     for (let i = 1; i <= steps; i++) {
       if (myGen !== playGeneration) return; // superseded mid-fade -- let the newer call take over
       await new Promise(r => setTimeout(r, stepMs));
@@ -1992,14 +1761,6 @@ async function fadeOutCurrentAudio(myGen, durationMs = 1200) {
     }
     audioEl.pause();
     audioEl.volume = targetVolume;
-  } else if (playerState.mode === 'spotify' && spotifyState.player) {
-    for (let i = 1; i <= steps; i++) {
-      if (myGen !== playGeneration) return;
-      await new Promise(r => setTimeout(r, stepMs));
-      try { await spotifyState.player.setVolume(Math.max(0, targetVolume * (1 - i / steps))); } catch (e) {}
-    }
-    try { await spotifyPause(); } catch (e) {}
-    try { await spotifyState.player.setVolume(targetVolume); } catch (e) {}
   }
 }
 
@@ -2044,12 +1805,11 @@ async function playBlockAt(index) {
       if (candidates.length > 1) setNowPlaying(block.name, 'Checking for a working recording…', '');
       const winner = await tryLoadAudio(candidates, myGen);
       if (myGen !== playGeneration) return;
-      playerState.mode = 'audio';
       // Fixed-length content (a podcast/OTR episode with a real end) should play to its natural
       // finish rather than being cut off at the assigned estimate -- a "5 min" news update that's
-      // actually 5:22 shouldn't get faded out 22 seconds early. Internet radio streams are the
-      // opposite: they're infinite and marked flexible in the catalog, so the budget cutoff is the
-      // whole point there, same as Spotify.
+      // actually 5:22 shouldn't get faded out 22 seconds early. Internet radio streams (including
+      // Radio-Browser tag/mood/decade channels) are the opposite: they're infinite and marked
+      // flexible in the catalog, so the budget cutoff is the whole point there.
       playerState.blockIsFlexible = !!src.flexible;
       playerState.blockIsLiveStream = src.sourceType === 'internet-radio';
       playerState.currentStreamUrl = winner.audioUrl;
@@ -2062,43 +1822,6 @@ async function playBlockAt(index) {
     } catch (err) {
       if (myGen !== playGeneration) return;
       setNowPlaying(block.name, '', 'Could not load this feed (' + err.message + ') — skipping in 2s…');
-      playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
-    }
-  } else if (src.sourceType === 'spotify-genre' || src.sourceType === 'spotify-decade' || src.sourceType === 'spotify-mood' || src.sourceType === 'spotify-custom') {
-    if (!spotifyState.token) {
-      setNowPlaying(block.name, '', 'Spotify not connected — skipping in 2s…');
-      playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
-      return;
-    }
-    if (!spotifyState.deviceId) {
-      // Right after connecting (or on a fresh page load), the Web Playback SDK can take a few
-      // seconds to establish its device — give it a real chance instead of failing instantly.
-      setNowPlaying(block.name, '', 'Waiting for Spotify device to come online…');
-      const ready = await waitForSpotifyDevice(12000);
-      if (myGen !== playGeneration) return;
-      if (!ready) {
-        setNowPlaying(block.name, '', 'Spotify device never came online — skipping in 2s…');
-        playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
-        return;
-      }
-    }
-    setNowPlaying(block.name, 'Finding tracks…', '');
-    try {
-      const uris = await buildSpotifyQueue(src, block.lengthMin);
-      if (myGen !== playGeneration) return;
-      await spotifyPlay(uris);
-      if (myGen !== playGeneration) return;
-      playerState.mode = 'spotify';
-      playerState.blockIsFlexible = true; // an endless queue -- cutting it off at the budget is the point
-      playerState.blockIsLiveStream = false; // the SDK manages its own queue/reconnect, not audioEl
-      playerState.currentStreamUrl = null;
-      playerState.blockStartedAt = Date.now();
-      playerState.blockBudgetSec = block.lengthMin * 60;
-      setNowPlaying(block.name, uris.length + ' tracks queued', 'Playing via Spotify');
-      startTick();
-    } catch (err) {
-      if (myGen !== playGeneration) return;
-      setNowPlaying(block.name, '', 'Spotify playback failed (' + err.message + ') — skipping in 2s…');
       playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
     }
   } else {
@@ -2114,29 +1837,25 @@ function advanceBlock() {
 
 function togglePlayPause() {
   if (playerState.currentIndex === -1) { playBroadcastFromStart(); return; }
-  if (playerState.mode === 'audio') {
-    if (audioEl.paused) {
-      // A live radio stream has no fixed buffer to resume from -- just calling play() again
-      // replays whatever got buffered while paused, which surfaces as a jarring jump forward
-      // once it catches up. Reconnecting fresh lands back at the live edge instead.
-      if (playerState.blockIsLiveStream && playerState.currentStreamUrl) {
-        audioEl.src = playerState.currentStreamUrl;
-        audioEl.load();
-        audioEl.play().catch(() => {});
-      } else {
-        audioEl.play();
-      }
-      playerState.playing = true;
+  if (audioEl.paused) {
+    // A live radio stream has no fixed buffer to resume from -- just calling play() again
+    // replays whatever got buffered while paused, which surfaces as a jarring jump forward
+    // once it catches up. Reconnecting fresh lands back at the live edge instead.
+    if (playerState.blockIsLiveStream && playerState.currentStreamUrl) {
+      audioEl.src = playerState.currentStreamUrl;
+      audioEl.load();
+      audioEl.play().catch(() => {});
     } else {
-      audioEl.pause();
-      if (playerState.blockIsLiveStream) {
-        audioEl.removeAttribute('src');
-        audioEl.load();
-      }
-      playerState.playing = false;
+      audioEl.play();
     }
-  } else if (playerState.mode === 'spotify') {
-    if (playerState.playing) { spotifyPause(); playerState.playing = false; } else { spotifyResume(); playerState.playing = true; }
+    playerState.playing = true;
+  } else {
+    audioEl.pause();
+    if (playerState.blockIsLiveStream) {
+      audioEl.removeAttribute('src');
+      audioEl.load();
+    }
+    playerState.playing = false;
   }
   updatePlayButtonLabel();
 }
@@ -2148,7 +1867,6 @@ function stopBroadcast() {
   stopTick();
   audioEl.pause();
   audioEl.removeAttribute('src');
-  if (spotifyState.deviceId) spotifyPause().catch(() => {});
   playerState.currentIndex = -1;
   playerState.blockIsLiveStream = false;
   playerState.currentStreamUrl = null;
@@ -2174,14 +1892,6 @@ renderFilters();
 renderLibrary();
 renderTimeline();
 renderRundownSelect();
-updateSpotifyButton();
-(async function initSpotifyOnLoad() {
-  await handleSpotifyRedirect();
-  updateSpotifyButton();
-  if (spotifyState.token) {
-    try { await initSpotifyPlayer(); } catch (e) { console.error(e); }
-  }
-})();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

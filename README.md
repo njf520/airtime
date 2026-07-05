@@ -1,13 +1,22 @@
-# Airtime
+# Airtime (commercial branch)
 
 A drag-and-drop timeline builder for assembling a custom "broadcast" out of
 recurring audio sources — news briefings, science shorts, poetry readings,
-old-time radio drama, and Spotify genre/decade mixes — targeting a total
-runtime you set (e.g. 2 hours), then **actually plays it**: podcast blocks
-stream their real latest episode, Spotify blocks play through your own
-Premium account.
+old-time radio drama, and internet-radio genre/decade/mood mixes — then
+**actually plays it**: podcast blocks stream their real latest episode,
+music blocks stream from live internet radio stations via the free
+Radio-Browser directory. No accounts, no sign-in, no per-user caps.
 
-Live at **https://njf520.github.io/airtime/**.
+**This branch has no Spotify integration.** The `master` branch has Spotify
+mixed in for personal use; this branch replaces it entirely with
+Radio-Browser because Spotify's Developer Policy prohibits segueing Spotify
+content with other audio sources in one continuous stream — see "Scaling
+this to the public" below for the exact policy text and reasoning. Every
+source on this branch (podcasts, archives, internet radio, and the
+Radio-Browser-backed Music genre/decade/mood channels) is legally clear for
+public/commercial use with no platform-imposed user cap.
+
+Live (personal-use `master` branch) at **https://njf520.github.io/airtime/**.
 
 ## Scaling this to the public
 
@@ -32,32 +41,11 @@ which is why testing locally still falls through to the free proxies).
 Cloudflare's free tier (100k requests/day) comfortably covers this app's
 traffic.
 
-**Spotify is the real constraint, and it's a hard platform limit, not a
-code problem.** Spotify apps start in "Development Mode," capped at **25
-total users** who must be individually allowlisted by email in the
-developer dashboard — this applies per registered app (per Client ID), not
-per code deployment. Three realistic paths:
-1. **Friends-and-family scale (≤25 people)**: works today. You (as the app
-   owner) add each person's Spotify account email to the allowlist in your
-   existing app's dashboard. No code changes needed.
-2. **Request Extended Quota Mode from Spotify**: a real approval process
-   (business justification, app review) — not guaranteed, and Spotify has
-   gotten stricter post-2024. Worth trying if you want genuinely public
-   Spotify integration, but plan for it to possibly be denied or slow.
-3. **Lead with the new Radio category instead** (see below) — these need
-   zero per-user auth at all, so they're the actual path to "the masses"
-   for the music portion, with Spotify staying available as a bonus for
-   whoever connects their own account.
-
-**Legal footing is solid for podcasts and internet radio, but NOT for how
-Spotify is currently integrated — this is a real, current, and significant
-finding, not a hypothetical.** Every podcast source just links to the
-creator's own publicly-published RSS feed and audio file — this is exactly
-what every podcast app (Apple Podcasts, Overcast, Spotify itself) does, not
-redistribution. The internet radio stations are explicitly free/listener-
-supported services designed to be streamed. Spotify is different: verified
-directly against Spotify's current Developer Policy (Section III,
-"Some prohibited applications"), which explicitly states:
+**Spotify was the real constraint on `master`, and it was a hard platform
+limit, not a code problem.** Spotify apps start in "Development Mode,"
+capped at **25 total users** who must be individually allowlisted by email
+in the developer dashboard, and — separately — Spotify's Developer Policy
+(Section III, "Some prohibited applications") explicitly states:
 
 > "Do not permit any device or system to segue, mix, re-mix, or overlap
 > any Spotify Content with any other audio content (including other
@@ -66,31 +54,24 @@ directly against Spotify's current Developer Policy (Section III,
 > "Do not create any product or service which is integrated with streams
 > or content from another service."
 
-This describes Airtime's exact architecture — sequencing Spotify playback
-between podcast and internet-radio blocks in one continuous timeline. The
-app never touches raw Spotify audio (no extraction, no recording, just
-official SDK play/pause calls), but that doesn't cure the violation — the
-prohibition is about the user-facing experience of combining sources, not
-the technical method. **Practical read**: low enforcement risk for pure
-personal use (Spotify isn't auditing individual hobby projects), but this
-should NOT be part of any public-facing or scaled version of Airtime as
-currently designed, and would very likely be rejected if Extended Quota
-Mode were ever requested with this feature description. Real options if
-this matters going forward: (a) redesign Spotify blocks as a clearly
-separate, non-auto-segueing "player mode" with standard Spotify branding,
-(b) seek Spotify's prior written permission, or (c) drop Spotify Web
-Playback SDK integration for any public/scaled version and keep it as a
-personal-use-only feature, leading with podcasts + internet radio (which
-have no such restriction) for anything wider.
+This described `master`'s exact architecture — sequencing Spotify playback
+between podcast and internet-radio blocks in one continuous timeline. Low
+enforcement risk for pure personal use, but not something to build a public
+or commercial product on top of. **This branch's answer**: drop Spotify
+entirely and lead with Radio-Browser for the music portion instead — see
+"Radio-Browser integration + dropping Spotify" below. Radio-Browser is a
+free, open, community-run station directory with no developer account, no
+OAuth, no per-user cap, and no equivalent restriction on how its content is
+used, so every source on this branch scales to unlimited users at zero
+platform-imposed cost.
 
 ## What works right now
 
 - Browse the source catalog (~113 shows/channels), filter by category (NPR
-  pinned
-  first) and by typical length (under 5 min / 5-20 min / 20+ min — flexible
-  Spotify blocks show up in every length bucket since their length is
-  user-set), drag onto a timeline, adjust flexible-length blocks, see
-  running total vs. target length.
+  pinned first), by typical length (under 5 min / 5-20 min / 20+ min —
+  flexible radio blocks show up in every length bucket since their length is
+  user-set), and by format (Podcast / Internet Radio); drag onto a timeline,
+  adjust flexible-length blocks, see the running total.
 - **Hit "Play Broadcast" and it plays for real**: each podcast/archive block
   fetches its actual RSS feed, grabs the latest episode's audio file, and
   streams it; when the block's allotted minutes elapse (or the episode ends),
@@ -98,50 +79,72 @@ have no such restriction) for anything wider.
   next/stop) work mid-broadcast.
 - Sources with no working public feed (marked red, "no feed") are skipped
   automatically with a visible message rather than breaking playback.
-- Spotify genre/decade blocks play through **your own** Spotify Premium
-  account once you connect it (see setup below) — tracks are picked via
-  Spotify's Search API and queued to roughly fill the block's length, played
-  through the Web Playback SDK (an in-browser Spotify Connect device).
-  **Confirmed working end-to-end** with a real account.
+- Music genre/decade/mood blocks (Jazz, 80s, Chill, etc.) resolve live via
+  the Radio-Browser API to real internet radio stations tagged with that
+  genre/mood/decade — no account, sign-in, or setup needed at all. A custom
+  channel field lets you search any genre/mood/format directly.
+  **Confirmed working end-to-end** against the live API.
 
 ## Tech stack
 
 - Single file (`index.html`) — all HTML, CSS, and JS inline, no framework,
   no build step (same approach as `dinner-planner`)
-- State (timeline, target length, Spotify tokens) persisted in `localStorage`
+- State (timeline, rundowns, custom channels) persisted in `localStorage`
 - Native HTML5 drag-and-drop (no libraries)
 - Podcast audio: fetch the RSS feed (direct, falling back through a chain of
   public CORS proxies since most podcast feeds don't set CORS headers for
   browser JS), parse the latest `<item>`'s `<enclosure>` URL with
   `DOMParser`, play it with a plain `<audio>` element (media playback itself
   isn't subject to CORS, only reading the feed XML is)
-- Spotify: Authorization Code + PKCE (no client secret, safe for a pure
-  client-side app), Web Playback SDK for in-browser playback, Search API to
-  build a track queue matching a genre/decade query
+- Radio-Browser: `radioBrowserSearch()` queries the public API's
+  `/json/stations/search` endpoint (tag search first, name search as a
+  fallback), tried across a couple of mirror hosts for resilience, and
+  returns every matching station as a `tryLoadAudio` candidate list — dead
+  or broken stations get skipped exactly like a broken podcast feed
 
-## Setting up Spotify playback
+## Radio-Browser integration + dropping Spotify
 
-Spotify doesn't allow embedding a single shared app across arbitrary sites,
-so each user needs their own free Developer app (~1 minute):
+This branch replaces every Spotify genre/decade/mood source with an
+equivalent internet-radio source resolved live via
+[Radio-Browser](https://www.radio-browser.info/), a free, open, community-
+run directory of internet radio stations with a public, CORS-enabled API
+and no developer account or API key required.
 
-1. Go to `developer.spotify.com/dashboard`, create an app.
-2. Add the exact redirect URI shown in the "Connect Spotify" dialog (the
-   page's own URL, e.g. `https://njf520.github.io/airtime/`) to the app's
-   settings, and check **Web API** + **Web Playback SDK** under "Which
-   API/SDKs are you planning to use?"
-3. Copy the Client ID into the dialog and click Connect — this redirects to
-   Spotify's login/consent screen and back (PKCE flow, no secrets exposed).
-4. Requires Spotify **Premium** — the Web Playback SDK refuses to output
-   audio on free accounts.
-
-**Known gotcha:** ad blockers and privacy extensions commonly block
-`apresolve.spotify.com`, `spclient.wg.spotify.com`, and the
-`dealer.g2.spotify.com` WebSocket — all part of the Web Playback SDK's actual
-connection, not just its initial script. Symptom: the button gets stuck on
-"Spotify: connecting device…" and the console shows `ERR_BLOCKED_BY_CLIENT`
-and a WebSocket failure. Fix: test in an InPrivate/Incognito window first to
-confirm it's an extension, then disable the offending one for this site (or
-just use InPrivate every time).
+- **`feedUrl: 'radio-browser:tag:<tag>'`** is a new special-cased scheme in
+  `fetchLatestEpisode()`, alongside the existing `date-archive:`,
+  `direct-stream:`, and `somafm:` schemes. It calls `radioBrowserSearch()`
+  and turns every matching station into a `{ audioUrl, title }` candidate —
+  reusing `tryLoadAudio()`'s existing candidate-probing loop unchanged, so a
+  dead or unreachable station is skipped exactly like a broken podcast feed,
+  with zero new plumbing needed.
+- **Resolved URLs only.** Radio-Browser's own health-checker follows
+  playlist-wrapper (`.pls`/`.m3u`) redirects and stores the actual stream
+  URL in `url_resolved` — always preferred over the raw `url` field.
+  Candidates are also filtered to exclude HLS streams (`hls: 1` or a
+  `.m3u8` URL), since a plain `<audio src>` can't play HLS in Chrome or
+  Firefox (only Safari supports it natively), and this app has no
+  MSE/hls.js player to handle it.
+- **Mirror fallback.** `RADIO_BROWSER_HOSTS` tries `all.api.radio-browser.info`
+  (the project's own load-balanced entry point) first, then two explicit
+  `de1`/`de2` mirrors as a fallback — verified live via `curl` that all
+  three respond with real station data and `Access-Control-Allow-Origin: *`.
+  Two other commonly-cited mirror hostnames (`nl1`, `at1`) no longer
+  resolved when checked, which is exactly why this list shouldn't be
+  trusted indefinitely — if it ever goes fully stale, the current mirror
+  list can be found by resolving `all.api.radio-browser.info` or checking
+  `api.radio-browser.info`.
+- **26 built-in Music sources** (`rb-jazz`, `rb-80s`, `rb-chill`, etc.)
+  replace the old `spotify-*` catalog entries one-for-one, each mapped to an
+  equivalent Radio-Browser tag (verified live that every tag returns real
+  results, e.g. `rnb`, `kpop`, `chillout`, `study`, `roadtrip`, `romantic`
+  aren't guesses). The custom-channel field now searches Radio-Browser (tag
+  first, station name as a fallback) instead of Spotify, so it's better
+  suited to genres/moods/formats than specific artists.
+- **No more Spotify OAuth/PKCE flow, Web Playback SDK, "Connect Spotify"
+  button, or Spotify Client ID setup.** Deleted entirely, along with the
+  `playerState.mode` distinction it required — every block now plays
+  through the same plain `<audio>` element, since there's only ever one
+  playback path left.
 
 ## Source catalog
 
@@ -418,9 +421,9 @@ variable, clamped 220-640px, persisted in `localStorage`).
   caught up to the live edge. Pausing a live-stream block now tears down
   the connection (`removeAttribute('src')` + `load()`); resuming
   reassigns the stream URL fresh and reconnects, landing back at the live
-  edge instead of a stale buffer. Fixed-length content (podcasts, OTR,
-  Spotify) is unaffected — it pauses/resumes normally since there's a real
-  buffer to resume from.
+  edge instead of a stale buffer. Fixed-length content (podcasts, OTR) is
+  unaffected — it pauses/resumes normally since there's a real buffer to
+  resume from.
 
 ## Known limitations / next steps
 
