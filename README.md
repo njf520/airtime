@@ -398,6 +398,30 @@ Resizable panes: drag the vertical bar between the source library and the
 timeline to resize them (`#pane-divider`, backed by a `--library-width` CSS
 variable, clamped 220-640px, persisted in `localStorage`).
 
+## Playback error recovery + live-stream pause fix
+
+- **Mid-playback format/network errors now auto-skip.** Previously, once a
+  block's audio actually started playing, there was no error handling at
+  all — only the initial candidate-loading phase (`tryLoadAudio`) caught
+  failures. If a stream errored *after* starting (an unsupported codec on a
+  given browser — e.g. Safari doesn't support `.ogg` at all — or a mid-play
+  network drop), the broadcast would just silently stall forever. There's
+  now a persistent `audioEl` `error` listener that shows a "Playback error
+  — skipping in 2s…" message and auto-advances, guarded so it doesn't
+  double-fire with `tryLoadAudio`'s own candidate-probing error handling
+  (tracked via a `probingAudio` flag).
+- **Live radio streams no longer jump on pause/resume.** A live internet
+  radio stream is infinite and unseekable, unlike a podcast file. Just
+  calling `audioEl.pause()`/`.play()` on it (the previous behavior) let the
+  browser keep whatever got buffered while paused, so resuming played
+  through that backlog and surfaced as a jarring jump forward once it
+  caught up to the live edge. Pausing a live-stream block now tears down
+  the connection (`removeAttribute('src')` + `load()`); resuming
+  reassigns the stream URL fresh and reconnects, landing back at the live
+  edge instead of a stale buffer. Fixed-length content (podcasts, OTR,
+  Spotify) is unaffected — it pauses/resumes normally since there's a real
+  buffer to resume from.
+
 ## Known limitations / next steps
 
 - **As It Happens, Quirks & Quarks, and Radiolab** consistently fail through

@@ -663,7 +663,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.7.0';
+const VERSION = '2.8.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Source catalog ----------
@@ -1499,31 +1499,39 @@ function buildPrairieHomeCompanionCandidates() {
 }
 
 // Tries each candidate in order using the audio element's own load events (avoids a separate
-// CORS-sensitive existence check) — returns the first one that actually loads.
+// CORS-sensitive existence check) — returns the first one that actually loads. Also catches a
+// candidate in a format the browser can't decode at all (e.g. an .ogg feed on Safari) the same
+// way as a network failure, since both just fire 'error' without 'loadedmetadata'.
+let probingAudio = false;
 async function tryLoadAudio(candidates, myGen, perAttemptTimeoutMs = 12000) {
-  for (const c of candidates) {
-    if (myGen !== undefined && myGen !== playGeneration) {
-      throw new Error('Superseded by a newer playback request');
-    }
-    const ok = await new Promise(resolve => {
-      let settled = false;
-      const finish = (result) => { if (settled) return; settled = true; cleanup(); resolve(result); };
-      const onError = () => finish(false);
-      const onReady = () => finish(true);
-      const timer = setTimeout(() => finish(false), perAttemptTimeoutMs);
-      function cleanup() {
-        audioEl.removeEventListener('error', onError);
-        audioEl.removeEventListener('loadedmetadata', onReady);
-        clearTimeout(timer);
+  probingAudio = true;
+  try {
+    for (const c of candidates) {
+      if (myGen !== undefined && myGen !== playGeneration) {
+        throw new Error('Superseded by a newer playback request');
       }
-      audioEl.addEventListener('error', onError, { once: true });
-      audioEl.addEventListener('loadedmetadata', onReady, { once: true });
-      audioEl.src = c.audioUrl;
-      audioEl.load();
-    });
-    if (ok) return c;
+      const ok = await new Promise(resolve => {
+        let settled = false;
+        const finish = (result) => { if (settled) return; settled = true; cleanup(); resolve(result); };
+        const onError = () => finish(false);
+        const onReady = () => finish(true);
+        const timer = setTimeout(() => finish(false), perAttemptTimeoutMs);
+        function cleanup() {
+          audioEl.removeEventListener('error', onError);
+          audioEl.removeEventListener('loadedmetadata', onReady);
+          clearTimeout(timer);
+        }
+        audioEl.addEventListener('error', onError, { once: true });
+        audioEl.addEventListener('loadedmetadata', onReady, { once: true });
+        audioEl.src = c.audioUrl;
+        audioEl.load();
+      });
+      if (ok) return c;
+    }
+    throw new Error(`No working audio found among ${candidates.length} date candidates`);
+  } finally {
+    probingAudio = false;
   }
-  throw new Error(`No working audio found among ${candidates.length} date candidates`);
 }
 
 async function fetchLatestEpisode(feedUrl) {
@@ -1859,12 +1867,27 @@ let playerState = {
   tickTimer: null,
   blockStartedAt: null,
   blockBudgetSec: 0,
+  blockIsLiveStream: false, // internet-radio only -- infinite, unseekable, needs reconnect on resume
+  currentStreamUrl: null,
 };
 let currentVolume = load('airtime_volume_v1', 80);
 const audioEl = new Audio();
 audioEl.volume = currentVolume / 100;
 audioEl.addEventListener('ended', () => {
   if (playerState.mode === 'audio' && playerState.playing) advanceBlock();
+});
+// Fires for network drops and unsupported/undecodable formats (e.g. a codec Safari iOS can't
+// play) once a block is actually playing -- not just during tryLoadAudio's own candidate probing,
+// which owns 'error' during that phase via probingAudio and handles it separately.
+audioEl.addEventListener('error', () => {
+  if (probingAudio) return;
+  if (playerState.mode !== 'audio' || !playerState.playing) return;
+  const myGen = playGeneration;
+  const name = timelineBlocks[playerState.currentIndex]?.name || '';
+  stopTick();
+  setNowPlaying(name, '', 'Playback error (unsupported format or connection drop) — skipping in 2s…');
+  clearTimeout(playerState.blockTimer);
+  playerState.blockTimer = setTimeout(() => { if (myGen === playGeneration) advanceBlock(); }, 2000);
 });
 
 document.getElementById('np-volume').value = currentVolume;
@@ -2028,6 +2051,8 @@ async function playBlockAt(index) {
       // opposite: they're infinite and marked flexible in the catalog, so the budget cutoff is the
       // whole point there, same as Spotify.
       playerState.blockIsFlexible = !!src.flexible;
+      playerState.blockIsLiveStream = src.sourceType === 'internet-radio';
+      playerState.currentStreamUrl = winner.audioUrl;
       playerState.blockStartedAt = Date.now();
       playerState.blockBudgetSec = block.lengthMin * 60;
       await audioEl.play();
@@ -2065,6 +2090,8 @@ async function playBlockAt(index) {
       if (myGen !== playGeneration) return;
       playerState.mode = 'spotify';
       playerState.blockIsFlexible = true; // an endless queue -- cutting it off at the budget is the point
+      playerState.blockIsLiveStream = false; // the SDK manages its own queue/reconnect, not audioEl
+      playerState.currentStreamUrl = null;
       playerState.blockStartedAt = Date.now();
       playerState.blockBudgetSec = block.lengthMin * 60;
       setNowPlaying(block.name, uris.length + ' tracks queued', 'Playing via Spotify');
@@ -2088,7 +2115,26 @@ function advanceBlock() {
 function togglePlayPause() {
   if (playerState.currentIndex === -1) { playBroadcastFromStart(); return; }
   if (playerState.mode === 'audio') {
-    if (audioEl.paused) { audioEl.play(); playerState.playing = true; } else { audioEl.pause(); playerState.playing = false; }
+    if (audioEl.paused) {
+      // A live radio stream has no fixed buffer to resume from -- just calling play() again
+      // replays whatever got buffered while paused, which surfaces as a jarring jump forward
+      // once it catches up. Reconnecting fresh lands back at the live edge instead.
+      if (playerState.blockIsLiveStream && playerState.currentStreamUrl) {
+        audioEl.src = playerState.currentStreamUrl;
+        audioEl.load();
+        audioEl.play().catch(() => {});
+      } else {
+        audioEl.play();
+      }
+      playerState.playing = true;
+    } else {
+      audioEl.pause();
+      if (playerState.blockIsLiveStream) {
+        audioEl.removeAttribute('src');
+        audioEl.load();
+      }
+      playerState.playing = false;
+    }
   } else if (playerState.mode === 'spotify') {
     if (playerState.playing) { spotifyPause(); playerState.playing = false; } else { spotifyResume(); playerState.playing = true; }
   }
@@ -2104,6 +2150,8 @@ function stopBroadcast() {
   audioEl.removeAttribute('src');
   if (spotifyState.deviceId) spotifyPause().catch(() => {});
   playerState.currentIndex = -1;
+  playerState.blockIsLiveStream = false;
+  playerState.currentStreamUrl = null;
   document.getElementById('now-playing').classList.remove('active');
   document.getElementById('np-elapsed').textContent = '0:00';
   document.getElementById('np-total').textContent = '0:00';
