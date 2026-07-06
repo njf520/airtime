@@ -148,6 +148,25 @@ and no developer account or API key required.
   `kpop`, that this doesn't zero out results — and that previously-colliding
   tags like `rock`/`80s` now resolve to different, actual English-named
   stations.
+- **Decade-focused stations + a stricter language check.** Separately
+  reported live: "1990s Music (Radio)" was playing 1970s tracks with
+  Spanish DJ chatter between songs. Root cause, confirmed via `curl`: a
+  generic "oldies" station tagged with 7 different decades at once
+  (60s/70s/80s/90s/...) was the clickcount-sorted #1 hit for the `90s` tag
+  despite not being decade-specific — and its tag list mixed in Spanish
+  words among the English ones, a sign the self-reported `language` field
+  wasn't trustworthy for it either. Two new client-side filters (with the
+  same filter-with-fallback-if-empty safety net as the English-language
+  one): `hasFocusedDecadeTags()` deprioritizes any station tagged with 3+
+  distinct decades, and `isMonolingualEnglish()` requires the `language`
+  field to be *exactly* `"english"`, not just contain it — Radio-Browser's
+  own `?language=` query param does a substring match, so a station
+  self-tagged `"english,german"` was passing it. (The `language` field is
+  self-reported and not verified against the actual audio, so this remains
+  a best-effort signal, not a guarantee — but it's a meaningfully stronger
+  one than the API's own filter.) Verified live that `90s` now leads with
+  genuine single-decade English stations (Heart 90s, iHeart90s Radio,
+  181.FM 90's Country), and that this doesn't break other tags.
 - **26 built-in Music sources** (`rb-jazz`, `rb-80s`, `rb-chill`, etc.)
   replace the old `spotify-*` catalog entries one-for-one, each mapped to an
   equivalent Radio-Browser tag (verified live that every tag returns real

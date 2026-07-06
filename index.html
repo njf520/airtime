@@ -718,7 +718,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.11.0';
+const VERSION = '2.12.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Theme ----------
@@ -1553,6 +1553,38 @@ async function radioBrowserTry(host, params) {
   }
 }
 
+// A handful of Radio-Browser's most-clicked stations are generic "oldies" grab-bags tagged with
+// half a dozen different decades at once (e.g. a station tagged 60s,70s,80s,90s all together).
+// Reported live: picking "1990s Music" played 1970s tracks, because exactly this kind of
+// multi-decade station was the clickcount-sorted #1 hit for the "90s" tag despite not being
+// decade-specific at all. Deprioritize (not fully exclude, in case nothing else is left) any
+// station tagged with 3+ distinct decades.
+const DECADE_TAG_RE = /^(50s|60s|70s|80s|90s|00s|2000s|2010s|50's|60's|70's|80's|90's)$/;
+function filterWithFallback(stations, predicate) {
+  const filtered = stations.filter(predicate);
+  return filtered.length > 0 ? filtered : stations;
+}
+function hasFocusedDecadeTags(s) {
+  const decadeCount = new Set(
+    (s.tags || '').split(',').map(t => t.trim()).filter(t => DECADE_TAG_RE.test(t))
+  ).size;
+  return decadeCount <= 2;
+}
+// Radio-Browser's own ?language= param does a substring match, so a station self-tagged
+// "english,german" still passes language=english -- confirmed live that this let a bilingual
+// German station through as the #1 "90s" result, which likely explains reported Spanish/German DJ
+// chatter between songs (the language field is self-reported and not verified against the actual
+// audio anyway, so this is a best-effort signal, not a guarantee). Requiring the field to be
+// EXACTLY "english" -- not just contain it -- is a meaningfully stronger filter than the API's own
+// language param.
+function isMonolingualEnglish(s) {
+  const langs = (s.language || '').split(',').map(l => l.trim().toLowerCase()).filter(Boolean);
+  return langs.length === 1 && langs[0] === 'english';
+}
+function improveStationQuality(stations) {
+  return filterWithFallback(filterWithFallback(stations, isMonolingualEnglish), hasFocusedDecadeTags);
+}
+
 async function radioBrowserSearch(query, limit = 15) {
   const commonParams = { limit: String(limit), hidebroken: 'true', order: 'clickcount', reverse: 'true' };
   for (const host of RADIO_BROWSER_HOSTS) {
@@ -1565,13 +1597,13 @@ async function radioBrowserSearch(query, limit = 15) {
     // that adding language=english fixes both problems at once for every genre/decade/mood tag in
     // the catalog, without zeroing out results for a niche one (still returns results for
     // something as narrow as "kpop").
-    let stations = await radioBrowserTry(host, { ...commonParams, tag: query, language: 'english' });
+    let stations = improveStationQuality(await radioBrowserTry(host, { ...commonParams, tag: query, language: 'english' }));
     if (stations.length > 0) return stations;
-    stations = await radioBrowserTry(host, { ...commonParams, tag: query });
+    stations = improveStationQuality(await radioBrowserTry(host, { ...commonParams, tag: query }));
     if (stations.length > 0) return stations;
-    stations = await radioBrowserTry(host, { ...commonParams, name: query, language: 'english' });
+    stations = improveStationQuality(await radioBrowserTry(host, { ...commonParams, name: query, language: 'english' }));
     if (stations.length > 0) return stations;
-    stations = await radioBrowserTry(host, { ...commonParams, name: query });
+    stations = improveStationQuality(await radioBrowserTry(host, { ...commonParams, name: query }));
     if (stations.length > 0) return stations;
   }
   return [];
