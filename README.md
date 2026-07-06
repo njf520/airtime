@@ -133,6 +133,21 @@ and no developer account or API key required.
   trusted indefinitely — if it ever goes fully stale, the current mirror
   list can be found by resolving `all.api.radio-browser.info` or checking
   `api.radio-browser.info`.
+- **English-language stations preferred, with a fallback.** Reported live:
+  "Rock (Radio)" and "1980s Music (Radio)" resolved to the exact same
+  (German) station. Root cause, confirmed via `curl`: an unfiltered tag
+  search sorted by clickcount skews heavily toward whichever country
+  dominates that tag in Radio-Browser's dataset (German/French stations for
+  a broad tag like "rock"), and the same few big multi-tag European
+  stations kept winning completely different genre searches — one German
+  station tagged both "rock" and "80s" was the #1 hit for both tags.
+  `radioBrowserSearch()` now tries `language=english` first for both the
+  tag and name search, falling back to unfiltered only if that comes back
+  empty (so a genuinely niche custom search doesn't just return nothing).
+  Verified live across every built-in tag, including niche ones like
+  `kpop`, that this doesn't zero out results — and that previously-colliding
+  tags like `rock`/`80s` now resolve to different, actual English-named
+  stations.
 - **26 built-in Music sources** (`rb-jazz`, `rb-80s`, `rb-chill`, etc.)
   replace the old `spotify-*` catalog entries one-for-one, each mapped to an
   equivalent Radio-Browser tag (verified live that every tag returns real

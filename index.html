@@ -718,7 +718,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.10.0';
+const VERSION = '2.11.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Theme ----------
@@ -1542,23 +1542,37 @@ const RADIO_BROWSER_HOSTS = [
 // falls back to a name search (so a custom channel typed as a station or artist name still has a
 // chance of matching something), trying each mirror host in turn like the CORS proxy fallback
 // chain elsewhere in this file.
+async function radioBrowserTry(host, params) {
+  try {
+    const res = await fetchWithTimeout(host + '/json/stations/search?' + new URLSearchParams(params), {}, 8000);
+    if (!res.ok) return [];
+    const stations = await res.json();
+    return Array.isArray(stations) ? stations : [];
+  } catch (e) {
+    return [];
+  }
+}
+
 async function radioBrowserSearch(query, limit = 15) {
   const commonParams = { limit: String(limit), hidebroken: 'true', order: 'clickcount', reverse: 'true' };
   for (const host of RADIO_BROWSER_HOSTS) {
-    try {
-      const tagRes = await fetchWithTimeout(host + '/json/stations/search?' + new URLSearchParams({ ...commonParams, tag: query }), {}, 8000);
-      if (tagRes.ok) {
-        const stations = await tagRes.json();
-        if (Array.isArray(stations) && stations.length > 0) return stations;
-      }
-    } catch (e) { /* try the name search below, then the next mirror */ }
-    try {
-      const nameRes = await fetchWithTimeout(host + '/json/stations/search?' + new URLSearchParams({ ...commonParams, name: query }), {}, 8000);
-      if (nameRes.ok) {
-        const stations = await nameRes.json();
-        if (Array.isArray(stations) && stations.length > 0) return stations;
-      }
-    } catch (e) { /* try the next mirror */ }
+    // English-first, tag search: an unfiltered genre/mood tag search skews heavily toward
+    // whichever country dominates that tag in Radio-Browser's dataset (often German or French
+    // stations for a broad tag like "rock"), and since results are sorted by clickcount, the same
+    // few big multi-tag European stations kept winning completely different genre searches --
+    // e.g. one German station tagged both "rock" and "80s" was the #1 hit for BOTH, so two
+    // different Music blocks resolved to the literal same (non-English) station. Verified live
+    // that adding language=english fixes both problems at once for every genre/decade/mood tag in
+    // the catalog, without zeroing out results for a niche one (still returns results for
+    // something as narrow as "kpop").
+    let stations = await radioBrowserTry(host, { ...commonParams, tag: query, language: 'english' });
+    if (stations.length > 0) return stations;
+    stations = await radioBrowserTry(host, { ...commonParams, tag: query });
+    if (stations.length > 0) return stations;
+    stations = await radioBrowserTry(host, { ...commonParams, name: query, language: 'english' });
+    if (stations.length > 0) return stations;
+    stations = await radioBrowserTry(host, { ...commonParams, name: query });
+    if (stations.length > 0) return stations;
   }
   return [];
 }
