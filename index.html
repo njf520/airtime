@@ -298,24 +298,19 @@
     border: 1px solid var(--border);
     border-left: 4px solid var(--card-color, var(--accent));
     border-radius: 8px;
-    padding: 8px 10px;
+    padding: 10px 12px;
     box-sizing: border-box;
     cursor: grab;
+    /* Column layout with the bottom row pushed to the end -- cards in the same row get stretched
+       to equal height by #timeline's align-items:stretch (since name-text wrapping differs by
+       card width), and without this the duration/remove row would sit at wherever the top content
+       happened to end, landing at a different height on every card instead of lining up. */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
   }
   .block.dragging { opacity: 0.4; }
   .block.playing { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-  /* Flexible/open-ended blocks (live internet radio, tag-based radio channels) get a translucent
-     diagonal-stripe pattern -- a distinct visual signal that this one is dynamic/user-adjustable
-     length, not a fixed episode with a real runtime. */
-  .block.flexible {
-    background-image: repeating-linear-gradient(
-      135deg,
-      var(--tint-weak),
-      var(--tint-weak) 8px,
-      transparent 8px,
-      transparent 16px
-    );
-  }
   .block-top {
     display: flex;
     align-items: flex-start;
@@ -330,14 +325,27 @@
   }
   .block-body { flex: 1; min-width: 0; }
   .block-name { font-size: 13.5px; font-weight: 600; }
-  .block-meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .block-meta { font-size: 11px; color: var(--text-dim); margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  /* A plain-language badge instead of the old stripe-pattern background -- a texture nobody could
+     be expected to decode at a glance. Says exactly what it means: this one's length is yours to
+     set (a live stream or an open-ended queue), not a fixed episode with a real runtime. */
+  .flex-badge {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--accent);
+    background: var(--tint-strong);
+    padding: 1px 6px;
+    border-radius: 4px;
+    cursor: help;
+  }
   .block-bottom {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    flex-wrap: wrap;
+    justify-content: space-between;
     gap: 6px;
-    margin-top: 8px;
+    margin-top: 10px;
   }
   .block-duration {
     display: flex;
@@ -345,26 +353,48 @@
     gap: 4px;
     font-size: 12px;
     color: var(--text-dim);
+    flex-shrink: 0;
+  }
+  /* The editable input (flexible blocks) and the plain-text pill (fixed blocks) share the exact
+     same box model so the duration control is the same size and sits at the same height either
+     way -- previously a bare span next to a bordered input made the two kinds of card look
+     inconsistent side by side. */
+  .block-duration input,
+  .dur-fixed {
+    height: 26px;
+    box-sizing: border-box;
+    padding: 0 6px;
+    border-radius: 6px;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
   }
   .block-duration input {
-    width: 52px;
+    width: 44px;
     background: var(--panel);
     border: 1px solid var(--border);
     color: var(--text);
-    border-radius: 6px;
-    padding: 4px 6px;
-    font-size: 12px;
   }
-  .dur-fixed { cursor: help; }
+  .dur-fixed {
+    background: var(--tint-weak);
+    border: 1px solid transparent;
+    color: var(--text-dim);
+    cursor: help;
+  }
   .block-remove {
     background: none;
     border: none;
     color: var(--text-dim);
     cursor: pointer;
     font-size: 15px;
-    padding: 2px 6px;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
   }
-  .block-remove:hover { color: var(--bad); }
+  .block-remove:hover { color: var(--bad); background: var(--tint-weak); }
   .block-move {
     /* Hidden on desktop -- dragging a block is the primary way to reorder there, so a redundant
        pair of arrow buttons per block was pure clutter. Re-shown below at the mobile breakpoint,
@@ -1086,7 +1116,11 @@ function renderLibrary() {
 // log at a glance. Clamped so a 2-min StarDate stays tappable and a 2-hour PHC show doesn't
 // swallow the whole row.
 function blockWidthPx(lengthMin) {
-  return Math.max(120, Math.min(320, 40 + lengthMin * 2.5));
+  // 136px is the narrowest a card can go while still comfortably fitting the editable-duration
+  // row (input + unit label + remove button) on one line without wrapping -- verified live that
+  // 120px was too tight and silently wrapped that row onto a second line, throwing off vertical
+  // alignment against neighboring cards.
+  return Math.max(136, Math.min(320, 40 + lengthMin * 2.5));
 }
 
 function renderTimeline() {
@@ -1108,7 +1142,10 @@ function renderTimeline() {
         <div class="block-index">${idx + 1}</div>
         <div class="block-body">
           <div class="block-name">${b.name}</div>
-          <div class="block-meta">${b.category} · ${src ? src.cadence : '<span class="feed-badge none">source removed</span>'}</div>
+          <div class="block-meta">
+            ${b.category} · ${src ? src.cadence : '<span class="feed-badge none">source removed</span>'}
+            ${isFlexible ? `<span class="flex-badge" title="You set how long this one plays -- it's a live stream or open-ended queue, not a fixed episode.">Flexible</span>` : ''}
+          </div>
         </div>
       </div>
       <div class="block-bottom">
