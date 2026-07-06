@@ -6,8 +6,11 @@
 <title>Airtime — build your own broadcast</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f1115'/%3E%3Cpath d='M20 20 Q32 8 44 20' stroke='%234fb0ff' stroke-width='3.5' fill='none' stroke-linecap='round'/%3E%3Cpath d='M13 15 Q32 -4 51 15' stroke='%234fb0ff' stroke-width='3.5' fill='none' stroke-linecap='round' opacity='0.55'/%3E%3Ccircle cx='32' cy='38' r='19' fill='%234fb0ff'/%3E%3Cpath d='M27 29 L27 47 L42 38 Z' fill='%230f1115'/%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="theme-color" content="#0f1115">
+<meta name="theme-color" content="#1b1915">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -23,47 +26,59 @@
 </script>
 <style>
   :root {
-    --bg: #0f1115;
-    --panel: #171a21;
-    --panel-2: #1e222b;
-    --border: #2a2f3a;
-    --text: #e8eaed;
-    --text-dim: #9aa0ab;
-    --accent: #4fb0ff;
-    --good: #3ecf8e;
-    --warn: #e0a233;
-    --bad: #e05a5a;
+    --bg: #1b1915;
+    --bg-hi: #262219;
+    --panel: #221e19;
+    --panel-2: #282520;
+    --border: #3a352e;
+    --text: #ece5d8;
+    --text-dim: #8f8676;
+    --accent: #e0a13c;
+    --accent-label: #e0a13c;
+    --accent-tint: rgba(224,161,60,0.08);
+    --good: #8bab5f;
+    --warn: #e0a13c;
+    --bad: #d9847f;
     /* Subtle overlay tints used for chips/stripes -- a light-on-dark tint reads as "faint" on a
        dark surface but is nearly invisible on a light one, so this flips per theme rather than
        being hardcoded at every call site. */
-    --tint-weak: rgba(255,255,255,0.06);
-    --tint-strong: rgba(255,255,255,0.12);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --tint-weak: rgba(255,255,255,0.05);
+    --tint-strong: rgba(255,255,255,0.10);
+    --selection-bg: rgba(224,161,60,0.28);
+    --play-shadow: 0 10px 26px -10px rgba(224,161,60,0.65);
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     color-scheme: dark;
   }
   :root[data-theme="light"] {
-    --bg: #f5f6f8;
-    --panel: #ffffff;
-    --panel-2: #f0f1f4;
-    --border: #dde1e8;
-    --text: #1c1f26;
-    --text-dim: #6b7280;
-    --accent: #2f7ee0;
-    --good: #1a9c62;
-    --warn: #a6690f;
-    --bad: #cf3f3f;
-    --tint-weak: rgba(15,17,21,0.05);
-    --tint-strong: rgba(15,17,21,0.09);
+    --bg: #efe8da;
+    --bg-hi: #fbf7ee;
+    --panel: #fffdf8;
+    --panel-2: #f6f1e7;
+    --border: #e4dccc;
+    --text: #2b2620;
+    --text-dim: #8a8172;
+    --accent: #d99a34;
+    --accent-label: #b07d24;
+    --accent-tint: rgba(184,125,36,0.08);
+    --good: #6f8a4f;
+    --warn: #b07d24;
+    --bad: #a84a2c;
+    --tint-weak: rgba(43,38,32,0.05);
+    --tint-strong: rgba(43,38,32,0.09);
+    --selection-bg: rgba(184,125,36,0.24);
+    --play-shadow: 0 10px 26px -10px rgba(184,130,40,0.55);
     color-scheme: light;
   }
   * { box-sizing: border-box; }
+  ::selection { background: var(--selection-bg); color: var(--text); }
   body {
     margin: 0;
-    background: var(--bg);
+    background: radial-gradient(1200px 620px at 72% -12%, var(--bg-hi), var(--bg) 62%);
     color: var(--text);
+    min-height: 100vh;
   }
   header {
-    padding: 16px 24px;
+    padding: 28px 40px 24px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -71,34 +86,50 @@
     flex-wrap: wrap;
     gap: 12px;
   }
-  header h1 {
-    font-size: 20px;
-    margin: 0;
-  }
   .header-brand {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
   }
-  .brand-icon {
-    width: 38px;
-    height: 38px;
+  .brand-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 34px;
     flex-shrink: 0;
   }
+  .brand-bars > div {
+    width: 4px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+  .brand-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .brand-wordmark {
+    font-family: 'Spectral', Georgia, serif;
+    font-weight: 600;
+    font-size: 28px;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    line-height: 1;
+  }
   .header-subtitle {
-    color: var(--text-dim);
-    font-weight: normal;
-    font-size: 14px;
+    display: none;
   }
   .version-badge {
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
-    font-weight: 500;
+    font-weight: 400;
     color: var(--text-dim);
-    background: var(--tint-weak);
-    padding: 2px 8px;
-    border-radius: 999px;
-    margin-left: 8px;
-    vertical-align: middle;
+    border: 1px solid var(--border);
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-left: 0;
+    vertical-align: baseline;
+    background: none;
   }
   /* Timeline on top (full width, so proportional-width blocks have real room to breathe), source
      library below as a browsable grid -- one layout that already matches what the mobile
@@ -109,13 +140,15 @@
     flex-direction: column;
   }
   #library {
-    padding: 20px 24px;
+    padding: 20px 40px;
   }
   #library h2, #timeline-col h2 {
-    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-dim);
+    letter-spacing: 0.2em;
+    color: var(--accent-label);
     margin: 0 0 12px 0;
   }
   .timeline-heading-row {
@@ -138,12 +171,13 @@
   #search {
     width: 100%;
     padding: 8px 10px;
-    background: var(--panel-2);
+    background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 6px;
     color: var(--text);
     margin-bottom: 10px;
-    font-size: 13px;
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
   }
   #custom-radio-form {
     display: flex;
@@ -177,11 +211,12 @@
   #custom-radio-status.fade { opacity: 0; }
   #recently-used { margin-bottom: 14px; }
   .recently-used-label {
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    color: var(--accent-label);
     margin-bottom: 7px;
   }
   .recently-used-row { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -212,7 +247,8 @@
     margin-bottom: 14px;
   }
   .cat-chip {
-    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
     padding: 4px 9px;
     border-radius: 999px;
     border: 1px solid var(--border);
@@ -264,12 +300,14 @@
   }
   .source-add-btn:hover { border-color: var(--accent); }
   .source-name {
-    font-size: 13.5px;
-    font-weight: 600;
+    font-family: 'Spectral', Georgia, serif;
+    font-size: 15px;
+    font-weight: 500;
     margin-bottom: 2px;
   }
   .source-meta {
-    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
     color: var(--text-dim);
     display: flex;
     gap: 6px;
@@ -282,7 +320,7 @@
     border-radius: 4px;
   }
   .tag-network {
-    background: rgba(79,176,255,0.12);
+    background: var(--accent-tint);
     color: var(--accent);
     font-weight: 600;
   }
@@ -298,15 +336,39 @@
     padding: 30px 10px;
   }
   #timeline-col {
-    padding: 20px 24px;
+    padding: 20px 40px;
     border-bottom: 1px solid var(--border);
   }
   #progress-wrap {
-    margin-bottom: 18px;
+    margin-bottom: 6px;
   }
   #progress-label {
-    font-size: 13px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-height: 38px;
+  }
+  .progress-time {
+    font-family: 'Spectral', Georgia, serif;
+    font-size: 30px;
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+  .progress-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
     color: var(--text-dim);
+  }
+  #timeline-ruler {
+    display: none;
+    gap: 3px;
+    height: 7px;
+    margin-bottom: 14px;
+  }
+  #timeline-ruler > div {
+    border-radius: 999px;
   }
   #timeline {
     min-height: 80px;
@@ -320,7 +382,7 @@
   }
   #timeline.drag-over {
     border-color: var(--accent);
-    background: rgba(79,176,255,0.05);
+    background: var(--accent-tint);
   }
   #timeline.empty::before {
     content: "Drag sources here to build your broadcast — block width shows how long each one runs.";
@@ -372,15 +434,17 @@
     gap: 8px;
   }
   .block-index {
-    font-size: 11px;
-    color: var(--text-dim);
-    width: 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--accent-label);
+    width: 20px;
     text-align: right;
     flex-shrink: 0;
+    line-height: 1.4;
   }
   .block-body { flex: 1; min-width: 0; }
-  .block-name { font-size: 13.5px; font-weight: 600; }
-  .block-meta { font-size: 11px; color: var(--text-dim); margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .block-name { font-family: 'Spectral', Georgia, serif; font-size: 15px; font-weight: 500; }
+  .block-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--text-dim); margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   /* A plain-language badge instead of the old stripe-pattern background -- a texture nobody could
      be expected to decode at a glance. Says exactly what it means: this one's length is yours to
      set (a live stream or an open-ended queue), not a fixed episode with a real runtime. */
@@ -493,19 +557,20 @@
     cursor: pointer;
   }
   .btn:hover { border-color: var(--accent); }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: #06131f; font-weight: 600; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #1a1200; font-weight: 600; border-radius: 999px; padding: 9px 20px; box-shadow: var(--play-shadow); }
   .btn.primary:hover { opacity: 0.9; }
   .btn.danger:hover { border-color: var(--bad); color: var(--bad); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .icon-btn {
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: 15px;
     line-height: 1;
+    border-radius: 999px;
   }
   #now-playing {
     display: none;
@@ -599,7 +664,7 @@
     border-radius: 8px;
     padding: 8px 10px;
     font-size: 11.5px;
-    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+    font-family: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
   }
   .log-entry { padding: 2px 0; color: var(--text-dim); }
   .log-entry.log-error { color: var(--bad); }
@@ -653,8 +718,13 @@
      (bigger touch targets, ↑/↓ reorder buttons) matter on phones in a way they don't on desktop. */
   @media (max-width: 768px) {
     header {
-      padding: 12px 16px;
+      padding: 16px 20px;
     }
+    #timeline-col, #library {
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+    .brand-wordmark { font-size: 22px; }
     .header-buttons {
       width: 100%;
       justify-content: space-between;
@@ -692,15 +762,18 @@
 
 <header>
   <div class="header-brand">
-    <svg class="brand-icon" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-      <rect width="64" height="64" rx="14" fill="#0f1115"/>
-      <path d="M20 20 Q32 8 44 20" stroke="#4fb0ff" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-      <path d="M13 15 Q32 -4 51 15" stroke="#4fb0ff" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.55"/>
-      <circle cx="32" cy="38" r="19" fill="#4fb0ff"/>
-      <path d="M27 29 L27 47 L42 38 Z" fill="#0f1115"/>
-    </svg>
+    <div class="brand-bars" aria-hidden="true">
+      <div style="height:13px"></div>
+      <div style="height:30px"></div>
+      <div style="height:20px"></div>
+      <div style="height:34px"></div>
+      <div style="height:10px"></div>
+    </div>
     <div>
-      <h1>Airtime<span class="version-badge" id="version-display"></span></h1>
+      <div class="brand-row">
+        <span class="brand-wordmark">Airtime</span>
+        <span class="version-badge" id="version-display"></span>
+      </div>
       <div class="header-subtitle"><span class="drag-hint">drag sources onto a timeline</span><span class="tap-hint">tap + to add sources</span> to build a custom broadcast</div>
     </div>
   </div>
@@ -746,6 +819,7 @@
     <div id="progress-wrap">
       <div id="progress-label"></div>
     </div>
+    <div id="timeline-ruler"></div>
     <div id="timeline" class="empty"></div>
     <div class="timeline-heading-row">
       <h2>Saved broadcasts</h2>
@@ -786,7 +860,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.2.0';
+const VERSION = '3.3.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Theme ----------
@@ -795,7 +869,7 @@ document.getElementById('version-display').textContent = 'v' + VERSION;
 function applyThemeButton() {
   const isLight = document.documentElement.dataset.theme === 'light';
   const btn = document.getElementById('theme-toggle-btn');
-  btn.textContent = isLight ? '☀️' : '🌙';
+  btn.textContent = isLight ? '☀' : '☾';
   btn.title = btn.ariaLabel = isLight ? 'Switch to dark mode' : 'Switch to light mode';
 }
 applyThemeButton();
@@ -1189,7 +1263,7 @@ function renderLibrary() {
       const card = document.createElement('div');
       card.className = 'source-card';
       card.draggable = true;
-      card.style.setProperty('--card-color', CATEGORY_COLORS[s.category] || '#4fb0ff');
+      card.style.setProperty('--card-color', CATEGORY_COLORS[s.category] || 'var(--accent)');
       const badgeText = s.feedStatus === 'verified' ? 'feed ok' : s.feedStatus === 'unverified' ? 'unverified' : 'no feed';
       card.innerHTML = `
         <div class="source-card-top">
@@ -1244,7 +1318,7 @@ function renderTimeline() {
     block.className = 'block' + (isFlexible ? ' flexible' : '') + (typeof playerState !== 'undefined' && playerState.currentIndex === idx ? ' playing' : '');
     block.draggable = true;
     block.dataset.uid = b.uid;
-    block.style.setProperty('--card-color', CATEGORY_COLORS[b.category] || '#4fb0ff');
+    block.style.setProperty('--card-color', CATEGORY_COLORS[b.category] || 'var(--accent)');
     block.style.width = blockWidthPx(b.lengthMin) + 'px';
     block.innerHTML = `
       <div class="block-top">
@@ -1322,11 +1396,27 @@ function renderTimeline() {
 }
 
 function renderProgress() {
-  // No target length to pick or fill anymore -- just add blocks and see the running total.
   const total = timelineBlocks.reduce((sum, b) => sum + b.lengthMin, 0);
   const h = Math.floor(total / 60), m = total % 60;
-  document.getElementById('progress-label').textContent =
-    timelineBlocks.length === 0 ? 'Total broadcast time: 0m' : `Total broadcast time: ${h}h ${m}m`;
+  const timeStr = total === 0 ? '0m' : (h > 0 ? `${h}h ${m}m` : `${m}m`);
+  const n = timelineBlocks.length;
+  const metaStr = n === 0 ? '' : `total &middot; ${n} block${n !== 1 ? 's' : ''}`;
+  document.getElementById('progress-label').innerHTML =
+    `<span class="progress-time">${timeStr}</span>${metaStr ? `<span class="progress-meta">${metaStr}</span>` : ''}`;
+  renderTimelineRuler();
+}
+
+function renderTimelineRuler() {
+  const ruler = document.getElementById('timeline-ruler');
+  if (!ruler) return;
+  const total = timelineBlocks.reduce((s, b) => s + b.lengthMin, 0);
+  if (!total) { ruler.style.display = 'none'; return; }
+  ruler.style.display = 'flex';
+  ruler.innerHTML = timelineBlocks.map(b => {
+    const pct = (b.lengthMin / total * 100).toFixed(2);
+    const color = CATEGORY_COLORS[b.category] || 'var(--accent)';
+    return `<div style="width:${pct}%;background:${color};opacity:0.75;flex-shrink:0;"></div>`;
+  }).join('');
 }
 
 function persistTimeline() { save('airtime_timeline_v1', timelineBlocks); }
