@@ -2,10 +2,11 @@
 
 A drag-and-drop timeline builder for assembling a custom "broadcast" out of
 recurring audio sources — news briefings, science shorts, poetry readings,
-old-time radio drama, and Spotify genre/decade mixes — targeting a total
-runtime you set (e.g. 2 hours), then **actually plays it**: podcast blocks
-stream their real latest episode, Spotify blocks play through your own
-Premium account.
+old-time radio drama, and Spotify genre/decade mixes — then **actually
+plays it**: podcast blocks stream their real latest episode, Spotify blocks
+play through your own Premium account. Add as many blocks as you like and
+see the running total ("Total broadcast time: 1h 35m") — no upfront
+duration to set.
 
 Live at **https://njf520.github.io/airtime/**.
 
