@@ -165,6 +165,16 @@
     padding: 6px 10px;
     white-space: nowrap;
   }
+  #custom-radio-status {
+    font-size: 12px;
+    min-height: 18px;
+    margin-top: -8px;
+    margin-bottom: 8px;
+    color: var(--good);
+    transition: opacity 0.3s;
+  }
+  #custom-radio-status.error { color: var(--bad); }
+  #custom-radio-status.fade { opacity: 0; }
   .cat-filters {
     display: flex;
     flex-wrap: wrap;
@@ -714,6 +724,7 @@
       <input type="text" id="custom-radio-query" placeholder="Any genre, mood, or format — e.g. lofi, salsa, talk radio…">
       <button class="btn" id="custom-radio-add">+ Custom channel</button>
     </div>
+    <div id="custom-radio-status"></div>
     <div id="source-list"></div>
   </section>
 </main>
@@ -725,7 +736,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.1.0';
+const VERSION = '3.1.1';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Theme ----------
@@ -959,6 +970,21 @@ function addCustomRadioChannel(query) {
   renderFilters();
   renderLibrary();
   addSourceToTimeline(entry.id);
+  // Scroll the new block into view and show a confirmation near the button so it's
+  // obvious something happened (the block appears in the timeline above the library).
+  const statusEl = document.getElementById('custom-radio-status');
+  if (statusEl) {
+    statusEl.className = '';
+    statusEl.textContent = '✓ "' + trimmed + '" added to your timeline ↑';
+    clearTimeout(statusEl._timer);
+    statusEl._timer = setTimeout(() => {
+      statusEl.classList.add('fade');
+      setTimeout(() => { statusEl.textContent = ''; statusEl.className = ''; }, 350);
+    }, 3500);
+  }
+  const blocks = document.querySelectorAll('#timeline .block');
+  const last = blocks[blocks.length - 1];
+  if (last) last.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
 }
 
 // ---------- State ----------
@@ -1624,17 +1650,18 @@ async function radioBrowserSearchExact(query, limit) {
 
 async function radioBrowserSearch(query, limit = 15) {
   const stations = await radioBrowserSearchExact(query, limit);
-  if (stations.length > 0) return stations;
-  // Reported live: a custom search for "Alternative 1990s" found nothing. Confirmed via curl that
-  // Radio-Browser tags are individual genre/mood/decade words, not compound phrases -- no station
-  // is literally tagged "alternative 1990s", even though "alternative" alone is a large, healthy
-  // tag by itself. Rather than failing outright on a query a user would reasonably expect to work,
-  // fall back to trying each significant word on its own.
+  // Must check for *playable* candidates, not just non-empty station lists. Radio-Browser can return
+  // stations for a tag (e.g. "1990s") that are all HLS streams or missing url_resolved -- those
+  // would pass the station-count check but get filtered to zero by radioBrowserStationsToCandidates,
+  // producing a silent "No working stations" error at play time. Using the candidate filter here
+  // ensures a result is only accepted if at least one stream would actually be playable.
+  if (radioBrowserStationsToCandidates(stations).length > 0) return stations;
+  // Radio-Browser tags are individual words, not compound phrases -- fall back to each word.
   const words = [...new Set(query.split(/\s+/).filter(w => w.length > 2))];
   for (const word of words) {
-    if (word.toLowerCase() === query.trim().toLowerCase()) continue; // already tried as the whole query
+    if (word.toLowerCase() === query.trim().toLowerCase()) continue;
     const wordStations = await radioBrowserSearchExact(word, limit);
-    if (wordStations.length > 0) return wordStations;
+    if (radioBrowserStationsToCandidates(wordStations).length > 0) return wordStations;
   }
   return [];
 }
