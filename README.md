@@ -482,6 +482,22 @@ variable, clamped 220-640px, persisted in `localStorage`).
   total; only genuinely flexible sources (internet radio, Spotify) keep the
   editable field, since that number really does set their cutoff.
 
+## Renamed "Rundowns" to "Saved broadcasts"; removing the playing block now stops it
+
+- "Rundown" is real broadcast-industry jargon but read as an odd, unclear
+  word in the UI. Renamed every user-facing string to "Saved broadcasts" /
+  "saved broadcast" — internal identifiers (`rundowns`, `renderRundownSelect()`,
+  the `airtime_rundowns_v1` localStorage key) were left alone since renaming
+  those has no user-visible effect and risks orphaning existing saved data
+  under a new key for no benefit.
+- Removing a timeline block while it's the one actually playing now calls
+  `stopBroadcast()` instead of leaving it audible for a block that no longer
+  exists on the timeline. Also fixed a related index-desync: removing a
+  block *before* the one currently playing now decrements
+  `playerState.currentIndex` to match, so it keeps pointing at the actual
+  block still playing instead of silently drifting to whatever shifted into
+  its old slot.
+
 ## Known limitations / next steps
 
 - **As It Happens, Quirks & Quarks, and Radiolab** consistently fail through
