@@ -691,12 +691,12 @@
       <div id="progress-label"></div>
     </div>
     <div class="timeline-heading-row">
-      <h2>Rundowns</h2>
+      <h2>Saved broadcasts</h2>
       <div class="timeline-heading-actions">
-        <select id="rundown-select"><option value="">Load a saved rundown…</option></select>
+        <select id="rundown-select"><option value="">Load a saved broadcast…</option></select>
         <button class="btn" id="rundown-load-btn">Load</button>
         <button class="btn" id="rundown-save-btn">Save current as…</button>
-        <button class="btn" id="rundown-delete-btn" title="Delete the selected rundown">Delete</button>
+        <button class="btn" id="rundown-delete-btn" title="Delete the selected broadcast">Delete</button>
       </div>
     </div>
     <div class="timeline-heading-row">
@@ -739,7 +739,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.10.0';
+const VERSION = '2.11.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Theme ----------
@@ -1183,6 +1183,18 @@ function renderTimeline() {
   });
   el.querySelectorAll('.block-remove').forEach(btn => {
     btn.addEventListener('click', () => {
+      const removedIndex = timelineBlocks.findIndex(x => x.uid === btn.dataset.uid);
+      if (removedIndex !== -1) {
+        if (playerState.currentIndex === removedIndex) {
+          // Removing the block that's actually playing right now -- don't leave it audible for a
+          // block that no longer exists in the timeline.
+          stopBroadcast();
+        } else if (playerState.currentIndex > removedIndex) {
+          // A block before the one currently playing was removed -- every later index shifts down
+          // by one, so keep currentIndex pointing at the same block that's still actually playing.
+          playerState.currentIndex--;
+        }
+      }
       timelineBlocks = timelineBlocks.filter(x => x.uid !== btn.dataset.uid);
       persistTimeline();
       renderTimeline();
@@ -1211,7 +1223,7 @@ function persistTimeline() { save('airtime_timeline_v1', timelineBlocks); }
 function renderRundownSelect() {
   const sel = document.getElementById('rundown-select');
   const current = sel.value;
-  sel.innerHTML = '<option value="">Load a saved rundown…</option>' +
+  sel.innerHTML = '<option value="">Load a saved broadcast…</option>' +
     rundowns.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
   if (rundowns.some(r => r.id === current)) sel.value = current;
 }
@@ -1305,7 +1317,7 @@ document.getElementById('search').addEventListener('input', e => {
 });
 document.getElementById('rundown-save-btn').addEventListener('click', () => {
   if (timelineBlocks.length === 0) { alert('Your timeline is empty — nothing to save.'); return; }
-  const name = prompt('Name this rundown (e.g. "My 8am Commute"):');
+  const name = prompt('Name this broadcast (e.g. "My 8am Commute"):');
   if (!name || !name.trim()) return;
   const rundown = {
     id: 'rundown-' + Date.now(),
@@ -1319,7 +1331,7 @@ document.getElementById('rundown-save-btn').addEventListener('click', () => {
 });
 document.getElementById('rundown-load-btn').addEventListener('click', () => {
   const id = document.getElementById('rundown-select').value;
-  if (!id) { alert('Pick a saved rundown from the list first.'); return; }
+  if (!id) { alert('Pick a saved broadcast from the list first.'); return; }
   const r = rundowns.find(x => x.id === id);
   if (!r) return;
   if (timelineBlocks.length > 0 && !confirm('Replace your current timeline with "' + r.name + '"?')) return;
@@ -1341,10 +1353,10 @@ document.getElementById('rundown-load-btn').addEventListener('click', () => {
 });
 document.getElementById('rundown-delete-btn').addEventListener('click', () => {
   const id = document.getElementById('rundown-select').value;
-  if (!id) { alert('Pick a saved rundown from the list first.'); return; }
+  if (!id) { alert('Pick a saved broadcast from the list first.'); return; }
   const r = rundowns.find(x => x.id === id);
   if (!r) return;
-  if (!confirm('Delete the "' + r.name + '" rundown? This can\'t be undone.')) return;
+  if (!confirm('Delete the "' + r.name + '" broadcast? This can\'t be undone.')) return;
   rundowns = rundowns.filter(x => x.id !== id);
   save('airtime_rundowns_v1', rundowns);
   renderRundownSelect();
