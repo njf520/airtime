@@ -718,7 +718,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.13.0';
+const VERSION = '2.14.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Theme ----------
@@ -1597,7 +1597,7 @@ function improveStationQuality(stations) {
   return filterWithFallback(filterWithFallback(stations, isMonolingualEnglish), hasFocusedDecadeTags);
 }
 
-async function radioBrowserSearch(query, limit = 15) {
+async function radioBrowserSearchExact(query, limit) {
   const commonParams = { limit: String(limit), hidebroken: 'true', order: 'clickcount', reverse: 'true' };
   for (const host of RADIO_BROWSER_HOSTS) {
     // English-first, tag search: an unfiltered genre/mood tag search skews heavily toward
@@ -1617,6 +1617,23 @@ async function radioBrowserSearch(query, limit = 15) {
     if (stations.length > 0) return stations;
     stations = improveStationQuality(await radioBrowserTry(host, { ...commonParams, name: query }));
     if (stations.length > 0) return stations;
+  }
+  return [];
+}
+
+async function radioBrowserSearch(query, limit = 15) {
+  const stations = await radioBrowserSearchExact(query, limit);
+  if (stations.length > 0) return stations;
+  // Reported live: a custom search for "Alternative 1990s" found nothing. Confirmed via curl that
+  // Radio-Browser tags are individual genre/mood/decade words, not compound phrases -- no station
+  // is literally tagged "alternative 1990s", even though "alternative" alone is a large, healthy
+  // tag by itself. Rather than failing outright on a query a user would reasonably expect to work,
+  // fall back to trying each significant word on its own.
+  const words = [...new Set(query.split(/\s+/).filter(w => w.length > 2))];
+  for (const word of words) {
+    if (word.toLowerCase() === query.trim().toLowerCase()) continue; // already tried as the whole query
+    const wordStations = await radioBrowserSearchExact(word, limit);
+    if (wordStations.length > 0) return wordStations;
   }
   return [];
 }

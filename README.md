@@ -498,6 +498,23 @@ variable, clamped 220-640px, persisted in `localStorage`).
   block still playing instead of silently drifting to whatever shifted into
   its old slot.
 
+## Custom-channel search: word-splitting fallback
+
+Reported live: a custom search for "Alternative 1990s" found nothing.
+Root cause, confirmed via `curl`: Radio-Browser tags are individual
+genre/mood/decade words, not compound phrases -- no station is literally
+tagged `"alternative 1990s"`, even though `alternative` alone is a large,
+well-populated tag. `radioBrowserSearch()` now falls back to trying each
+significant word in the query on its own (`radioBrowserSearchExact()` is
+the original exact-phrase logic, unchanged) before giving up, so a query
+like this transparently resolves via its most useful word instead of
+failing outright. Verified live end-to-end through
+`addCustomRadioChannel()` → `fetchLatestEpisode()`.
+
+Deliberately not yet built: surfacing "closest matches" to the user when
+even this still fails on a truly nonsensical query -- worth a follow-up if
+it comes up again in practice.
+
 ## Known limitations / next steps
 
 - **As It Happens, Quirks & Quarks, and Radiolab** consistently fail through
