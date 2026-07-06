@@ -431,10 +431,6 @@ PWA pattern — genuinely easy since that template already existed. On
 Android Chrome, visit the live URL and use "Add to Home screen"; it'll
 launch standalone (no browser chrome) with its own icon.
 
-Resizable panes: drag the vertical bar between the source library and the
-timeline to resize them (`#pane-divider`, backed by a `--library-width` CSS
-variable, clamped 220-640px, persisted in `localStorage`).
-
 ## Playback error recovery + live-stream pause fix
 
 - **Mid-playback format/network errors now auto-skip.** Previously, once a
@@ -543,6 +539,45 @@ it comes up again in practice.
   HLS support, a separate feature. **WMMR (Philadelphia) has no listing
   on Radio-Browser at all** and wasn't added rather than guess an
   unverified URL.
+
+## Layout redesign: timeline on top, library below (v3.0.0)
+
+Replaced the left/right split (fixed-width library sidebar + timeline
+column, with a draggable resize divider between them) with a top/bottom
+stack: the timeline section (now playing, your timeline, saved
+broadcasts, playback log) is now full-width at the top; the source
+library is a browsable card grid below it. Chosen over evolving the old
+sidebar layout for two reasons: the proportional-width visual timeline
+blocks (added earlier) need real horizontal room to read as a schedule at
+a glance, which a competing fixed-width sidebar worked against; and it
+converges desktop and mobile into one layout instead of two, since mobile
+already collapsed to a vertical stack.
+
+- `main`'s CSS changed from a `grid-template-columns` two-pane layout to
+  a simple `flex-direction: column` stack; `#library` and `#timeline-col`
+  no longer independently scroll in fixed-height panes (`max-height` +
+  `overflow-y: auto` removed) -- the whole page scrolls naturally, which
+  is what the mobile breakpoint already forced as a special case.
+- `#source-list` is now `display: grid` with
+  `repeat(auto-fill, minmax(260px, 1fr))` instead of a plain vertical
+  stack, so it uses the newly-available full width — verified live that
+  it renders 4 columns at 1280px and collapses to 1 at phone width.
+- The resizable-divider feature (`#pane-divider`, drag to resize the
+  library width) doesn't make sense in a top/bottom layout and was
+  removed entirely, along with its now-dead JS (`initPaneResize()`) and
+  the `--library-width` CSS variable/`airtime_library_width_v1`
+  localStorage key.
+- The mobile media query lost most of its rules since they're now just
+  the default behavior at every width (stacking, full-page scrolling) --
+  what's left there is genuinely mobile-specific: bigger touch targets,
+  and the ↑/↓ reorder buttons (still `display: none` above 768px, still
+  shown below it, since native drag-and-drop doesn't work on touch at
+  all).
+- Verified live at both 1280px and phone width: filtering, adding a
+  source to the timeline, 2D drag-and-drop reordering, and full playback
+  (confirmed against a direct-stream source; a podcast-RSS source hit
+  transient CORS-proxy network flakiness in the test environment during
+  this check, unrelated to this change) all still work correctly.
 
 ## Known limitations / next steps
 
