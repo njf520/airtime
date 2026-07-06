@@ -525,6 +525,39 @@ already collapsed to a vertical stack.
   transient CORS-proxy network flakiness in the test environment during
   this check, unrelated to this change) all still work correctly.
 
+## Timeline block polish: consistent alignment, no more stripe pattern
+
+Reported live (with a screenshot): the duration control and remove
+button looked uneven across blocks. Root cause, found by inspecting
+actual pixel positions: `.block` wasn't a flex column, so `.block-bottom`
+just sat wherever the content above it ended -- and cards in the same row
+get stretched to equal height by `#timeline`'s `align-items: stretch`
+(since name-text wraps differently by card width), so cards with more
+text above pushed their bottom row down further than cards with less,
+misaligning the row across the timeline. Separately, the editable input
+(flexible blocks) and the plain-text pill (fixed blocks) had different
+box models, so they were different heights next to each other.
+
+- `.block` is now `display: flex; flex-direction: column; justify-content: space-between`,
+  pinning the duration/remove row to the bottom of every card regardless
+  of stretched height. Verified live: the remove button and duration
+  control now sit at an identical offset from the card's bottom edge
+  across every block in a row.
+- The input and the fixed-duration pill now share one box model (same
+  height, padding, border-radius) so they're visually the same size.
+- Found a second, real bug while verifying this: at the 120px minimum
+  card width, the editable-duration row (input + unit label + remove
+  button) didn't actually fit on one line and silently wrapped, which is
+  what was throwing off *that* alignment specifically. Raised the
+  minimum card width to 136px and shrank the input slightly (52px → 44px)
+  so it reliably fits -- confirmed live that the duration control and
+  remove button now stay on one row at the narrowest card width.
+- Replaced the diagonal-stripe background on flexible/live blocks with
+  an explicit "Flexible" text badge (reusing the small-badge visual
+  language already used for feed-status tags) plus a tooltip explaining
+  what it means -- a texture pattern isn't something a user could be
+  expected to decode at a glance, but a word is unambiguous.
+
 ## Known limitations / next steps
 
 - **As It Happens, Quirks & Quarks, and Radiolab** consistently fail through
