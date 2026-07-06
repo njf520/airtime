@@ -309,7 +309,7 @@
     color: var(--text-dim);
   }
   #timeline {
-    min-height: 200px;
+    min-height: 80px;
     border: 2px dashed var(--border);
     border-radius: 10px;
     padding: 12px;
@@ -328,7 +328,7 @@
     font-size: 13px;
     display: block;
     text-align: center;
-    padding: 40px 10px;
+    padding: 20px 10px;
     width: 100%;
   }
   /* Visual time-blocking: each block's width is proportional to its length (see renderTimeline's
@@ -1215,6 +1215,7 @@ function renderLibrary() {
         e.stopPropagation();
         addSourceToTimeline(s.id);
       });
+      card.addEventListener('dblclick', () => addSourceToTimeline(s.id));
       list.appendChild(card);
   });
 }

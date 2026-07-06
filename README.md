@@ -16,7 +16,7 @@ source on this branch (podcasts, archives, internet radio, and the
 Radio-Browser-backed Music genre/decade/mood channels) is legally clear for
 public/commercial use with no platform-imposed user cap.
 
-Live (personal-use `master` branch) at **https://njf520.github.io/airtime/**.
+Live (`commercial` branch) at **https://njf520.github.io/airtime/**.
 
 ## Scaling this to the public
 
@@ -70,13 +70,20 @@ platform-imposed cost.
 - Browse the source catalog (~113 shows/channels), filter by category (NPR
   pinned first), by typical length (under 5 min / 5-20 min / 20+ min —
   flexible radio blocks show up in every length bucket since their length is
-  user-set), and by format (Podcast / Internet Radio); drag onto a timeline,
-  adjust flexible-length blocks, see the running total.
+  user-set), and by format (Podcast / Internet Radio); drag or double-click
+  a source card to add it to the timeline, adjust flexible-length blocks,
+  see the running total. Recently-used sources appear as one-click chips
+  above the full library for quick re-use.
 - **Hit "Play Broadcast" and it plays for real**: each podcast/archive block
   fetches its actual RSS feed, grabs the latest episode's audio file, and
   streams it; when the block's allotted minutes elapse (or the episode ends),
   it auto-advances to the next block. Transport controls (prev/play-pause/
-  next/stop) work mid-broadcast.
+  next/stop) work mid-broadcast. A progress bar along the bottom of the
+  playing block tracks position within the current block.
+- **Live track info for radio streams**: ICY metadata is polled every 25s
+  from the stream itself and shown in the "Now playing" bar (e.g.
+  "Song Title — Artist") whenever the station embeds it. Best-effort /
+  CORS-limited, gracefully absent when unavailable.
 - Sources with no working public feed (marked red, "no feed") are skipped
   automatically with a visible message rather than breaking playback.
 - Music genre/decade/mood blocks (Jazz, 80s, Chill, etc.) resolve live via
@@ -611,6 +618,34 @@ box models, so they were different heights next to each other.
   language already used for feed-status tags) plus a tooltip explaining
   what it means -- a texture pattern isn't something a user could be
   expected to decode at a glance, but a word is unambiguous.
+
+## v3.2.0 — ICY metadata, recently-used chips, block progress bar
+
+- **ICY live track metadata**: when a Radio-Browser stream embeds `StreamTitle`
+  via the ICY metadata protocol, `fetchIcyTitle()` reads it (separate fetch
+  with `Icy-MetaData: 1`, parses every `icy-metaint + 4081` bytes) and
+  `startIcyPolling()` updates the "Now playing" bar every 25 seconds while
+  the stream is active. CORS-limited and best-effort — silently absent when
+  the station doesn't support it or the browser blocks the cross-origin read.
+- **Recently-used source chips**: the last few sources added to the timeline
+  are shown as one-click chips above the full library list, so returning to
+  a source you just used doesn't require scrolling or filtering again.
+  `recentSourceIds` (capped at 6 entries) is updated in `addSourceToTimeline()`
+  and the chip row is re-rendered with the full library on every
+  `renderLibrary()` call.
+- **Block progress bar**: a thin bar along the bottom of the currently playing
+  block fills left-to-right as the block plays. Driven by `--progress` CSS
+  variable set each tick in `startTick()`.
+- **Double-click to add**: double-clicking any source card calls
+  `addSourceToTimeline()`, identical to the "+" button. Drag-and-drop and
+  "+" are still available; double-click is a desktop shortcut.
+- **Mobile hint text**: the header subtitle now reads "drag sources" on
+  desktop and "tap + to add sources" on mobile (< 768px) via two
+  `<span>` elements toggled with the existing mobile media query, since
+  drag-and-drop doesn't work on touchscreens.
+- **Timeline padding fix**: `#timeline` `min-height` reduced from 200px to
+  80px — eliminates dead space below the last block when only a few blocks
+  are present, and shrinks the empty-state dashed box.
 
 ## Known limitations / next steps
 
