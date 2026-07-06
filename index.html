@@ -156,7 +156,8 @@
     align-items: center;
     justify-content: space-between;
   }
-  .timeline-heading-row h2 { margin: 0; }
+  #timeline-col .timeline-heading-row h2,
+  #library .timeline-heading-row h2 { margin: 0; }
   .timeline-heading-actions { display: flex; gap: 6px; align-items: center; }
   .timeline-heading-actions .btn { font-size: 12px; padding: 5px 10px; }
   #rundown-select {
@@ -384,14 +385,26 @@
     border-color: var(--accent);
     background: var(--accent-tint);
   }
-  #timeline.empty::before {
-    content: "Drag sources here to build your broadcast — block width shows how long each one runs.";
+  .timeline-drop-hint {
+    min-width: 130px;
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--text-dim);
-    font-size: 13px;
-    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
     text-align: center;
-    padding: 20px 10px;
-    width: 100%;
+    padding: 12px;
+    line-height: 1.5;
+    flex-shrink: 0;
+    align-self: stretch;
+    pointer-events: none;
+  }
+  #timeline.empty .timeline-drop-hint {
+    min-width: 100%;
+    padding: 24px 10px;
   }
   /* Visual time-blocking: each block's width is proportional to its length (see renderTimeline's
      inline style), so the timeline reads like a real broadcast log/clock wheel at a glance. */
@@ -752,8 +765,11 @@
     }
     .drag-hint { display: none; }
     .tap-hint  { display: inline; }
-    #timeline.empty::before {
-      content: "Tap + on a source card below to add it to your broadcast.";
+    .timeline-drop-hint {
+      min-width: 100%;
+    }
+    #timeline.empty .timeline-drop-hint {
+      padding: 20px 10px;
     }
   }
 </style>
@@ -1352,6 +1368,11 @@ function renderTimeline() {
     block.addEventListener('dragend', () => block.classList.remove('dragging'));
     el.appendChild(block);
   });
+
+  const hint = document.createElement('div');
+  hint.className = 'timeline-drop-hint';
+  hint.textContent = 'Drag a source here to add it.';
+  el.appendChild(hint);
 
   el.querySelectorAll('.block-move').forEach(btn => {
     btn.addEventListener('click', () => moveBlock(btn.dataset.uid, parseInt(btn.dataset.dir)));
