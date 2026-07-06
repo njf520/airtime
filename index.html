@@ -175,6 +175,36 @@
   }
   #custom-radio-status.error { color: var(--bad); }
   #custom-radio-status.fade { opacity: 0; }
+  #recently-used { margin-bottom: 14px; }
+  .recently-used-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-dim);
+    margin-bottom: 7px;
+  }
+  .recently-used-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .recent-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--chip-color, var(--border));
+    border-radius: 14px;
+    font-size: 12px;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .recent-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .recent-chip-plus { font-size: 13px; opacity: 0.45; line-height: 1; }
+  /* On mobile, HTML5 drag-and-drop does not fire on touch at all — swap instructional text. */
+  .drag-hint { display: inline; }
+  .tap-hint  { display: none; }
   .cat-filters {
     display: flex;
     flex-wrap: wrap;
@@ -311,6 +341,7 @@
     padding: 10px 12px;
     box-sizing: border-box;
     cursor: grab;
+    position: relative;
     /* Column layout with the bottom row pushed to the end -- cards in the same row get stretched
        to equal height by #timeline's align-items:stretch (since name-text wrapping differs by
        card width), and without this the duration/remove row would sit at wherever the top content
@@ -321,6 +352,20 @@
   }
   .block.dragging { opacity: 0.4; }
   .block.playing { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .block-progress-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--tint-weak);
+    overflow: hidden;
+    border-radius: 0 0 7px 7px;
+  }
+  .block-progress-fill {
+    height: 100%;
+    background: var(--card-color, var(--accent));
+    width: var(--progress, 0%);
+    transition: width 0.95s linear;
+  }
   .block-top {
     display: flex;
     align-items: flex-start;
@@ -635,6 +680,11 @@
     .block {
       width: 100% !important;
     }
+    .drag-hint { display: none; }
+    .tap-hint  { display: inline; }
+    #timeline.empty::before {
+      content: "Tap + on a source card below to add it to your broadcast.";
+    }
   }
 </style>
 </head>
@@ -651,7 +701,7 @@
     </svg>
     <div>
       <h1>Airtime<span class="version-badge" id="version-display"></span></h1>
-      <div class="header-subtitle">drag sources onto a timeline to build a custom broadcast</div>
+      <div class="header-subtitle"><span class="drag-hint">drag sources onto a timeline</span><span class="tap-hint">tap + to add sources</span> to build a custom broadcast</div>
     </div>
   </div>
   <div class="header-buttons">
@@ -736,7 +786,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.1.1';
+const VERSION = '3.2.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Theme ----------
@@ -902,6 +952,11 @@ const CATEGORY_COLORS = {
 // they survive a reload, then re-merged into SOURCES on the next load.
 let customRadioSources = load('airtime_custom_sources_v1', []);
 customRadioSources.forEach(cs => SOURCES.push(cs));
+let recentSourceIds = load('airtime_recent_sources_v1', []);
+function trackRecentSource(id) {
+  recentSourceIds = [id, ...recentSourceIds.filter(x => x !== id)].slice(0, 6);
+  save('airtime_recent_sources_v1', recentSourceIds);
+}
 
 // Which publisher/network produced each source — shown as its own tag on the card and searchable,
 // so e.g. typing "BBC" surfaces every BBC show regardless of category. Listed explicitly for
@@ -1088,6 +1143,33 @@ function renderFilters() {
 function renderLibrary() {
   const list = document.getElementById('source-list');
   list.innerHTML = '';
+
+  // Recently used chips — shown at top when the user has added sources before. Only chips that
+  // pass the current filters are shown so the row stays relevant (e.g. no Music chips while
+  // browsing News). Hidden entirely when filters would leave it empty.
+  const recentSrcs = recentSourceIds
+    .map(id => SOURCES.find(s => s.id === id))
+    .filter(Boolean)
+    .filter(s => !activeCategory || s.category === activeCategory)
+    .filter(matchesLengthBucket)
+    .filter(matchesFormat);
+  if (recentSrcs.length > 0) {
+    const recentEl = document.createElement('div');
+    recentEl.id = 'recently-used';
+    recentEl.innerHTML = '<div class="recently-used-label">Recently used</div><div class="recently-used-row"></div>';
+    const row = recentEl.querySelector('.recently-used-row');
+    recentSrcs.forEach(s => {
+      const chip = document.createElement('button');
+      chip.className = 'recent-chip';
+      chip.style.setProperty('--chip-color', CATEGORY_COLORS[s.category] || 'var(--border)');
+      chip.title = s.desc;
+      chip.innerHTML = `${s.name} <span class="recent-chip-plus">+</span>`;
+      chip.addEventListener('click', () => addSourceToTimeline(s.id));
+      row.appendChild(chip);
+    });
+    list.appendChild(recentEl);
+  }
+
   const q = searchText.trim().toLowerCase();
   const matches = SOURCES
     .filter(s => !activeCategory || s.category === activeCategory)
@@ -1185,6 +1267,7 @@ function renderTimeline() {
         <button class="block-move" data-uid="${b.uid}" data-dir="1" title="Move down" aria-label="Move ${b.name} down" ${idx === timelineBlocks.length - 1 ? 'disabled' : ''}>↓</button>
         <button class="block-remove" data-uid="${b.uid}" aria-label="Remove ${b.name} from timeline">✕</button>
       </div>
+      <div class="block-progress-bar"><div class="block-progress-fill"></div></div>
     `;
     block.addEventListener('dragstart', e => {
       block.classList.add('dragging');
@@ -1308,8 +1391,10 @@ function addSourceToTimeline(sourceId) {
     category: src.category,
     lengthMin: src.flexible ? 30 : src.lengthMin,
   });
+  trackRecentSource(src.id);
   persistTimeline();
   renderTimeline();
+  renderLibrary();
 }
 
 function moveBlock(uid, direction) {
@@ -1676,6 +1761,69 @@ function radioBrowserStationsToCandidates(stations) {
     .map(s => ({ audioUrl: s.url_resolved, title: s.name + (s.country ? ' — ' + s.country : '') }));
 }
 
+// ---------- ICY metadata (live track info from radio streams) ----------
+// Internet radio streams embed artist+title in-band via ICY metadata: the server interleaves
+// a metadata block every <icy-metaint> bytes of audio data. To read it we do a separate fetch
+// (distinct from the <audio> element's own stream) with the Icy-MetaData:1 request header,
+// accumulate enough bytes to reach the first metadata block, parse StreamTitle, then abort.
+// This only works when the stream server responds to the CORS preflight for that custom header
+// (many do; those that don't get a CORS error we silently catch). Best-effort: if it fails for
+// any reason the Now Playing display just keeps showing the station name instead of the track.
+async function fetchIcyTitle(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 9000);
+  try {
+    const res = await fetch(url, { headers: { 'Icy-MetaData': '1' }, signal: controller.signal });
+    const metaIntStr = res.headers.get('icy-metaint');
+    if (!metaIntStr) return null;
+    const metaInt = parseInt(metaIntStr, 10);
+    if (!metaInt || metaInt > 131072) return null;
+    const reader = res.body.getReader();
+    const chunks = [];
+    let totalBytes = 0;
+    // Accumulate metaInt (audio) + 1 (length byte) + up to 4080 (metadata) bytes.
+    while (totalBytes < metaInt + 4081) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      totalBytes += value.length;
+    }
+    reader.cancel().catch(() => {});
+    const buf = new Uint8Array(totalBytes);
+    let off = 0;
+    for (const c of chunks) { buf.set(c, off); off += c.length; }
+    if (buf.length <= metaInt) return null;
+    const lenByte = buf[metaInt];
+    if (!lenByte) return null;
+    const metaLen = lenByte * 16;
+    if (buf.length < metaInt + 1 + metaLen) return null;
+    const metaStr = new TextDecoder().decode(buf.slice(metaInt + 1, metaInt + 1 + metaLen)).replace(/\0+$/, '');
+    const m = metaStr.match(/StreamTitle='([^']*)'/);
+    return (m && m[1].trim()) || null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+let icyPoller = null;
+function startIcyPolling(url) {
+  stopIcyPolling();
+  const poll = () => {
+    fetchIcyTitle(url).then(title => {
+      if (!playerState.playing || !title) return;
+      const el = document.getElementById('np-episode');
+      if (el) el.textContent = title;
+    });
+  };
+  poll();
+  icyPoller = setInterval(poll, 25000);
+}
+function stopIcyPolling() {
+  if (icyPoller) { clearInterval(icyPoller); icyPoller = null; }
+}
+
 async function fetchRandomArchiveItemAudio(identifier) {
   const res = await fetchWithTimeout('https://archive.org/metadata/' + identifier, {}, 12000);
   if (!res.ok) throw new Error('Archive.org metadata lookup failed');
@@ -1919,6 +2067,8 @@ function startTick() {
     updateScrub(elapsed / scrubDenominator);
     document.getElementById('np-elapsed').textContent = formatTime(elapsed);
     document.getElementById('np-total').textContent = formatTime(scrubDenominator);
+    const pct = Math.min(100, (elapsed / scrubDenominator) * 100);
+    document.querySelector('#timeline .block.playing')?.style.setProperty('--progress', pct + '%');
     if (playerState.blockIsFlexible) {
       if (elapsed >= playerState.blockBudgetSec) advanceBlock();
     } else if (elapsed >= playerState.blockBudgetSec * 2 + 300) {
@@ -1966,6 +2116,7 @@ async function playBlockAt(index) {
   const myGen = ++playGeneration;
   clearTimeout(playerState.blockTimer);
   stopTick();
+  stopIcyPolling();
   await fadeOutCurrentAudio(myGen);
   if (myGen !== playGeneration) return; // superseded while fading out
 
@@ -2017,6 +2168,7 @@ async function playBlockAt(index) {
       if (myGen !== playGeneration) return;
       setNowPlaying(block.name, winner.title, `Playing (feed status: ${src.feedStatus})`);
       startTick();
+      if (playerState.blockIsLiveStream) startIcyPolling(winner.audioUrl);
     } catch (err) {
       if (myGen !== playGeneration) return;
       setNowPlaying(block.name, '', 'Could not load this feed (' + err.message + ') — skipping in 2s…');
@@ -2063,6 +2215,7 @@ function stopBroadcast() {
   playerState.playing = false;
   clearTimeout(playerState.blockTimer);
   stopTick();
+  stopIcyPolling();
   audioEl.pause();
   audioEl.removeAttribute('src');
   playerState.currentIndex = -1;
