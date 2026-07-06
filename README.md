@@ -592,6 +592,12 @@ Also grew the icon-only buttons (add/move/remove) from 24-26px to 40-44px
 specifically under the mobile media query — comfortable with a mouse, but
 genuinely hard to tap precisely on a real phone screen otherwise.
 
+**Later refinement:** the ↑/↓ reorder buttons were originally shown at every
+screen width, but on desktop that's pure redundant clutter next to drag —
+dragging works fine there. They're now `display: none` above the 768px
+breakpoint and only reappear (at their existing enlarged, tappable size)
+below it, where they're load-bearing since drag genuinely doesn't work.
+
 ## Accessibility & new features
 
 - Added `aria-label`s to every icon-only button (transport controls,

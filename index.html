@@ -374,6 +374,11 @@
   }
   .block-remove:hover { color: var(--bad); }
   .block-move {
+    /* Hidden on desktop -- dragging a block is the primary way to reorder there, so a redundant
+       pair of arrow buttons per block was pure clutter. Re-shown below at the mobile breakpoint,
+       where native HTML5 drag-and-drop doesn't fire on touch at all (see that media query for
+       why), so these are the only way to reorder blocks on a phone. */
+    display: none;
     background: none;
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -598,6 +603,7 @@
       height: 40px;
       font-size: 18px;
     }
+    .block-move { display: inline-flex; align-items: center; justify-content: center; }
     #np-controls button {
       width: 44px;
       height: 44px;
