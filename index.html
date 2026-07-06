@@ -692,8 +692,7 @@
     <div class="timeline-heading-row">
       <h2>Saved broadcasts</h2>
       <div class="timeline-heading-actions">
-        <select id="rundown-select"><option value="">Load a saved broadcast…</option></select>
-        <button class="btn" id="rundown-load-btn">Load</button>
+        <select id="rundown-select" title="Selecting a saved broadcast loads it right away"><option value="">Load a saved broadcast…</option></select>
         <button class="btn" id="rundown-save-btn">Save current as…</button>
         <button class="btn" id="rundown-delete-btn" title="Delete the selected broadcast">Delete</button>
       </div>
@@ -701,8 +700,8 @@
     <div class="timeline-heading-row">
       <h2>Your timeline</h2>
       <div class="timeline-heading-actions">
-        <button class="btn" id="export-timeline-btn" title="Download this timeline as a JSON file">Export</button>
-        <button class="btn" id="import-timeline-btn" title="Load a previously exported timeline">Import</button>
+        <button class="btn" id="export-timeline-btn" title="Download this exact timeline as a file, e.g. to move it to another device or share it with someone">Export to file</button>
+        <button class="btn" id="import-timeline-btn" title="Load a timeline from a file previously saved with Export to file">Import from file</button>
         <input type="file" id="import-timeline-input" accept="application/json" style="display:none">
         <button class="btn" id="clear-timeline-btn">Clear all</button>
       </div>
@@ -718,7 +717,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.14.0';
+const VERSION = '2.15.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Theme ----------
@@ -835,6 +834,13 @@ const SOURCES = [
   { id: 'rp-global',       name: 'Radio Paradise: Global Mix',       category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/global-128', feedStatus: 'verified', desc: 'World/eclectic mix, no ads, listener-supported.' },
   { id: 'rp-beyond',       name: 'Radio Paradise: Beyond',           category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.radioparadise.com/beyond-128', feedStatus: 'verified', desc: 'Radio Paradise\'s experimental/deep-cut channel, no ads.' },
   { id: 'kexp',            name: 'KEXP Live Stream',                 category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://kexp.streamguys1.com/kexp160.aac', feedStatus: 'verified', desc: 'Seattle listener-supported station, live DJ-programmed eclectic/indie/alternative, no ads.' },
+  // Unlike KEXP/Radio Paradise/SomaFM above, these are commercial terrestrial stations -- they
+  // carry real ads and DJ chatter like a normal FM broadcast, not curated ad-free streams. Stream
+  // URLs verified live via curl (HTTP 200, real audio content-type) before adding.
+  { id: 'kroq',            name: 'KROQ 106.7 (Los Angeles)',          category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:http://live.amperwave.net/direct/audacy-kroqfmaac-imc', feedStatus: 'verified', desc: 'LA alternative rock institution, live and commercial (ads included).' },
+  { id: 'kiisfm',          name: 'KIIS-FM 102.7 (Los Angeles)',       category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.revma.ihrhls.com/zc185', feedStatus: 'verified', desc: 'LA top-40/pop hits station, live and commercial (ads included).' },
+  { id: 'wsm650',          name: 'WSM 650 AM (Nashville)',            category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:http://stream01048.westreamradio.com/wsm-am-mp3', feedStatus: 'verified', desc: 'Home of the Grand Ole Opry, classic and current country, live and commercial (ads included).' },
+  { id: 'z100nyc',         name: 'Z100 / WHTZ (New York)',            category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.revma.ihrhls.com/zc1469', feedStatus: 'verified', desc: "New York's #1 hit music station, live and commercial (ads included)." },
   { id: 'soma-groovesalad', name: 'SomaFM: Groove Salad',            category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:groovesalad', feedStatus: 'verified', desc: 'Ambient/downtempo chill, nonprofit listener-supported, no ads.' },
   { id: 'soma-dronezone',  name: 'SomaFM: Drone Zone',               category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:dronezone', feedStatus: 'verified', desc: 'Atmospheric ambient, minimal beats, no ads.' },
   { id: 'soma-spacestation', name: 'SomaFM: Space Station Soma',     category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:spacestation', feedStatus: 'verified', desc: 'Ambient/mid-tempo electronica, no ads.' },
@@ -912,6 +918,9 @@ const NETWORK_MAP = {
   'otr-shadow': 'Internet Archive', 'otr-holmes': 'Internet Archive',
   'rp-main': 'Radio Paradise', 'rp-mellow': 'Radio Paradise', 'rp-rock': 'Radio Paradise', 'rp-global': 'Radio Paradise', 'rp-beyond': 'Radio Paradise',
   'kexp': 'KEXP',
+  'kroq': 'Audacy',
+  'kiisfm': 'iHeartMedia', 'z100nyc': 'iHeartMedia',
+  'wsm650': 'Grand Ole Opry',
 };
 SOURCES.forEach(s => {
   if (s.network) return;
@@ -1311,12 +1320,19 @@ document.getElementById('rundown-save-btn').addEventListener('click', () => {
   renderRundownSelect();
   document.getElementById('rundown-select').value = rundown.id;
 });
-document.getElementById('rundown-load-btn').addEventListener('click', () => {
-  const id = document.getElementById('rundown-select').value;
-  if (!id) { alert('Pick a saved broadcast from the list first.'); return; }
+// Selecting a saved broadcast loads it immediately -- a separate "Load" button next to the
+// dropdown was a redundant extra click doing the same job as picking from the list. The existing
+// confirm() below still guards against accidentally clobbering an in-progress timeline.
+document.getElementById('rundown-select').addEventListener('change', (e) => {
+  const sel = e.target;
+  const id = sel.value;
+  if (!id) return;
   const r = rundowns.find(x => x.id === id);
   if (!r) return;
-  if (timelineBlocks.length > 0 && !confirm('Replace your current timeline with "' + r.name + '"?')) return;
+  if (timelineBlocks.length > 0 && !confirm('Replace your current timeline with "' + r.name + '"?')) {
+    sel.value = '';
+    return;
+  }
   if (typeof stopBroadcast === 'function') stopBroadcast();
   // Fresh uids, and re-hydrate name/category from the CURRENT catalog rather than trusting a
   // stale snapshot -- a source's display info (or existence) may have changed since this was saved.

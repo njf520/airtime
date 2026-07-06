@@ -515,6 +515,35 @@ Deliberately not yet built: surfacing "closest matches" to the user when
 even this still fails on a truly nonsensical query -- worth a follow-up if
 it comes up again in practice.
 
+## Saved-broadcast dropdown loads on select; Export/Import relabeled; 4 named commercial stations
+
+- Reported live: "Load a saved broadcast…" dropdown next to a separate
+  "Load" button was a redundant extra click doing the same job as picking
+  from the list. Selecting an option now loads it immediately (the
+  existing confirm-before-replacing-your-timeline guard still applies,
+  and canceling resets the dropdown back to empty); the standalone Load
+  button is gone.
+- "Export"/"Import" were unclear from the button label alone (title
+  tooltips existed but require a hover to see). Relabeled to "Export to
+  file"/"Import from file" — this is a different mechanism from Saved
+  broadcasts above (a downloadable file vs. `localStorage`), useful for
+  moving a broadcast to another device or sharing it with someone.
+- Added 4 named commercial terrestrial stations, verified live via `curl`
+  (HTTP 200, real audio content-type) before adding: **KROQ** 106.7 (LA
+  alt rock, Audacy), **KIIS-FM** 102.7 (LA top-40, iHeartMedia), **WSM**
+  650 AM (Nashville, home of the Grand Ole Opry), **Z100/WHTZ** (NYC
+  top-40, iHeartMedia). Unlike KEXP/Radio Paradise/SomaFM already in the
+  catalog, these are ordinary commercial stations with real ads and DJ
+  chatter, not curated ad-free streams — flagged as such in each `desc`.
+  **BBC national stations (Radio 1, Radio 2, etc.) are NOT included**:
+  checked via Radio-Browser, and their current live streams are almost
+  entirely HLS (`.m3u8`), which this app's plain `<audio>` element can't
+  play (no MSE/hls.js support) — the one non-HLS BBC URL that turned up
+  was stale/404 when tested. Adding real BBC live radio would need actual
+  HLS support, a separate feature. **WMMR (Philadelphia) has no listing
+  on Radio-Browser at all** and wasn't added rather than guess an
+  unverified URL.
+
 ## Known limitations / next steps
 
 - **As It Happens, Quirks & Quarks, and Radiolab** consistently fail through
