@@ -100,30 +100,16 @@
     margin-left: 8px;
     vertical-align: middle;
   }
+  /* Timeline on top (full width, so proportional-width blocks have real room to breathe), source
+     library below as a browsable grid -- one layout that already matches what the mobile
+     breakpoint below used to have to force as a special case. The whole page scrolls naturally
+     instead of two independently-scrolling fixed-height panes. */
   main {
-    display: grid;
-    grid-template-columns: var(--library-width, 340px) 6px 1fr;
-    gap: 0;
-    min-height: calc(100vh - 65px);
-  }
-  #pane-divider {
-    cursor: col-resize;
-    background: var(--border);
-    position: relative;
-  }
-  #pane-divider:hover, #pane-divider.dragging {
-    background: var(--accent);
-  }
-  #pane-divider::after {
-    content: '';
-    position: absolute;
-    top: 0; bottom: 0;
-    left: -4px; right: -4px;
+    display: flex;
+    flex-direction: column;
   }
   #library {
-    padding: 16px;
-    overflow-y: auto;
-    max-height: calc(100vh - 65px);
+    padding: 20px 24px;
   }
   #library h2, #timeline-col h2 {
     font-size: 13px;
@@ -199,13 +185,20 @@
     border-color: var(--accent);
     color: var(--accent);
   }
+  /* A browsable grid uses the full-width library section effectively -- auto-fit lets the column
+     count adapt to whatever width is available, from a phone-width single column up to several
+     columns on a wide desktop window. */
+  #source-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 8px;
+  }
   .source-card {
     background: var(--panel-2);
     border: 1px solid var(--border);
     border-left: 3px solid var(--card-color, var(--accent));
     border-radius: 8px;
     padding: 10px 12px;
-    margin-bottom: 8px;
     cursor: grab;
     position: relative;
   }
@@ -265,9 +258,8 @@
     padding: 30px 10px;
   }
   #timeline-col {
-    padding: 16px 24px;
-    overflow-y: auto;
-    max-height: calc(100vh - 65px);
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
   }
   #progress-wrap {
     margin-bottom: 18px;
@@ -572,21 +564,9 @@
     color: var(--text-dim);
     border-top: 1px solid var(--border);
   }
-  /* Native drag-and-drop and a fixed-width side panel both fall apart on phone-width screens —
-     stack library above timeline, hide the (meaningless-on-mobile) resize divider, and let the
-     whole page scroll naturally instead of two independently-scrolling fixed-height panes. */
+  /* Native drag-and-drop doesn't work at all on touchscreens, so the tap-based alternatives below
+     (bigger touch targets, ↑/↓ reorder buttons) matter on phones in a way they don't on desktop. */
   @media (max-width: 768px) {
-    main {
-      grid-template-columns: 1fr;
-    }
-    #pane-divider { display: none; }
-    #library, #timeline-col {
-      max-height: none;
-      overflow-y: visible;
-    }
-    #library {
-      border-bottom: 1px solid var(--border);
-    }
     header {
       padding: 12px 16px;
     }
@@ -642,21 +622,6 @@
 </header>
 
 <main>
-  <section id="library">
-    <h2>Source library</h2>
-    <input type="text" id="search" placeholder="Search by name or network (e.g. BBC)...">
-    <div class="cat-filters" id="cat-filters"></div>
-    <div class="cat-filters" id="length-filters"></div>
-    <div class="cat-filters" id="format-filters"></div>
-    <div id="custom-spotify-form">
-      <input type="text" id="custom-spotify-query" placeholder="Any Spotify search — an artist, mood, era…">
-      <button class="btn" id="custom-spotify-add">+ Custom channel</button>
-    </div>
-    <div id="source-list"></div>
-  </section>
-
-  <div id="pane-divider"></div>
-
   <section id="timeline-col">
     <div id="now-playing">
       <div id="np-top">
@@ -680,24 +645,6 @@
       </div>
       <div id="np-status"></div>
     </div>
-    <details id="playback-log-wrap">
-      <summary>Playback log</summary>
-      <div class="playback-log-toolbar">
-        <button class="btn" id="copy-log-btn" title="Copy the full log to your clipboard">Copy log</button>
-      </div>
-      <div id="playback-log"><div class="empty-state">Nothing played yet this session.</div></div>
-    </details>
-    <div id="progress-wrap">
-      <div id="progress-label"></div>
-    </div>
-    <div class="timeline-heading-row">
-      <h2>Saved broadcasts</h2>
-      <div class="timeline-heading-actions">
-        <select id="rundown-select" title="Selecting a saved broadcast loads it right away"><option value="">Load a saved broadcast…</option></select>
-        <button class="btn" id="rundown-save-btn">Save current as…</button>
-        <button class="btn" id="rundown-delete-btn" title="Delete the selected broadcast">Delete</button>
-      </div>
-    </div>
     <div class="timeline-heading-row">
       <h2>Your timeline</h2>
       <div class="timeline-heading-actions">
@@ -707,7 +654,38 @@
         <button class="btn" id="clear-timeline-btn">Clear all</button>
       </div>
     </div>
+    <div id="progress-wrap">
+      <div id="progress-label"></div>
+    </div>
     <div id="timeline" class="empty"></div>
+    <div class="timeline-heading-row">
+      <h2>Saved broadcasts</h2>
+      <div class="timeline-heading-actions">
+        <select id="rundown-select" title="Selecting a saved broadcast loads it right away"><option value="">Load a saved broadcast…</option></select>
+        <button class="btn" id="rundown-save-btn">Save current as…</button>
+        <button class="btn" id="rundown-delete-btn" title="Delete the selected broadcast">Delete</button>
+      </div>
+    </div>
+    <details id="playback-log-wrap">
+      <summary>Playback log</summary>
+      <div class="playback-log-toolbar">
+        <button class="btn" id="copy-log-btn" title="Copy the full log to your clipboard">Copy log</button>
+      </div>
+      <div id="playback-log"><div class="empty-state">Nothing played yet this session.</div></div>
+    </details>
+  </section>
+
+  <section id="library">
+    <h2>Source library</h2>
+    <input type="text" id="search" placeholder="Search by name or network (e.g. BBC)...">
+    <div class="cat-filters" id="cat-filters"></div>
+    <div class="cat-filters" id="length-filters"></div>
+    <div class="cat-filters" id="format-filters"></div>
+    <div id="custom-spotify-form">
+      <input type="text" id="custom-spotify-query" placeholder="Any Spotify search — an artist, mood, era…">
+      <button class="btn" id="custom-spotify-add">+ Custom channel</button>
+    </div>
+    <div id="source-list"></div>
   </section>
 </main>
 
@@ -738,7 +716,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '2.12.0';
+const VERSION = '3.0.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 
 // ---------- Theme ----------
@@ -1440,36 +1418,6 @@ document.getElementById('import-timeline-input').addEventListener('change', asyn
     alert('Could not import this file: ' + err.message);
   }
 });
-
-// ---------- Resizable panes ----------
-(function initPaneResize() {
-  const divider = document.getElementById('pane-divider');
-  const MIN_WIDTH = 220;
-  const MAX_WIDTH = 640;
-  const saved = load('airtime_library_width_v1', null);
-  if (saved) document.documentElement.style.setProperty('--library-width', saved + 'px');
-
-  let dragging = false;
-  divider.addEventListener('mousedown', e => {
-    dragging = true;
-    divider.classList.add('dragging');
-    e.preventDefault();
-  });
-  window.addEventListener('mousemove', e => {
-    if (!dragging) return;
-    const mainRect = document.querySelector('main').getBoundingClientRect();
-    let width = e.clientX - mainRect.left;
-    width = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, width));
-    document.documentElement.style.setProperty('--library-width', width + 'px');
-  });
-  window.addEventListener('mouseup', () => {
-    if (!dragging) return;
-    dragging = false;
-    divider.classList.remove('dragging');
-    const width = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--library-width'));
-    save('airtime_library_width_v1', width);
-  });
-})();
 
 // ---------- Podcast RSS fetching ----------
 // Podcast feeds almost never set Access-Control-Allow-Origin for browser JS, so we try direct
