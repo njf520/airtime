@@ -369,7 +369,7 @@
     padding: 30px 10px;
   }
   #timeline-col {
-    padding: 20px 40px;
+    padding: 20px 40px 0;
   }
   #progress-label {
     display: flex;
@@ -934,7 +934,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.3.2';
+const VERSION = '3.3.3';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1005,7 +1005,13 @@ const SOURCES = [
   { id: 'freakonomics',    name: 'Freakonomics Radio',               category: 'Business',   cadence: 'Weekly', lengthMin: 40,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/Y8lFbOT4', feedStatus: 'verified', desc: 'The hidden side of everything, through an economics lens.' },
   { id: 'ninetyninepi',    name: '99% Invisible',                    category: 'Storytelling', cadence: 'Weekly', lengthMin: 30, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/BqbsxVfO', feedStatus: 'verified', desc: 'The unnoticed architecture and design that shapes the world.' },
   { id: 'syskshouldknow',  name: 'Stuff You Should Know',            category: 'Science',    cadence: '3x/week', lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/A91018A4-EA4F-4130-BF55-AE270180C327/44710ECC-10BB-48D1-93C7-AE270180C33E/podcast.rss', feedStatus: 'verified', desc: 'An explainer on just about anything.' },
-  { id: 'crimejunkie',     name: 'Crime Junkie',                     category: 'True Crime', cadence: 'Weekly', lengthMin: 40, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/qm_9xx0g', feedStatus: 'verified', desc: 'A true crime case, researched and told simply.' },
+  { id: 'crimejunkie',     name: 'Crime Junkie',                     category: 'True Crime', cadence: 'Weekly',   lengthMin: 40,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/qm_9xx0g',                             feedStatus: 'verified',   desc: 'A true crime case, researched and told simply.' },
+  { id: 'myfavmurder',    name: 'My Favorite Murder',               category: 'True Crime', cadence: 'Weekly',   lengthMin: 80,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/Xe9NGNHZ',                             feedStatus: 'unverified', desc: 'Karen Kilgariff and Georgia Hardstark cover true crime cases with humor and candor.' },
+  { id: 'serial',         name: 'Serial',                           category: 'True Crime', cadence: 'Seasonal', lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.art19.com/serial',                                       feedStatus: 'unverified', desc: 'Sarah Koenig\'s groundbreaking investigative journalism — one story told over a whole season.' },
+  { id: 'casefiletc',     name: 'Casefile True Crime',              category: 'True Crime', cadence: 'Biweekly', lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://audioboom.com/channels/4883717.rss',                        feedStatus: 'unverified', desc: 'Meticulously researched international true crime, presented by an anonymous Australian host.' },
+  { id: 'inthedark',      name: 'In the Dark',                      category: 'True Crime', cadence: 'Seasonal', lengthMin: 50,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.apmreports.org/APMReports_InTheDark',                  feedStatus: 'unverified', desc: 'APM Reports\' investigative series exposing systemic failures in the criminal justice system.' },
+  { id: 'morbid',         name: 'Morbid',                           category: 'True Crime', cadence: 'Weekly',   lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/oE9TPBJK',                             feedStatus: 'unverified', desc: 'Alaina Urquhart and Ash Kelley cover true crime cases with personality and wit.' },
+  { id: 'swindled',       name: 'Swindled',                         category: 'True Crime', cadence: 'Weekly',   lengthMin: 35,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/swindled',                                feedStatus: 'unverified', desc: 'An anonymous host covers corporate crime and white-collar misconduct, read like a bedtime story.' },
   { id: 'smartless',       name: 'SmartLess',                        category: 'Comedy',     cadence: 'Weekly', lengthMin: 60, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/hNaFxXpO', feedStatus: 'verified', desc: 'Jason Bateman, Sean Hayes, and Will Arnett surprise-interview a guest.' },
   { id: 'howibuiltthis',   name: 'How I Built This',                 category: 'Business',   cadence: 'Weekly', lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.art19.com/how-i-built-this', feedStatus: 'verified', desc: 'NPR\'s Guy Raz interviews founders on how they built their companies.' },
   { id: 'podsaveamerica',  name: 'Pod Save America',                 category: 'News',       cadence: '3x/week', lengthMin: 70, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://audioboom.com/channels/5166624.rss', feedStatus: 'verified', desc: 'Former Obama staffers on politics and the news.' },
