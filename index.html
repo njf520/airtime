@@ -153,11 +153,13 @@
   }
   .timeline-heading-row {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
+    margin-bottom: 20px;
   }
+  .timeline-heading-left { min-width: 0; }
   #timeline-col .timeline-heading-row h2,
-  #library .timeline-heading-row h2 { margin: 0; }
+  #library .timeline-heading-row h2 { margin: 0 0 8px 0; }
   .timeline-heading-actions { display: flex; gap: 6px; align-items: center; }
   .timeline-heading-actions .btn { font-size: 12px; padding: 5px 10px; }
   #rundown-select {
@@ -339,9 +341,6 @@
   #timeline-col {
     padding: 20px 40px;
     border-bottom: 1px solid var(--border);
-  }
-  #progress-wrap {
-    margin-bottom: 6px;
   }
   #progress-label {
     display: flex;
@@ -846,16 +845,16 @@
       <div id="np-status"></div>
     </div>
     <div class="timeline-heading-row">
-      <h2>Your timeline</h2>
+      <div class="timeline-heading-left">
+        <h2>Your timeline</h2>
+        <div id="progress-label"></div>
+      </div>
       <div class="timeline-heading-actions">
         <button class="btn" id="export-timeline-btn" title="Download this exact timeline as a file, e.g. to move it to another device or share it with someone">Export to file</button>
         <button class="btn" id="import-timeline-btn" title="Load a timeline from a file previously saved with Export to file">Import from file</button>
         <input type="file" id="import-timeline-input" accept="application/json" style="display:none">
         <button class="btn" id="clear-timeline-btn">Clear all</button>
       </div>
-    </div>
-    <div id="progress-wrap">
-      <div id="progress-label"></div>
     </div>
     <div id="timeline-ruler"></div>
     <div id="timeline" class="empty"></div>
@@ -1063,8 +1062,8 @@ const SOURCES = [
 ];
 
 const CATEGORY_COLORS = {
-  NPR: '#e05a5a', News: '#4fb0ff', International: '#3ec6cf', Business: '#3ecf8e',
-  Storytelling: '#e0a233', Comedy: '#e05ac0', Science: '#7c8cff', Poetry: '#e0a233',
+  NPR: '#d4706a', News: '#7aafc4', International: '#5fada8', Business: '#5aab86',
+  Storytelling: '#d4954a', Comedy: '#c468a8', Science: '#8a8fd4', Poetry: '#c9954a',
   Reflection: '#9aa0ab', History: '#c98a4a', Drama: '#c9564a', Weather: '#4fd1ff', Music: '#3ecf8e',
   'True Crime': '#c94f5c',
 };
