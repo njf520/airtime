@@ -859,8 +859,8 @@
     <div class="timeline-heading-row">
       <h2>Saved broadcasts</h2>
       <div class="timeline-heading-actions">
-        <select id="rundown-select" title="Selecting a saved broadcast loads it right away"><option value="">Load a saved broadcast…</option></select>
-        <button class="btn" id="rundown-save-btn">Save current as…</button>
+        <select id="rundown-select" title="Selecting a saved broadcast loads it right away"><option value="">Load broadcast…</option></select>
+        <button class="btn" id="rundown-save-btn">Save as…</button>
         <button class="btn" id="rundown-delete-btn" title="Delete the selected broadcast">Delete</button>
       </div>
     </div>
@@ -1480,7 +1480,7 @@ function persistTimeline() { save('airtime_timeline_v1', timelineBlocks); }
 function renderRundownSelect() {
   const sel = document.getElementById('rundown-select');
   const current = sel.value;
-  sel.innerHTML = '<option value="">Load a saved broadcast…</option>' +
+  sel.innerHTML = '<option value="">Load broadcast…</option>' +
     rundowns.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
   if (rundowns.some(r => r.id === current)) sel.value = current;
 }
