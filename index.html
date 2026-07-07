@@ -788,12 +788,48 @@
       padding-left: 20px;
       padding-right: 20px;
     }
+    footer {
+      padding: 16px 20px 32px;
+      flex-direction: column;
+      gap: 12px;
+    }
     .brand-wordmark { font-size: 22px; }
     .header-buttons {
       width: 100%;
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 8px;
+    }
+    /* Stack the timeline heading so the 3 action buttons don't crowd the title at narrow widths. */
+    .timeline-heading-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .timeline-heading-actions {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+    /* The saved-broadcasts right side (select + 2 buttons) is 328 px wide at desktop and would
+       crush the left text panel to zero width on a 375 px phone — stack vertically instead. */
+    .rundown-section {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 14px;
+      padding: 16px 0;
+    }
+    /* Grid lets the select fill all remaining space while the two buttons stay natural-width. */
+    .rundown-section-right {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
+    }
+    /* Library heading: "Pick from the catalogue" in 23 px Spectral would overflow the row when
+       the pill button is beside it — stack them so each gets the full width. */
+    .library-heading-row {
+      flex-direction: column;
+      gap: 12px;
     }
     /* Touch targets under ~40px are notoriously hard to tap precisely on a phone — grow the
        icon-only buttons instead of leaving them at their comfortable-with-a-mouse desktop size. */
@@ -930,7 +966,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.3.4';
+const VERSION = '3.3.5';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1098,12 +1134,37 @@ const SOURCES = [
   { id: 'soma-fluid',      name: 'SomaFM: Fluid',                    category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:fluid', feedStatus: 'verified', desc: 'Instrumental hip-hop/future soul/liquid trap, no ads.' },
   { id: 'soma-sf1033',     name: 'SomaFM: SF 10-33',                 category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:sf1033', feedStatus: 'verified', desc: 'Ambient mixed with SF public-safety radio chatter (novelty channel), no ads.' },
   { id: 'soma-missioncontrol', name: 'SomaFM: Mission Control',      category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:missioncontrol', feedStatus: 'verified', desc: 'NASA/space-themed ambient, no ads.' },
+
+  // Car Talk — classic NPR comedy, Tom & Ray Magliozzi, archived as "Best of Car Talk" replays since 2014.
+  { id: 'cartalk', name: 'Car Talk', category: 'Comedy', cadence: 'Weekly', lengthMin: 57, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.npr.org/510208/podcast.xml', feedStatus: 'verified', desc: 'Tom and Ray Magliozzi answer car questions and laugh uncontrollably. Airing classic replays since Tom\'s passing in 2014.' },
+
+  // Sports podcasts
+  { id: 'pardonmytake',  name: 'Pardon My Take',           category: 'Sports', cadence: 'Daily',    lengthMin: 75, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/pardonmytake',        feedStatus: 'unverified', desc: 'Barstool\'s flagship comedy sports pod — big interviews, meatball analysis, daily takes.' },
+  { id: '30for30',       name: '30 for 30 Podcast',        category: 'Sports', cadence: 'Seasonal', lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/30for30',              feedStatus: 'unverified', desc: 'ESPN\'s audio-documentary series on the most compelling stories in sports history.' },
+  { id: 'aroundthenfl',  name: 'Around the NFL',           category: 'Sports', cadence: 'Daily',    lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/aroundthenfl',         feedStatus: 'unverified', desc: 'NFL.com writers break down every week in professional football.' },
+  { id: 'rb-sportstalk', name: 'Sports Talk (Radio)',      category: 'Sports', cadence: 'Anytime',  lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:sports talk',             feedStatus: 'verified',   desc: 'Live sports talk stations via Radio-Browser, length you set.' },
+  { id: 'rb-espn',       name: 'ESPN Radio',               category: 'Sports', cadence: 'Anytime',  lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:name:espn radio',             feedStatus: 'verified',   desc: 'ESPN Radio stations via Radio-Browser, length you set.' },
+
+  // History (expanding beyond the 2 existing entries)
+  { id: 'hardcorehistory', name: 'Hardcore History',                   category: 'History', cadence: 'Seasonal', lengthMin: 270, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.feedburner.com/dancarlin/history',            feedStatus: 'unverified', desc: 'Dan Carlin\'s marathon-length explorations of major historical events — episodes routinely run 4–6 hours.' },
+  { id: 'revolutions',    name: 'Revolutions',                         category: 'History', cadence: 'Seasonal', lengthMin: 25,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://revolutionspodcast.libsyn.com/rss',                  feedStatus: 'unverified', desc: 'Mike Duncan traces the English, American, French, Haitian, and other world revolutions, one season each.' },
+  { id: 'symisc',         name: 'Stuff You Missed in History Class',   category: 'History', cadence: 'Biweekly', lengthMin: 35,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/stuffyoumissedinhistoryclass',      feedStatus: 'unverified', desc: 'Lively dives into overlooked and underreported history — royal scandals to lost inventions.' },
+  { id: 'aht',            name: 'American History Tellers',            category: 'History', cadence: 'Weekly',   lengthMin: 30,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/33N6zHST',                      feedStatus: 'unverified', desc: 'Wondery\'s narrative tour through pivotal moments in American history.' },
+  { id: 'throughline',    name: 'Throughline',                         category: 'History', cadence: 'Weekly',   lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.npr.org/510333/podcast.xml',                    feedStatus: 'verified',   desc: 'NPR traces the roots of today\'s news back through history.' },
+  { id: 'fallofciv',      name: 'Fall of Civilizations',               category: 'History', cadence: 'Seasonal', lengthMin: 90,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.acast.com/public/shows/fallofcivilizations',    feedStatus: 'unverified', desc: 'Paul Cooper\'s beautifully produced narrative histories of lost and fallen civilizations.' },
+
+  // Sleep podcasts
+  { id: 'sleepwithme',       name: 'Sleep With Me',         category: 'Sleep', cadence: 'Nightly', lengthMin: 60, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://sleepwithmepodcast.libsyn.com/rss', feedStatus: 'unverified', desc: 'Scooter\'s meandering bedtime stories intentionally bore your active mind into rest.' },
+  { id: 'nothingmuchhappens', name: 'Nothing Much Happens', category: 'Sleep', cadence: 'Weekly',  lengthMin: 30, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/YuKkh2ZV',    feedStatus: 'unverified', desc: 'Kathryn Nicolai\'s slow, detailed stories about nothing in particular, designed to quiet an anxious mind.' },
+  { id: 'getsleepy',         name: 'Get Sleepy',            category: 'Sleep', cadence: 'Weekly',  lengthMin: 40, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.buzzsprout.com/702443.rss',   feedStatus: 'unverified', desc: 'Guided relaxation followed by original sleep stories with ambient soundscapes.' },
+  { id: 'rb-ambient',        name: 'Ambient (Radio)',        category: 'Sleep', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:ambient', feedStatus: 'verified', desc: 'Ambient/drone music stations via Radio-Browser, good for sleep or focus.' },
 ];
 
 const CATEGORY_COLORS = {
   NPR: '#d4706a', News: '#7aafc4', International: '#5fada8', Business: '#5aab86',
   Storytelling: '#d4954a', Comedy: '#c468a8', Science: '#8a8fd4', Poetry: '#c9954a',
   Reflection: '#9aa0ab', History: '#c98a4a', Drama: '#c9564a', Weather: '#4fd1ff', Music: '#3ecf8e',
+  Sports: '#4a9fd4', Sleep: '#8a6fad',
   'True Crime': '#c94f5c',
 };
 
