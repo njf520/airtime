@@ -149,8 +149,22 @@
     text-transform: uppercase;
     letter-spacing: 0.2em;
     color: var(--accent-label);
-    margin: 0 0 12px 0;
+    margin: 0 0 4px 0;
   }
+  .library-heading-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .library-subtitle {
+    font-family: 'Spectral', Georgia, serif;
+    font-size: 23px;
+    color: var(--text);
+    margin: 6px 0 0;
+  }
+  .btn.pill { border-radius: 999px; padding: 9px 18px; }
   .timeline-heading-row {
     display: flex;
     align-items: flex-end;
@@ -162,14 +176,31 @@
   #library .timeline-heading-row h2 { margin: 0 0 8px 0; }
   .timeline-heading-actions { display: flex; gap: 6px; align-items: center; }
   .timeline-heading-actions .btn { font-size: 12px; padding: 5px 10px; }
+  .rundown-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 22px 0;
+    margin-top: 20px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .rundown-section-left { min-width: 0; }
+  .rundown-subtitle {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin: 5px 0 0;
+  }
+  .rundown-section-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
   #rundown-select {
-    font-size: 12px;
-    padding: 5px 8px;
+    font-size: 13px;
+    padding: 8px 14px;
     background: var(--panel-2);
     border: 1px solid var(--border);
     border-radius: 6px;
     color: var(--text);
-    max-width: 160px;
+    max-width: 220px;
   }
   #search {
     width: 100%;
@@ -198,9 +229,8 @@
     font-size: 12px;
   }
   #custom-radio-add {
-    font-size: 12px;
-    padding: 6px 10px;
     white-space: nowrap;
+    align-self: center;
   }
   #custom-radio-status {
     font-size: 12px;
@@ -340,7 +370,6 @@
   }
   #timeline-col {
     padding: 20px 40px;
-    border-bottom: 1px solid var(--border);
   }
   #progress-label {
     display: flex;
@@ -571,9 +600,11 @@
     cursor: pointer;
   }
   .btn:hover { border-color: var(--accent); }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: #1a1200; font-weight: 600; border-radius: 999px; padding: 9px 20px; box-shadow: var(--play-shadow); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #1a1200; font-weight: 600; }
   .btn.primary:hover { opacity: 0.9; }
-  .btn.danger:hover { border-color: var(--bad); color: var(--bad); }
+  #play-broadcast-btn { border-radius: 999px; padding: 11px 22px; box-shadow: var(--play-shadow); }
+  .btn.danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 35%, transparent); }
+  .btn.danger:hover { border-color: var(--bad); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .icon-btn {
     width: 38px;
@@ -856,25 +887,33 @@
     </div>
     <div id="timeline-ruler"></div>
     <div id="timeline" class="empty"></div>
-    <div class="timeline-heading-row">
-      <h2>Saved broadcasts</h2>
-      <div class="timeline-heading-actions">
+    <div class="rundown-section">
+      <div class="rundown-section-left">
+        <h2>Saved broadcasts</h2>
+        <p class="rundown-subtitle">Load a set you built earlier, or save this one.</p>
+      </div>
+      <div class="rundown-section-right">
         <select id="rundown-select" title="Selecting a saved broadcast loads it right away"><option value="">Load broadcast…</option></select>
-        <button class="btn" id="rundown-save-btn">Save as…</button>
-        <button class="btn" id="rundown-delete-btn" title="Delete the selected broadcast">Delete</button>
+        <button class="btn primary" id="rundown-save-btn">Save as…</button>
+        <button class="btn danger" id="rundown-delete-btn" title="Delete the selected broadcast">Delete</button>
       </div>
     </div>
   </section>
 
   <section id="library">
-    <h2>Source library</h2>
+    <div class="library-heading-row">
+      <div>
+        <h2>Source library</h2>
+        <p class="library-subtitle">Pick from the catalogue</p>
+      </div>
+      <button class="btn primary pill" id="custom-radio-add">+ Custom channel</button>
+    </div>
     <input type="text" id="search" placeholder="Search by name or network (e.g. BBC)...">
     <div class="cat-filters" id="cat-filters"></div>
     <div class="cat-filters" id="length-filters"></div>
     <div class="cat-filters" id="format-filters"></div>
     <div id="custom-radio-form">
       <input type="text" id="custom-radio-query" placeholder="Any genre, mood, or format — e.g. lofi, salsa, talk radio…">
-      <button class="btn" id="custom-radio-add">+ Custom channel</button>
     </div>
     <div id="custom-radio-status"></div>
     <div id="source-list"></div>
@@ -895,7 +934,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.3.1';
+const VERSION = '3.3.2';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
