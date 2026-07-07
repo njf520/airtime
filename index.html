@@ -387,20 +387,22 @@
   }
   .timeline-drop-hint {
     min-width: 130px;
-    border: 2px dashed var(--border);
+    border: 1.5px dashed var(--border);
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--text-dim);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
+    font-family: 'Spectral', Georgia, serif;
+    font-style: italic;
+    font-size: 15px;
     text-align: center;
-    padding: 12px;
-    line-height: 1.5;
+    padding: 16px;
+    line-height: 1.4;
     flex-shrink: 0;
     align-self: stretch;
     pointer-events: none;
+    opacity: 0.65;
   }
   #timeline.empty .timeline-drop-hint {
     min-width: 100%;
@@ -646,35 +648,43 @@
   /* A raw always-visible log looks like debug output left in place -- tuck it behind a native
      <details> disclosure instead, closed by default, so it's there when you want it without
      cluttering the timeline view by default. */
-  #playback-log-wrap { margin-bottom: 16px; }
+  #playback-log-wrap {
+    flex: 1;
+    min-width: 0;
+  }
   #playback-log-wrap > summary {
     cursor: pointer;
-    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.14em;
     color: var(--text-dim);
+    opacity: 0.7;
     list-style: none;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     user-select: none;
   }
   #playback-log-wrap > summary::-webkit-details-marker { display: none; }
   #playback-log-wrap > summary::before {
     content: '▸';
-    font-size: 10px;
+    font-size: 9px;
     display: inline-block;
     transition: transform 0.15s ease;
+    color: var(--text-dim);
+    opacity: 0.6;
   }
   #playback-log-wrap[open] > summary::before { transform: rotate(90deg); }
-  #playback-log-wrap > summary:hover { color: var(--accent); }
-  .playback-log-toolbar { display: flex; justify-content: flex-end; margin: 10px 0 8px; }
+  #playback-log-wrap > summary:hover { opacity: 1; }
+  .playback-log-toolbar { display: flex; justify-content: flex-end; margin: 8px 0 0; }
   #playback-log {
-    max-height: 140px;
+    max-height: 170px;
     overflow-y: auto;
-    background: var(--panel-2);
+    background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 8px;
+    margin-top: 14px;
     padding: 8px 10px;
     font-size: 11.5px;
     font-family: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
@@ -722,10 +732,22 @@
     font-size: 11.5px;
   }
   footer {
-    padding: 10px 24px;
+    padding: 20px 40px 40px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-top: 20px;
+  }
+  #footer-status {
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
     color: var(--text-dim);
-    border-top: 1px solid var(--border);
+    white-space: nowrap;
+    padding-top: 3px;
+    opacity: 0.65;
+    flex-shrink: 0;
   }
   /* Native drag-and-drop doesn't work at all on touchscreens, so the tap-based alternatives below
      (bigger touch targets, ↑/↓ reorder buttons) matter on phones in a way they don't on desktop. */
@@ -845,13 +867,6 @@
         <button class="btn" id="rundown-delete-btn" title="Delete the selected broadcast">Delete</button>
       </div>
     </div>
-    <details id="playback-log-wrap">
-      <summary>Playback log</summary>
-      <div class="playback-log-toolbar">
-        <button class="btn" id="copy-log-btn" title="Copy the full log to your clipboard">Copy log</button>
-      </div>
-      <div id="playback-log"><div class="empty-state">Nothing played yet this session.</div></div>
-    </details>
   </section>
 
   <section id="library">
@@ -870,7 +885,14 @@
 </main>
 
 <footer>
-  Podcast blocks stream their real latest episode via public RSS feeds. Music blocks stream from free internet radio stations (via the Radio-Browser directory) — no account or sign-in needed. Some sources have no working public feed (marked in red) and will be skipped during playback.
+  <details id="playback-log-wrap">
+    <summary>Playback log</summary>
+    <div id="playback-log"><div class="empty-state">Nothing played yet this session.</div></div>
+    <div class="playback-log-toolbar">
+      <button class="btn" id="copy-log-btn" title="Copy the full log to your clipboard">Copy log</button>
+    </div>
+  </details>
+  <span id="footer-status"></span>
 </footer>
 
 <script>
@@ -878,6 +900,17 @@
 // the service worker's cache both reflect what's actually live.
 const VERSION = '3.3.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
+(function() {
+  const el = document.getElementById('footer-status');
+  if (!el) return;
+  // Count after SOURCES is defined (this runs inline, SOURCES is declared below)
+  // — use a microtask to wait for the rest of the script to execute first.
+  Promise.resolve().then(() => {
+    const healthy = typeof SOURCES !== 'undefined'
+      ? SOURCES.filter(s => s.feedStatus === 'verified').length : 0;
+    el.textContent = `Airtime v${VERSION} · ${healthy} feeds healthy`;
+  });
+})();
 
 // ---------- Theme ----------
 // The actual theme attribute is already set pre-paint by the inline <script> in <head> (see
@@ -1371,7 +1404,7 @@ function renderTimeline() {
 
   const hint = document.createElement('div');
   hint.className = 'timeline-drop-hint';
-  hint.textContent = 'Drag a source here to add it.';
+  hint.innerHTML = 'Drag a source<br>here to add it';
   el.appendChild(hint);
 
   el.querySelectorAll('.block-move').forEach(btn => {
