@@ -88,7 +88,7 @@
   }
   .header-brand {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 14px;
   }
   .brand-bars {
@@ -140,7 +140,7 @@
     flex-direction: column;
   }
   #library {
-    padding: 22px 40px 20px;
+    padding: 16px 40px 20px;
   }
   #library h2, #timeline-col h2 {
     font-family: 'IBM Plex Mono', monospace;
@@ -159,14 +159,14 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 4px;
+    margin-bottom: 16px;
   }
   .library-h2-row h2 { margin: 0; }
   .library-subtitle {
     font-family: 'Spectral', Georgia, serif;
     font-size: 23px;
     color: var(--text);
-    margin: 6px 0 0;
+    margin: 0;
   }
   .btn.pill { border-radius: 999px; padding: 9px 18px; }
   .timeline-heading-row {
@@ -941,7 +941,7 @@
         <h2>Source library</h2>
         <button class="btn primary pill" id="custom-radio-add">+ Custom channel</button>
       </div>
-      <p class="library-subtitle">Pick from the catalogue</p>
+      <p class="library-subtitle">Pick from the catalog</p>
     </div>
     <input type="text" id="search" placeholder="Search by name or network (e.g. BBC)...">
     <div class="cat-filters" id="cat-filters"></div>
@@ -966,7 +966,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.3.5';
+const VERSION = '3.3.6';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1498,6 +1498,11 @@ function renderTimeline() {
       e.dataTransfer.effectAllowed = 'move';
     });
     block.addEventListener('dragend', () => block.classList.remove('dragging'));
+    block.addEventListener('click', e => {
+      if (e.target.closest('button, input')) return;
+      playerState.playing = true;
+      playBlockAt(idx);
+    });
     el.appendChild(block);
   });
 
