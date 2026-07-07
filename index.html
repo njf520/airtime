@@ -371,17 +371,16 @@
     border-radius: 999px;
   }
   #timeline {
-    min-height: 80px;
-    border: 2px dashed var(--border);
-    border-radius: 10px;
-    padding: 12px;
     display: flex;
     flex-wrap: wrap;
     align-items: stretch;
-    gap: 8px;
+    gap: 14px;
+    margin-bottom: 8px;
   }
   #timeline.drag-over {
-    border-color: var(--accent);
+    outline: 2px dashed var(--accent);
+    outline-offset: 8px;
+    border-radius: 10px;
     background: var(--accent-tint);
   }
   .timeline-drop-hint {
@@ -404,8 +403,9 @@
     opacity: 0.65;
   }
   #timeline.empty .timeline-drop-hint {
-    min-width: 100%;
-    padding: 24px 10px;
+    min-width: 260px;
+    min-height: 110px;
+    padding: 24px 20px;
   }
   /* Visual time-blocking: each block's width is proportional to its length (see renderTimeline's
      inline style), so the timeline reads like a real broadcast log/clock wheel at a glance. */
@@ -788,9 +788,7 @@
     .tap-hint  { display: inline; }
     .timeline-drop-hint {
       min-width: 100%;
-    }
-    #timeline.empty .timeline-drop-hint {
-      padding: 20px 10px;
+      min-height: 80px;
     }
   }
 </style>
