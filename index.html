@@ -140,7 +140,7 @@
     flex-direction: column;
   }
   #library {
-    padding: 20px 40px;
+    padding: 34px 40px 20px;
   }
   #library h2, #timeline-col h2 {
     font-family: 'IBM Plex Mono', monospace;
@@ -172,8 +172,7 @@
     margin-bottom: 20px;
   }
   .timeline-heading-left { min-width: 0; }
-  #timeline-col .timeline-heading-row h2,
-  #library .timeline-heading-row h2 { margin: 0 0 8px 0; }
+  #timeline-col .timeline-heading-row h2 { margin: 0 0 8px 0; }
   .timeline-heading-actions { display: flex; gap: 6px; align-items: center; }
   .timeline-heading-actions .btn { font-size: 12px; padding: 5px 10px; }
   .rundown-section {
@@ -182,7 +181,7 @@
     justify-content: space-between;
     gap: 24px;
     padding: 22px 0;
-    margin-top: 20px;
+    margin-top: 26px;
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
   }
@@ -204,33 +203,18 @@
   }
   #search {
     width: 100%;
-    padding: 8px 10px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text);
-    margin-bottom: 10px;
-    font-size: 12px;
-    font-family: 'IBM Plex Mono', monospace;
-  }
-  #custom-radio-form {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 14px;
-  }
-  #custom-radio-query {
-    flex: 1;
-    min-width: 0;
-    padding: 7px 9px;
+    padding: 12px 16px;
     background: var(--panel-2);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 8px;
     color: var(--text);
-    font-size: 12px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-family: 'IBM Plex Sans', sans-serif;
   }
+  #search::placeholder { color: var(--text-dim); }
   #custom-radio-add {
     white-space: nowrap;
-    align-self: center;
   }
   #custom-radio-status {
     font-size: 12px;
@@ -281,18 +265,20 @@
   }
   .cat-chip {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 10.5px;
-    padding: 4px 9px;
+    font-size: 11.5px;
+    padding: 6px 12px;
     border-radius: 999px;
     border: 1px solid var(--border);
     background: var(--panel-2);
     color: var(--text-dim);
     cursor: pointer;
     user-select: none;
+    white-space: nowrap;
   }
   .cat-chip.active {
     border-color: var(--accent);
     color: var(--accent);
+    background: var(--accent-tint);
   }
   /* A browsable grid uses the full-width library section effectively -- auto-fit lets the column
      count adapt to whatever width is available, from a phone-width single column up to several
@@ -300,16 +286,19 @@
   #source-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 8px;
+    gap: 14px;
   }
   .source-card {
     background: var(--panel-2);
     border: 1px solid var(--border);
     border-left: 3px solid var(--card-color, var(--accent));
-    border-radius: 8px;
-    padding: 10px 12px;
+    border-radius: 10px;
+    padding: 16px 16px 14px;
     cursor: grab;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
   .source-card:active { cursor: grabbing; }
   .source-card.dragging { opacity: 0.4; }
@@ -317,26 +306,29 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 8px;
+    gap: 10px;
   }
   .source-add-btn {
     flex-shrink: 0;
-    width: 26px;
-    height: 26px;
-    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
     background: var(--panel);
     border: 1px solid var(--border);
     color: var(--accent);
-    font-size: 16px;
+    font-size: 17px;
     line-height: 1;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
-  .source-add-btn:hover { border-color: var(--accent); }
+  .source-add-btn:hover { border-color: var(--accent); background: var(--accent-tint); }
   .source-name {
     font-family: 'Spectral', Georgia, serif;
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 500;
-    margin-bottom: 2px;
+    line-height: 1.25;
   }
   .source-meta {
     font-family: 'IBM Plex Mono', monospace;
@@ -345,11 +337,12 @@
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
-    margin-bottom: 4px;
+    margin-top: auto;
+    padding-top: 2px;
   }
   .tag {
     background: var(--tint-weak);
-    padding: 1px 6px;
+    padding: 2px 6px;
     border-radius: 4px;
   }
   .tag-network {
@@ -358,9 +351,9 @@
     font-weight: 600;
   }
   .source-desc {
-    font-size: 11.5px;
+    font-size: 12.5px;
     color: var(--text-dim);
-    line-height: 1.4;
+    line-height: 1.5;
   }
   .empty-state {
     color: var(--text-dim);
@@ -369,7 +362,7 @@
     padding: 30px 10px;
   }
   #timeline-col {
-    padding: 20px 40px 0;
+    padding: 36px 40px 0;
   }
   #progress-label {
     display: flex;
@@ -394,7 +387,7 @@
     display: none;
     gap: 3px;
     height: 7px;
-    margin-bottom: 14px;
+    margin-bottom: 24px;
   }
   #timeline-ruler > div {
     border-radius: 999px;
@@ -443,7 +436,7 @@
     border: 1px solid var(--border);
     border-left: 4px solid var(--card-color, var(--accent));
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 14px 14px 12px;
     box-sizing: border-box;
     cursor: grab;
     position: relative;
@@ -478,16 +471,16 @@
   }
   .block-index {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
+    font-size: 14px;
     color: var(--accent-label);
-    width: 20px;
+    width: 22px;
     text-align: right;
     flex-shrink: 0;
     line-height: 1.4;
   }
   .block-body { flex: 1; min-width: 0; }
-  .block-name { font-family: 'Spectral', Georgia, serif; font-size: 15px; font-weight: 500; }
-  .block-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--text-dim); margin-top: 3px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .block-name { font-family: 'Spectral', Georgia, serif; font-size: 16px; font-weight: 500; }
+  .block-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim); margin-top: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   /* A plain-language badge instead of the old stripe-pattern background -- a texture nobody could
      be expected to decode at a glance. Says exactly what it means: this one's length is yours to
      set (a live stream or an open-ended queue), not a fixed episode with a real runtime. */
@@ -768,7 +761,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 24px;
-    margin-top: 20px;
+    margin-top: 40px;
   }
   #footer-status {
     font-family: 'IBM Plex Mono', monospace;
@@ -785,7 +778,13 @@
     header {
       padding: 16px 20px;
     }
-    #timeline-col, #library {
+    #timeline-col {
+      padding-top: 24px;
+      padding-left: 20px;
+      padding-right: 20px;
+    }
+    #library {
+      padding-top: 24px;
       padding-left: 20px;
       padding-right: 20px;
     }
@@ -912,9 +911,6 @@
     <div class="cat-filters" id="cat-filters"></div>
     <div class="cat-filters" id="length-filters"></div>
     <div class="cat-filters" id="format-filters"></div>
-    <div id="custom-radio-form">
-      <input type="text" id="custom-radio-query" placeholder="Any genre, mood, or format — e.g. lofi, salsa, talk radio…">
-    </div>
     <div id="custom-radio-status"></div>
     <div id="source-list"></div>
   </section>
@@ -934,7 +930,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.3.3';
+const VERSION = '3.3.4';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1361,14 +1357,14 @@ function renderLibrary() {
           <div class="source-name">${s.name}</div>
           <button class="source-add-btn" title="Add to timeline" aria-label="Add ${s.name} to timeline" data-id="${s.id}">+</button>
         </div>
+        <div class="source-desc">${s.desc}</div>
         <div class="source-meta">
           <span class="tag tag-network">${s.network}</span>
           <span class="tag">${s.category}</span>
           <span class="tag">${s.cadence}</span>
-          <span class="tag">${s.flexible ? 'flexible length' : s.lengthMin + ' min'}</span>
+          <span class="tag">${s.flexible ? 'flex' : s.lengthMin + ' min'}</span>
           <span class="feed-badge ${s.feedStatus}">${badgeText}</span>
         </div>
-        <div class="source-desc">${s.desc}</div>
       `;
       card.addEventListener('dragstart', e => {
         card.classList.add('dragging');
@@ -1695,12 +1691,8 @@ document.getElementById('copy-log-btn').addEventListener('click', async () => {
   }
 });
 document.getElementById('custom-radio-add').addEventListener('click', () => {
-  const input = document.getElementById('custom-radio-query');
-  addCustomRadioChannel(input.value);
-  input.value = '';
-});
-document.getElementById('custom-radio-query').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('custom-radio-add').click();
+  const query = prompt('Enter a genre, mood, or format to find radio stations:\n(e.g. "lofi", "salsa", "80s rock", "talk radio")');
+  if (query && query.trim()) addCustomRadioChannel(query.trim());
 });
 document.getElementById('export-timeline-btn').addEventListener('click', () => {
   if (timelineBlocks.length === 0) { alert('Your timeline is empty — nothing to export.'); return; }
