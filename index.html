@@ -152,12 +152,16 @@
     margin: 0 0 4px 0;
   }
   .library-heading-row {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
     margin-bottom: 16px;
   }
+  .library-h2-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 4px;
+  }
+  .library-h2-row h2 { margin: 0; }
   .library-subtitle {
     font-family: 'Spectral', Georgia, serif;
     font-size: 23px;
@@ -825,12 +829,8 @@
       grid-template-columns: 1fr auto auto;
       gap: 8px;
     }
-    /* Library heading: "Pick from the catalogue" in 23 px Spectral would overflow the row when
-       the pill button is beside it — stack them so each gets the full width. */
-    .library-heading-row {
-      flex-direction: column;
-      gap: 12px;
-    }
+    /* Library heading: the pill button sits beside the h2 label (not the subtitle), so no
+       mobile override is needed — the h2 row stays horizontal at all widths. */
     /* Touch targets under ~40px are notoriously hard to tap precisely on a phone — grow the
        icon-only buttons instead of leaving them at their comfortable-with-a-mouse desktop size. */
     .block-move, .block-remove, .source-add-btn {
@@ -937,11 +937,11 @@
 
   <section id="library">
     <div class="library-heading-row">
-      <div>
+      <div class="library-h2-row">
         <h2>Source library</h2>
-        <p class="library-subtitle">Pick from the catalogue</p>
+        <button class="btn primary pill" id="custom-radio-add">+ Custom channel</button>
       </div>
-      <button class="btn primary pill" id="custom-radio-add">+ Custom channel</button>
+      <p class="library-subtitle">Pick from the catalogue</p>
     </div>
     <input type="text" id="search" placeholder="Search by name or network (e.g. BBC)...">
     <div class="cat-filters" id="cat-filters"></div>
