@@ -89,7 +89,7 @@
   .header-brand {
     display: flex;
     align-items: flex-end;
-    gap: 14px;
+    gap: 12px;
   }
   .brand-bars {
     display: flex;
@@ -102,11 +102,6 @@
     width: 4px;
     background: var(--accent);
     border-radius: 2px;
-  }
-  .brand-row {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
   }
   .brand-wordmark {
     font-family: 'Spectral', Georgia, serif;
@@ -870,13 +865,8 @@
       <div style="height:34px"></div>
       <div style="height:10px"></div>
     </div>
-    <div>
-      <div class="brand-row">
-        <span class="brand-wordmark">Airtime</span>
-        <span class="version-badge" id="version-display"></span>
-      </div>
-      <div class="header-subtitle"><span class="drag-hint">drag sources onto a timeline</span><span class="tap-hint">tap + to add sources</span> to build a custom broadcast</div>
-    </div>
+    <span class="brand-wordmark">Airtime</span>
+    <span class="version-badge" id="version-display"></span>
   </div>
   <div class="header-buttons">
     <button class="btn icon-btn" id="theme-toggle-btn" title="Switch to light mode" aria-label="Switch to light mode">🌙</button>
