@@ -959,7 +959,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.3.6';
+const VERSION = '3.3.7';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1971,7 +1971,7 @@ async function radioBrowserSearchExact(query, limit) {
   return [];
 }
 
-async function radioBrowserSearch(query, limit = 15) {
+async function radioBrowserSearch(query, limit = 20) {
   const stations = await radioBrowserSearchExact(query, limit);
   // Must check for *playable* candidates, not just non-empty station lists. Radio-Browser can return
   // stations for a tag (e.g. "1990s") that are all HLS streams or missing url_resolved -- those
@@ -1994,9 +1994,16 @@ async function radioBrowserSearch(query, limit = 15) {
 // HLS streams (.m3u8): plain <audio src> can't play those in Chrome/Firefox (only Safari supports
 // HLS natively), and this app has no MSE/hls.js player to handle them.
 function radioBrowserStationsToCandidates(stations) {
-  return stations
+  const all = stations
     .filter(s => s.hls !== 1 && s.url_resolved && !/\.(m3u8?|pls)(\?|$)/i.test(s.url_resolved))
     .map(s => ({ audioUrl: s.url_resolved, title: s.name + (s.country ? ' — ' + s.country : '') }));
+  // HTTPS streams first: on HTTPS pages (GitHub Pages) the browser blocks HTTP streams as mixed
+  // content, so without this sort the first several candidates would fail before reaching any
+  // working HTTPS stream, potentially timing out or stalling for seconds per HTTP attempt.
+  return [
+    ...all.filter(c => c.audioUrl.startsWith('https://')),
+    ...all.filter(c => !c.audioUrl.startsWith('https://')),
+  ];
 }
 
 // ---------- ICY metadata (live track info from radio streams) ----------
@@ -2169,15 +2176,17 @@ async function fetchLatestEpisode(feedUrl) {
     const r = await resolveSomaFmStream(feedUrl.slice('somafm:'.length));
     return { candidates: [r] };
   }
-  if (feedUrl.startsWith('radio-browser:tag:')) {
+  if (feedUrl.startsWith('radio-browser:tag:') || feedUrl.startsWith('radio-browser:name:')) {
     // Every Music genre/decade/mood source and every user-added custom channel resolves live via
     // Radio-Browser rather than a fixed station -- return every matching station as a candidate so
     // tryLoadAudio's existing probing skips over any that are dead/broken/unplayable, same as the
     // date-archive candidate lists above.
-    const tag = feedUrl.slice('radio-browser:tag:'.length);
-    const stations = await radioBrowserSearch(tag);
+    const query = feedUrl.startsWith('radio-browser:tag:')
+      ? feedUrl.slice('radio-browser:tag:'.length)
+      : feedUrl.slice('radio-browser:name:'.length);
+    const stations = await radioBrowserSearch(query);
     const candidates = radioBrowserStationsToCandidates(stations);
-    if (candidates.length === 0) throw new Error('No working "' + tag + '" stations found via Radio-Browser');
+    if (candidates.length === 0) throw new Error('No working "' + query + '" stations found via Radio-Browser');
     return { candidates };
   }
   const xmlText = await fetchTextWithProxies(feedUrl);
