@@ -1070,7 +1070,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.3.9';
+const VERSION = '3.3.10';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1147,6 +1147,8 @@ const SOURCES = [
   { id: 'casefiletc',     name: 'Casefile True Crime',              category: 'True Crime', cadence: 'Biweekly', lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://audioboom.com/channels/4883717.rss',                        feedStatus: 'unverified', desc: 'Meticulously researched international true crime, presented by an anonymous Australian host.' },
   { id: 'inthedark',      name: 'In the Dark',                      category: 'True Crime', cadence: 'Seasonal', lengthMin: 50,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.apmreports.org/APMReports_InTheDark',                  feedStatus: 'unverified', desc: 'APM Reports\' investigative series exposing systemic failures in the criminal justice system.' },
   { id: 'morbid',         name: 'Morbid',                           category: 'True Crime', cadence: 'Weekly',   lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/oE9TPBJK',                             feedStatus: 'unverified', desc: 'Alaina Urquhart and Ash Kelley cover true crime cases with personality and wit.' },
+  { id: 'dateline-nbc',   name: 'Dateline NBC',                     category: 'True Crime', cadence: 'Weekly',   lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.nbcnews.com/dateline/podcast-audio',                  feedStatus: 'unverified', desc: 'Gripping audio editions of NBC\'s premier true-crime and investigative television show.' },
+  { id: 'mrballen',       name: 'MrBallen Podcast',                 category: 'True Crime', cadence: 'Weekly',   lengthMin: 35,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/strange-dark-and-mysterious-stories',   feedStatus: 'unverified', desc: 'Strange, dark, and mysterious stories — unsolved cases and paranormal events.' },
   { id: 'swindled',       name: 'Swindled',                         category: 'True Crime', cadence: 'Weekly',   lengthMin: 35,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/swindled',                                feedStatus: 'unverified', desc: 'An anonymous host covers corporate crime and white-collar misconduct, read like a bedtime story.' },
   { id: 'smartless',       name: 'SmartLess',                        category: 'Comedy',     cadence: 'Weekly', lengthMin: 60, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/hNaFxXpO', feedStatus: 'verified', desc: 'Jason Bateman, Sean Hayes, and Will Arnett surprise-interview a guest.' },
   { id: 'howibuiltthis',   name: 'How I Built This',                 category: 'Business',   cadence: 'Weekly', lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.art19.com/how-i-built-this', feedStatus: 'verified', desc: 'NPR\'s Guy Raz interviews founders on how they built their companies.' },
