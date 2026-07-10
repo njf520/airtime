@@ -789,59 +789,6 @@
     border-radius: 4px;
     font-size: 11.5px;
   }
-  #about-section {
-    padding: 0 40px;
-    margin-top: 16px;
-  }
-  #how-to-use {
-    border-top: 1px solid var(--border);
-    padding-top: 16px;
-  }
-  #how-to-use > summary {
-    cursor: pointer;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: var(--text-dim);
-    list-style: none;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    user-select: none;
-    padding-bottom: 16px;
-  }
-  #how-to-use > summary::-webkit-details-marker { display: none; }
-  #how-to-use > summary::before { content: '▸'; font-size: 9px; display: inline-block; transition: transform 0.15s; }
-  #how-to-use[open] > summary::before { transform: rotate(90deg); }
-  .about-cols {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 24px;
-    margin-bottom: 16px;
-  }
-  .about-col h3 {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-    color: var(--accent-label);
-    margin: 0 0 8px;
-  }
-  .about-col p {
-    font-size: 13px;
-    color: var(--text-dim);
-    line-height: 1.6;
-    margin: 0 0 8px;
-  }
-  .about-note {
-    font-size: 11.5px;
-    color: var(--text-dim);
-    opacity: 0.7;
-    margin: 0;
-  }
-  .about-note a { color: var(--text-dim); }
   footer {
     padding: 20px 40px 40px;
     border-top: 1px solid var(--border);
@@ -1029,31 +976,6 @@
     <div id="source-list"></div>
   </section>
 
-  <section id="about-section">
-    <details id="how-to-use">
-      <summary>How to use Airtime</summary>
-      <div class="about-content">
-        <div class="about-cols">
-          <div class="about-col">
-            <h3>Building your broadcast</h3>
-            <p>Drag any source card from the library onto your timeline, or click the <strong>+</strong> button on any card. Reorder blocks by dragging them left and right, or use the ↑↓ arrows.</p>
-            <p>For radio and music sources, set how many minutes you want to listen before it moves on. For podcasts, it plays the full episode.</p>
-          </div>
-          <div class="about-col">
-            <h3>Playing</h3>
-            <p>Click <strong>▶ Play Broadcast</strong> in the top-right corner to start from the beginning, or click any individual block to jump straight to it.</p>
-            <p>The Now Playing bar shows what's on, lets you skip forward/back, and has a volume slider.</p>
-          </div>
-          <div class="about-col">
-            <h3>Custom radio</h3>
-            <p>Click <strong>+ Custom channel</strong> to add any kind of radio station by genre, mood, or style — try "lofi jazz", "classical study", or "80s new wave".</p>
-            <p>Use <strong>Save as…</strong> to save your timeline and reload it any time.</p>
-          </div>
-        </div>
-        <p class="about-note">Radio stations are sourced from <a href="https://www.radio-browser.info" target="_blank" rel="noopener">Radio-Browser</a>, a free public directory. Podcast episodes are fetched fresh each time you play.</p>
-      </div>
-    </details>
-  </section>
 </main>
 
 <footer>
@@ -1070,7 +992,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.3.11';
+const VERSION = '3.3.12';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
