@@ -194,6 +194,38 @@
     margin: 5px 0 0;
   }
   .rundown-section-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  #rundown-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .rundown-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 12.5px;
+    cursor: pointer;
+    color: var(--text);
+    transition: border-color 0.15s;
+  }
+  .rundown-chip:hover { border-color: var(--accent); }
+  .rundown-chip-del {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 15px;
+    line-height: 1;
+    padding: 0 0 0 2px;
+    opacity: 0.5;
+  }
+  .rundown-chip-del:hover { opacity: 1; color: var(--bad); }
+  .rundown-empty { font-size: 12.5px; color: var(--text-dim); margin: 6px 0 0; }
   #rundown-select {
     font-size: 13px;
     padding: 8px 14px;
@@ -262,13 +294,13 @@
   .cat-filters {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 14px;
+    gap: 5px;
+    margin-bottom: 8px;
   }
   .cat-chip {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 11.5px;
-    padding: 6px 12px;
+    font-size: 11px;
+    padding: 5px 10px;
     border-radius: 999px;
     border: 1px solid var(--border);
     background: var(--panel-2);
@@ -356,6 +388,8 @@
     font-size: 12.5px;
     color: var(--text-dim);
     line-height: 1.5;
+    overflow-wrap: break-word;
+    padding-right: 4px;
   }
   .empty-state {
     color: var(--text-dim);
@@ -574,12 +608,10 @@
     font-size: 9.5px;
     padding: 1px 6px;
     border-radius: 4px;
-    text-transform: uppercase;
     letter-spacing: 0.03em;
   }
-  .feed-badge.verified { background: rgba(62,207,142,0.15); color: var(--good); }
-  .feed-badge.unverified { background: rgba(224,162,51,0.15); color: var(--warn); }
-  .feed-badge.none { background: rgba(224,90,90,0.15); color: var(--bad); }
+  .feed-badge.unverified { background: rgba(224,162,51,0.1); color: var(--text-dim); border: 1px solid rgba(224,162,51,0.3); }
+  .feed-badge.none { background: rgba(224,90,90,0.1); color: var(--text-dim); border: 1px solid rgba(224,90,90,0.3); }
   .header-buttons {
     display: flex;
     align-items: center;
@@ -667,8 +699,11 @@
     background: var(--panel);
     border: 1px solid var(--border);
     overflow: hidden;
+    cursor: pointer;
+    position: relative;
   }
-  #np-scrub-fill { height: 100%; background: var(--accent); width: 0%; }
+  #np-scrub.live { cursor: default; opacity: 0.5; }
+  #np-scrub-fill { height: 100%; background: var(--accent); width: 0%; pointer-events: none; }
   #np-status { font-size: 11px; color: var(--text-dim); margin-top: 6px; }
   /* A raw always-visible log looks like debug output left in place -- tuck it behind a native
      <details> disclosure instead, closed by default, so it's there when you want it without
@@ -756,6 +791,59 @@
     border-radius: 4px;
     font-size: 11.5px;
   }
+  #about-section {
+    padding: 0 40px;
+    margin-top: 16px;
+  }
+  #how-to-use {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+  #how-to-use > summary {
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+    padding-bottom: 16px;
+  }
+  #how-to-use > summary::-webkit-details-marker { display: none; }
+  #how-to-use > summary::before { content: '▸'; font-size: 9px; display: inline-block; transition: transform 0.15s; }
+  #how-to-use[open] > summary::before { transform: rotate(90deg); }
+  .about-cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+    margin-bottom: 16px;
+  }
+  .about-col h3 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--accent-label);
+    margin: 0 0 8px;
+  }
+  .about-col p {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin: 0 0 8px;
+  }
+  .about-note {
+    font-size: 11.5px;
+    color: var(--text-dim);
+    opacity: 0.7;
+    margin: 0;
+  }
+  .about-note a { color: var(--text-dim); }
   footer {
     padding: 20px 40px 40px;
     border-top: 1px solid var(--border);
@@ -918,14 +1006,13 @@
     <div class="rundown-section">
       <div class="rundown-section-left">
         <h2>Saved broadcasts</h2>
-        <p class="rundown-subtitle">Load a broadcast you built earlier, or save this one.</p>
+        <p class="rundown-subtitle">Save your timeline and reload it anytime.</p>
       </div>
       <div class="rundown-section-right">
-        <select id="rundown-select" title="Selecting a saved broadcast loads it right away"><option value="">Load broadcast…</option></select>
         <button class="btn primary" id="rundown-save-btn">Save as…</button>
-        <button class="btn danger" id="rundown-delete-btn" title="Delete the selected broadcast">Delete</button>
       </div>
     </div>
+    <div id="rundown-chips"></div>
   </section>
 
   <section id="library">
@@ -943,6 +1030,32 @@
     <div id="custom-radio-status"></div>
     <div id="source-list"></div>
   </section>
+
+  <section id="about-section">
+    <details id="how-to-use">
+      <summary>How to use Airtime</summary>
+      <div class="about-content">
+        <div class="about-cols">
+          <div class="about-col">
+            <h3>Building your broadcast</h3>
+            <p>Drag any source card from the library onto your timeline, or click the <strong>+</strong> button on any card. Reorder blocks by dragging them left and right, or use the ↑↓ arrows.</p>
+            <p>For radio and music sources, set how many minutes you want to listen before it moves on. For podcasts, it plays the full episode.</p>
+          </div>
+          <div class="about-col">
+            <h3>Playing</h3>
+            <p>Click <strong>▶ Play Broadcast</strong> in the top-right corner to start from the beginning, or click any individual block to jump straight to it.</p>
+            <p>The Now Playing bar shows what's on, lets you skip forward/back, and has a volume slider.</p>
+          </div>
+          <div class="about-col">
+            <h3>Custom radio</h3>
+            <p>Click <strong>+ Custom channel</strong> to add any kind of radio station by genre, mood, or style — try "lofi jazz", "classical study", or "80s new wave".</p>
+            <p>Use <strong>Save as…</strong> to save your timeline and reload it any time.</p>
+          </div>
+        </div>
+        <p class="about-note">Radio stations are sourced from <a href="https://www.radio-browser.info" target="_blank" rel="noopener">Radio-Browser</a>, a free public directory. Podcast episodes are fetched fresh each time you play.</p>
+      </div>
+    </details>
+  </section>
 </main>
 
 <footer>
@@ -959,7 +1072,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.3.7';
+const VERSION = '3.3.8';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1010,16 +1123,16 @@ const SOURCES = [
   { id: 'bbc-world-news',  name: 'BBC World Service News',           category: 'International', cadence: 'Hourly', lengthMin: 5, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcast.voice.api.bbci.co.uk/rss/audio/p002vsmz?api_key=Wbek5zSqxz0Hk1blo5IBqbd9SCWIfNbT', feedStatus: 'verified', desc: 'Top-of-the-hour global news bulletin from the BBC World Service.' },
   { id: 'bbc-global-news', name: 'BBC Global News Podcast',          category: 'International', cadence: 'Daily', lengthMin: 30, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcasts.files.bbci.co.uk/p02nq0gn.rss', feedStatus: 'verified', desc: 'BBC\'s twice-daily deep dive on the world\'s top stories.' },
   { id: 'dw-news',         name: 'DW News Brief',                    category: 'International', cadence: 'Hourly', lengthMin: 2, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.dw.com/syndication/feeds/podcast_en_newsbrief.33191-mrss.xml', feedStatus: 'verified', desc: 'Deutsche Welle\'s short hourly news brief (~90 seconds).' },
-  { id: 'nhk-newsline',    name: 'NHK World Radio Japan: English News', category: 'International', cadence: 'Daily', lengthMin: 20, flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://www3.nhk.or.jp/rj/podcast/rss/english.xml', feedStatus: 'verified', desc: 'NHK\'s English-language radio news from Japan (closest available feed to the TV show "NHK Newsline", which has no independent podcast feed).' },
+  { id: 'nhk-newsline',    name: 'NHK World Radio Japan: English News', category: 'International', cadence: 'Daily', lengthMin: 20, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www3.nhk.or.jp/rj/podcast/rss/english.xml', feedStatus: 'unverified', desc: 'Daily English-language news from Japan\'s national broadcaster.' },
   { id: 'witness-history', name: 'BBC Witness History',              category: 'History',   cadence: 'Daily',  lengthMin: 9,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcasts.files.bbci.co.uk/p004t1hd.rss', feedStatus: 'verified', desc: 'A historical event, told by someone who was there.' },
   { id: 'thought-for-day', name: 'BBC Thought for the Day',          category: 'Reflection', cadence: 'Daily',  lengthMin: 3,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcasts.files.bbci.co.uk/p00szxv6.rss', feedStatus: 'verified', desc: 'Short daily reflection from Radio 4\'s Today programme.' },
-  { id: 'as-it-happens',   name: 'CBC As It Happens',                category: 'News',       cadence: 'Daily',  lengthMin: 54,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.cbc.ca/podcasting/includes/asithappens.xml', feedStatus: 'unverified', desc: 'Canadian nightly news and interviews — feed is real but has failed through 7 different CORS proxies across multiple sessions; CBC likely blocks proxy/datacenter traffic specifically.' },
+  { id: 'as-it-happens',   name: 'CBC As It Happens',                category: 'News',       cadence: 'Daily',  lengthMin: 54,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.cbc.ca/podcasting/includes/asithappens.xml', feedStatus: 'unverified', desc: 'Canadian nightly news and interviews from CBC Radio. Episodes may not be available in all regions.' },
   { id: 'tal',             name: 'This American Life',               category: 'Storytelling', cadence: 'Weekly', lengthMin: 59, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.thisamericanlife.org/podcast/rss.xml', feedStatus: 'verified', desc: 'Weekly theme, told in a few first-person stories.' },
   { id: 'the-moth',        name: 'The Moth',                         category: 'Storytelling', cadence: 'Weekly', lengthMin: 10, flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feeds.themoth.org/themothpodcast', feedStatus: 'verified', desc: 'A single true story, told live, no notes.' },
-  { id: 'radiolab',        name: 'Radiolab',                         category: 'Science',   cadence: 'Weekly', lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feeds.wnyc.org/radiolab', feedStatus: 'unverified', desc: 'Sound-rich exploration of science and philosophy — feed is real but consistently fails via CORS proxy; likely WNYC blocking proxy/datacenter traffic.' },
+  { id: 'radiolab',        name: 'Radiolab',                         category: 'Science',   cadence: 'Weekly', lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feeds.wnyc.org/radiolab', feedStatus: 'unverified', desc: 'Sound-rich explorations of science and philosophy from WNYC Studios. Episodes may not be available in all regions.' },
   { id: 'says-you',        name: 'Says You!',                        category: 'Comedy',     cadence: 'Weekly', lengthMin: 50,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://saysyou.libsyn.com/rss', feedStatus: 'verified', desc: 'A word game, bluffing quiz show, PRX — now airing reruns, feed still playable.' },
   { id: 'startalk',        name: 'StarTalk Radio',                   category: 'Science',   cadence: 'Weekly', lengthMin: 40,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/4T39_jAj', feedStatus: 'verified', desc: 'Neil deGrasse Tyson on science and pop culture.' },
-  { id: 'quirks',          name: 'CBC Quirks & Quarks',              category: 'Science',   cadence: 'Weekly', lengthMin: 54,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.cbc.ca/podcasting/includes/quirksaio.xml', feedStatus: 'unverified', desc: 'Canadian weekly science radio show — feed is real but consistently fails via CORS proxy; CBC likely blocks proxy/datacenter traffic specifically.' },
+  { id: 'quirks',          name: 'CBC Quirks & Quarks',              category: 'Science',   cadence: 'Weekly', lengthMin: 54,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.cbc.ca/podcasting/includes/quirksaio.xml', feedStatus: 'unverified', desc: 'Canada\'s longest-running science radio show, covering the latest in science and nature. Episodes may not be available in all regions.' },
   { id: 'moment-science',  name: 'A Moment of Science',              category: 'Science',   cadence: 'Daily',  lengthMin: 2,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://f.prxu.org/4317/feed-rss.xml', feedStatus: 'verified', desc: 'Two-minute daily science tidbit, Indiana Public Media.' },
   { id: 'sciam-quickly',   name: 'Scientific American: Science Quickly', category: 'Science', cadence: 'Weekly', lengthMin: 8, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/SAM8799470961', feedStatus: 'verified', desc: 'Short science news bites.' },
   { id: 'stardate',        name: 'StarDate',                         category: 'Science',   cadence: 'Daily',  lengthMin: 2,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://stardate.org/feeds/podcast.xml', feedStatus: 'verified', desc: 'Daily stargazing tip from McDonald Observatory.' },
@@ -1151,6 +1264,18 @@ const SOURCES = [
   { id: 'nothingmuchhappens', name: 'Nothing Much Happens', category: 'Sleep', cadence: 'Weekly',  lengthMin: 30, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/YuKkh2ZV',    feedStatus: 'unverified', desc: 'Kathryn Nicolai\'s slow, detailed stories about nothing in particular, designed to quiet an anxious mind.' },
   { id: 'getsleepy',         name: 'Get Sleepy',            category: 'Sleep', cadence: 'Weekly',  lengthMin: 40, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.buzzsprout.com/702443.rss',   feedStatus: 'unverified', desc: 'Guided relaxation followed by original sleep stories with ambient soundscapes.' },
   { id: 'rb-ambient',        name: 'Ambient (Radio)',        category: 'Sleep', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:ambient', feedStatus: 'verified', desc: 'Ambient/drone music stations via Radio-Browser, good for sleep or focus.' },
+
+  // More NPR shows
+  { id: 'ted-radio-hour',  name: 'TED Radio Hour',              category: 'Science',      cadence: 'Weekly',   lengthMin: 55,  flexible: false, sourceType: 'podcast-rss', network: 'NPR', feedUrl: 'https://feeds.npr.org/510298/podcast.xml',                     feedStatus: 'verified',   desc: 'Inspiring talks from TED speakers, woven into a narrative by NPR.' },
+  { id: 'short-wave',      name: 'Short Wave',                  category: 'Science',      cadence: 'Daily',    lengthMin: 12,  flexible: false, sourceType: 'podcast-rss', network: 'NPR', feedUrl: 'https://feeds.npr.org/510351/podcast.xml',                     feedStatus: 'verified',   desc: 'A bite-sized daily science podcast from NPR.' },
+  { id: 'code-switch',     name: 'Code Switch',                 category: 'News',         cadence: 'Weekly',   lengthMin: 30,  flexible: false, sourceType: 'podcast-rss', network: 'NPR', feedUrl: 'https://feeds.npr.org/510312/podcast.xml',                     feedStatus: 'verified',   desc: 'NPR\'s podcast about race, identity, and culture in America.' },
+  { id: 'pop-culture-hh',  name: 'Pop Culture Happy Hour',      category: 'Comedy',       cadence: 'Daily',    lengthMin: 20,  flexible: false, sourceType: 'podcast-rss', network: 'NPR', feedUrl: 'https://feeds.npr.org/510282/podcast.xml',                     feedStatus: 'verified',   desc: 'NPR\'s weekly roundtable on movies, TV, music, books, and other pop culture.' },
+  { id: 'rough-translation', name: 'Rough Translation',         category: 'International', cadence: 'Weekly',  lengthMin: 30,  flexible: false, sourceType: 'podcast-rss', network: 'NPR', feedUrl: 'https://feeds.npr.org/510324/podcast.xml',                     feedStatus: 'verified',   desc: 'NPR explores how the same things play out very differently around the world.' },
+  { id: 'wow-in-the-world', name: 'Wow in the World',           category: 'Science',      cadence: 'Daily',    lengthMin: 25,  flexible: false, sourceType: 'podcast-rss', network: 'NPR', feedUrl: 'https://feeds.npr.org/510335/podcast.xml',                     feedStatus: 'verified',   desc: 'Science and wonder for curious minds of all ages, from Mindy Thomas and Guy Raz.' },
+  { id: 'levar-reads',     name: 'LeVar Burton Reads',          category: 'Storytelling', cadence: 'Weekly',   lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', network: 'LeVar Burton', feedUrl: 'https://feeds.simplecast.com/l22RdML4',            feedStatus: 'verified',   desc: 'LeVar Burton reads short fiction, from the host of Reading Rainbow.' },
+  { id: 'ologies',         name: 'Ologies with Alie Ward',      category: 'Science',      cadence: 'Biweekly', lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', network: 'Earwolf', feedUrl: 'https://feeds.simplecast.com/pK4RXaD1',                 feedStatus: 'verified',   desc: 'Alie Ward asks top scientists quirky, in-depth questions about their specific field.' },
+  { id: 'conan-friend',    name: 'Conan O\'Brien Needs a Friend', category: 'Comedy',     cadence: 'Weekly',   lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', network: 'Team Coco', feedUrl: 'https://feeds.simplecast.com/dHoohVNH',              feedStatus: 'verified',   desc: 'Conan tries to make a real friend — with celebrity guests as his only social outlet.' },
+  { id: 'all-songs',       name: 'All Songs Considered',        category: 'Music',        cadence: 'Weekly',   lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', network: 'NPR', feedUrl: 'https://feeds.npr.org/510019/podcast.xml',                     feedStatus: 'verified',   desc: 'NPR Music\'s guide to new music, from the passionate team behind the long-running radio show.' },
 ];
 
 const CATEGORY_COLORS = {
@@ -1405,7 +1530,7 @@ function renderLibrary() {
       card.className = 'source-card';
       card.draggable = true;
       card.style.setProperty('--card-color', CATEGORY_COLORS[s.category] || 'var(--accent)');
-      const badgeText = s.feedStatus === 'verified' ? 'feed ok' : s.feedStatus === 'unverified' ? 'unverified' : 'no feed';
+      const badgeText = s.feedStatus === 'verified' ? '' : s.feedStatus === 'unverified' ? 'may not load' : 'unavailable';
       card.innerHTML = `
         <div class="source-card-top">
           <div class="source-name">${s.name}</div>
@@ -1417,7 +1542,7 @@ function renderLibrary() {
           <span class="tag">${s.category}</span>
           <span class="tag">${s.cadence}</span>
           <span class="tag">${s.flexible ? 'flex' : s.lengthMin + ' min'}</span>
-          <span class="feed-badge ${s.feedStatus}">${badgeText}</span>
+          ${badgeText ? `<span class="feed-badge ${s.feedStatus}">${badgeText}</span>` : ''}
         </div>
       `;
       card.addEventListener('dragstart', e => {
@@ -1577,12 +1702,49 @@ function persistTimeline() { save('airtime_timeline_v1', timelineBlocks); }
 // later and hitting Play always grabs whatever's currently latest for date-sensitive/rolling
 // sources (e.g. "My 8am Commute" always plays *today's* NPR Hourly News, not the one from when it
 // was saved).
-function renderRundownSelect() {
-  const sel = document.getElementById('rundown-select');
-  const current = sel.value;
-  sel.innerHTML = '<option value="">Load broadcast…</option>' +
-    rundowns.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
-  if (rundowns.some(r => r.id === current)) sel.value = current;
+function renderRundownChips() {
+  const el = document.getElementById('rundown-chips');
+  if (rundowns.length === 0) {
+    el.innerHTML = '<p class="rundown-empty">No saved broadcasts yet.</p>';
+    return;
+  }
+  el.innerHTML = rundowns.map(r => `
+    <div class="rundown-chip" data-id="${escapeHtml(r.id)}">
+      <span>${escapeHtml(r.name)}</span>
+      <button class="rundown-chip-del" data-id="${escapeHtml(r.id)}" title="Delete this broadcast" aria-label="Delete ${escapeHtml(r.name)}">×</button>
+    </div>
+  `).join('');
+  el.querySelectorAll('.rundown-chip').forEach(chip => {
+    chip.addEventListener('click', e => {
+      if (e.target.closest('.rundown-chip-del')) return;
+      const id = chip.dataset.id;
+      const r = rundowns.find(x => x.id === id);
+      if (!r) return;
+      if (timelineBlocks.length > 0 && !confirm('Replace your current timeline with "' + r.name + '"?')) return;
+      if (typeof stopBroadcast === 'function') stopBroadcast();
+      timelineBlocks = r.blocks.map(b => {
+        const src = SOURCES.find(s => s.id === b.sourceId);
+        return {
+          uid: 'b' + Date.now() + Math.random().toString(36).slice(2, 7),
+          sourceId: b.sourceId,
+          name: src ? src.name : b.sourceId,
+          category: src ? src.category : '',
+          lengthMin: b.lengthMin,
+        };
+      });
+      persistTimeline();
+      renderTimeline();
+    });
+    chip.querySelector('.rundown-chip-del').addEventListener('click', e => {
+      e.stopPropagation();
+      const id = e.currentTarget.dataset.id;
+      const r = rundowns.find(x => x.id === id);
+      if (!r || !confirm('Delete "' + r.name + '"?')) return;
+      rundowns = rundowns.filter(x => x.id !== id);
+      save('airtime_rundowns_v1', rundowns);
+      renderRundownChips();
+    });
+  });
 }
 
 // ---------- Drop handling ----------
@@ -1678,54 +1840,13 @@ document.getElementById('rundown-save-btn').addEventListener('click', () => {
   if (timelineBlocks.length === 0) { alert('Your timeline is empty — nothing to save.'); return; }
   const name = prompt('Name this broadcast (e.g. "My 8am Commute"):');
   if (!name || !name.trim()) return;
-  const rundown = {
+  rundowns.push({
     id: 'rundown-' + Date.now(),
     name: name.trim(),
     blocks: timelineBlocks.map(b => ({ sourceId: b.sourceId, lengthMin: b.lengthMin })),
-  };
-  rundowns.push(rundown);
-  save('airtime_rundowns_v1', rundowns);
-  renderRundownSelect();
-  document.getElementById('rundown-select').value = rundown.id;
-});
-// Selecting a saved broadcast loads it immediately -- a separate "Load" button next to the
-// dropdown was a redundant extra click doing the same job as picking from the list. The existing
-// confirm() below still guards against accidentally clobbering an in-progress timeline.
-document.getElementById('rundown-select').addEventListener('change', (e) => {
-  const sel = e.target;
-  const id = sel.value;
-  if (!id) return;
-  const r = rundowns.find(x => x.id === id);
-  if (!r) return;
-  if (timelineBlocks.length > 0 && !confirm('Replace your current timeline with "' + r.name + '"?')) {
-    sel.value = '';
-    return;
-  }
-  if (typeof stopBroadcast === 'function') stopBroadcast();
-  // Fresh uids, and re-hydrate name/category from the CURRENT catalog rather than trusting a
-  // stale snapshot -- a source's display info (or existence) may have changed since this was saved.
-  timelineBlocks = r.blocks.map(b => {
-    const src = SOURCES.find(s => s.id === b.sourceId);
-    return {
-      uid: 'b' + Date.now() + Math.random().toString(36).slice(2, 7),
-      sourceId: b.sourceId,
-      name: src ? src.name : b.sourceId,
-      category: src ? src.category : '',
-      lengthMin: b.lengthMin,
-    };
   });
-  persistTimeline();
-  renderTimeline();
-});
-document.getElementById('rundown-delete-btn').addEventListener('click', () => {
-  const id = document.getElementById('rundown-select').value;
-  if (!id) { alert('Pick a saved broadcast from the list first.'); return; }
-  const r = rundowns.find(x => x.id === id);
-  if (!r) return;
-  if (!confirm('Delete the "' + r.name + '" broadcast? This can\'t be undone.')) return;
-  rundowns = rundowns.filter(x => x.id !== id);
   save('airtime_rundowns_v1', rundowns);
-  renderRundownSelect();
+  renderRundownChips();
 });
 document.getElementById('clear-timeline-btn').addEventListener('click', () => {
   if (timelineBlocks.length === 0) return;
@@ -1979,14 +2100,23 @@ async function radioBrowserSearch(query, limit = 20) {
   // producing a silent "No working stations" error at play time. Using the candidate filter here
   // ensures a result is only accepted if at least one stream would actually be playable.
   if (radioBrowserStationsToCandidates(stations).length > 0) return stations;
-  // Radio-Browser tags are individual words, not compound phrases -- fall back to each word.
+  // Radio-Browser tags are individual words, not compound phrases -- collect from ALL words and
+  // deduplicate so a query like "1990s alternative" yields a large pool from both tags rather than
+  // stopping at the first word that has even a single playable candidate.
   const words = [...new Set(query.split(/\s+/).filter(w => w.length > 2))];
+  const combined = [];
+  const seenUrls = new Set();
   for (const word of words) {
     if (word.toLowerCase() === query.trim().toLowerCase()) continue;
     const wordStations = await radioBrowserSearchExact(word, limit);
-    if (radioBrowserStationsToCandidates(wordStations).length > 0) return wordStations;
+    for (const s of wordStations) {
+      if (s.url_resolved && !seenUrls.has(s.url_resolved)) {
+        seenUrls.add(s.url_resolved);
+        combined.push(s);
+      }
+    }
   }
-  return [];
+  return combined;
 }
 
 // Radio-Browser's own health-checker follows playlist-wrapper (.pls/.m3u) redirects and stores the
@@ -2413,7 +2543,8 @@ async function playBlockAt(index) {
       playerState.blockBudgetSec = block.lengthMin * 60;
       await audioEl.play();
       if (myGen !== playGeneration) return;
-      setNowPlaying(block.name, winner.title, `Playing (feed status: ${src.feedStatus})`);
+      setNowPlaying(block.name, winner.title, playerState.blockIsLiveStream ? 'Live stream' : 'Playing');
+      document.getElementById('np-scrub').classList.toggle('live', !!playerState.blockIsLiveStream);
       startTick();
       if (playerState.blockIsLiveStream) startIcyPolling(winner.audioUrl);
     } catch (err) {
@@ -2484,12 +2615,21 @@ document.getElementById('np-playpause').addEventListener('click', togglePlayPaus
 document.getElementById('np-next').addEventListener('click', () => { playerState.playing = true; playBlockAt(playerState.currentIndex + 1); });
 document.getElementById('np-prev').addEventListener('click', () => { playerState.playing = true; playBlockAt(Math.max(0, playerState.currentIndex - 1)); });
 document.getElementById('np-stop').addEventListener('click', stopBroadcast);
+// Click-to-seek: only works for fixed-length podcast content where audioEl.duration is known.
+// Disabled for live streams (cursor changes to indicate this).
+document.getElementById('np-scrub').addEventListener('click', e => {
+  if (playerState.blockIsLiveStream || !isFinite(audioEl.duration)) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  audioEl.currentTime = frac * audioEl.duration;
+  playerState.blockStartedAt = Date.now() - audioEl.currentTime * 1000;
+});
 
 // ---------- Init ----------
 renderFilters();
 renderLibrary();
 renderTimeline();
-renderRundownSelect();
+renderRundownChips();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
