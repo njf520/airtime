@@ -501,20 +501,18 @@
     transition: width 0.95s linear;
   }
   .block-top {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
+    display: block;
   }
   .block-index {
     font-family: 'IBM Plex Mono', monospace;
-    font-size: 14px;
+    font-size: 12px;
     color: var(--accent-label);
-    width: 22px;
-    text-align: right;
-    flex-shrink: 0;
+    position: absolute;
+    top: 10px;
+    right: 12px;
     line-height: 1.4;
   }
-  .block-body { flex: 1; min-width: 0; }
+  .block-body { min-width: 0; }
   .block-name { font-family: 'Spectral', Georgia, serif; font-size: 16px; font-weight: 500; }
   .block-meta { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-dim); margin-top: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   /* A plain-language badge instead of the old stripe-pattern background -- a texture nobody could
@@ -1072,7 +1070,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.3.8';
+const VERSION = '3.3.9';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
