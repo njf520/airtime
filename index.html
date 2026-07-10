@@ -1070,7 +1070,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.3.10';
+const VERSION = '3.3.11';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1127,7 +1127,7 @@ const SOURCES = [
   { id: 'as-it-happens',   name: 'CBC As It Happens',                category: 'News',       cadence: 'Daily',  lengthMin: 54,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.cbc.ca/podcasting/includes/asithappens.xml', feedStatus: 'unverified', desc: 'Canadian nightly news and interviews from CBC Radio. Episodes may not be available in all regions.' },
   { id: 'tal',             name: 'This American Life',               category: 'Storytelling', cadence: 'Weekly', lengthMin: 59, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.thisamericanlife.org/podcast/rss.xml', feedStatus: 'verified', desc: 'Weekly theme, told in a few first-person stories.' },
   { id: 'the-moth',        name: 'The Moth',                         category: 'Storytelling', cadence: 'Weekly', lengthMin: 10, flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feeds.themoth.org/themothpodcast', feedStatus: 'verified', desc: 'A single true story, told live, no notes.' },
-  { id: 'radiolab',        name: 'Radiolab',                         category: 'Science',   cadence: 'Weekly', lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feeds.wnyc.org/radiolab', feedStatus: 'unverified', desc: 'Sound-rich explorations of science and philosophy from WNYC Studios. Episodes may not be available in all regions.' },
+  { id: 'radiolab',        name: 'Radiolab',                         category: 'Science',   cadence: 'Weekly', lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.wnyc.org/radiolab', feedStatus: 'unverified', desc: 'Sound-rich explorations of science and philosophy from WNYC Studios. Episodes may not be available in all regions.' },
   { id: 'says-you',        name: 'Says You!',                        category: 'Comedy',     cadence: 'Weekly', lengthMin: 50,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://saysyou.libsyn.com/rss', feedStatus: 'verified', desc: 'A word game, bluffing quiz show, PRX — now airing reruns, feed still playable.' },
   { id: 'startalk',        name: 'StarTalk Radio',                   category: 'Science',   cadence: 'Weekly', lengthMin: 40,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/4T39_jAj', feedStatus: 'verified', desc: 'Neil deGrasse Tyson on science and pop culture.' },
   { id: 'quirks',          name: 'CBC Quirks & Quarks',              category: 'Science',   cadence: 'Weekly', lengthMin: 54,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.cbc.ca/podcasting/includes/quirksaio.xml', feedStatus: 'unverified', desc: 'Canada\'s longest-running science radio show, covering the latest in science and nature. Episodes may not be available in all regions.' },
@@ -1142,13 +1142,13 @@ const SOURCES = [
   { id: 'ninetyninepi',    name: '99% Invisible',                    category: 'Storytelling', cadence: 'Weekly', lengthMin: 30, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/BqbsxVfO', feedStatus: 'verified', desc: 'The unnoticed architecture and design that shapes the world.' },
   { id: 'syskshouldknow',  name: 'Stuff You Should Know',            category: 'Science',    cadence: '3x/week', lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/A91018A4-EA4F-4130-BF55-AE270180C327/44710ECC-10BB-48D1-93C7-AE270180C33E/podcast.rss', feedStatus: 'verified', desc: 'An explainer on just about anything.' },
   { id: 'crimejunkie',     name: 'Crime Junkie',                     category: 'True Crime', cadence: 'Weekly',   lengthMin: 40,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/qm_9xx0g',                             feedStatus: 'verified',   desc: 'A true crime case, researched and told simply.' },
-  { id: 'myfavmurder',    name: 'My Favorite Murder',               category: 'True Crime', cadence: 'Weekly',   lengthMin: 80,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/Xe9NGNHZ',                             feedStatus: 'unverified', desc: 'Karen Kilgariff and Georgia Hardstark cover true crime cases with humor and candor.' },
-  { id: 'serial',         name: 'Serial',                           category: 'True Crime', cadence: 'Seasonal', lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.art19.com/serial',                                       feedStatus: 'unverified', desc: 'Sarah Koenig\'s groundbreaking investigative journalism — one story told over a whole season.' },
-  { id: 'casefiletc',     name: 'Casefile True Crime',              category: 'True Crime', cadence: 'Biweekly', lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://audioboom.com/channels/4883717.rss',                        feedStatus: 'unverified', desc: 'Meticulously researched international true crime, presented by an anonymous Australian host.' },
-  { id: 'inthedark',      name: 'In the Dark',                      category: 'True Crime', cadence: 'Seasonal', lengthMin: 50,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.apmreports.org/APMReports_InTheDark',                  feedStatus: 'unverified', desc: 'APM Reports\' investigative series exposing systemic failures in the criminal justice system.' },
-  { id: 'morbid',         name: 'Morbid',                           category: 'True Crime', cadence: 'Weekly',   lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/oE9TPBJK',                             feedStatus: 'unverified', desc: 'Alaina Urquhart and Ash Kelley cover true crime cases with personality and wit.' },
-  { id: 'dateline-nbc',   name: 'Dateline NBC',                     category: 'True Crime', cadence: 'Weekly',   lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.nbcnews.com/dateline/podcast-audio',                  feedStatus: 'unverified', desc: 'Gripping audio editions of NBC\'s premier true-crime and investigative television show.' },
-  { id: 'mrballen',       name: 'MrBallen Podcast',                 category: 'True Crime', cadence: 'Weekly',   lengthMin: 35,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/strange-dark-and-mysterious-stories',   feedStatus: 'unverified', desc: 'Strange, dark, and mysterious stories — unsolved cases and paranormal events.' },
+  { id: 'myfavmurder',    name: 'My Favorite Murder',               category: 'True Crime', cadence: 'Weekly',   lengthMin: 80,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/Xe9NGNHZ',                             feedStatus: 'none',       desc: 'Karen Kilgariff and Georgia Hardstark cover true crime cases with humor and candor. Feed appears to have moved to a premium platform.' },
+  { id: 'serial',         name: 'Serial',                           category: 'True Crime', cadence: 'Seasonal', lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.thisamericanlife.org/SerialPodcast',                   feedStatus: 'verified',   desc: 'Sarah Koenig\'s groundbreaking investigative journalism — one story told over a whole season.' },
+  { id: 'casefiletc',     name: 'Casefile True Crime',              category: 'True Crime', cadence: 'Biweekly', lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://casefile.libsyn.com/rss',                                    feedStatus: 'verified',   desc: 'Meticulously researched international true crime, presented by an anonymous Australian host.' },
+  { id: 'inthedark',      name: 'In the Dark',                      category: 'True Crime', cadence: 'Seasonal', lengthMin: 50,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.apmreports.org/APMReports_InTheDark',                  feedStatus: 'none',       desc: 'APM Reports\' investigative series exposing systemic failures in the criminal justice system. Feed appears to have been taken down.' },
+  { id: 'morbid',         name: 'Morbid',                           category: 'True Crime', cadence: 'Weekly',   lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/oE9TPBJK',                             feedStatus: 'none',       desc: 'Alaina Urquhart and Ash Kelley cover true crime cases with personality and wit. Feed appears to have moved to a premium platform.' },
+  { id: 'dateline-nbc',   name: 'Dateline NBC',                     category: 'True Crime', cadence: 'Weekly',   lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcastfeeds.nbcnews.com/dateline',                          feedStatus: 'unverified', desc: 'Gripping audio editions of NBC\'s premier true-crime and investigative television show.' },
+  { id: 'mrballen',       name: 'MrBallen Podcast',                 category: 'True Crime', cadence: 'Weekly',   lengthMin: 35,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/strange-dark-and-mysterious-stories',   feedStatus: 'none',       desc: 'Strange, dark, and mysterious stories — unsolved cases and paranormal events. No public RSS found; may be streaming-platform exclusive.' },
   { id: 'swindled',       name: 'Swindled',                         category: 'True Crime', cadence: 'Weekly',   lengthMin: 35,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/swindled',                                feedStatus: 'unverified', desc: 'An anonymous host covers corporate crime and white-collar misconduct, read like a bedtime story.' },
   { id: 'smartless',       name: 'SmartLess',                        category: 'Comedy',     cadence: 'Weekly', lengthMin: 60, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/hNaFxXpO', feedStatus: 'verified', desc: 'Jason Bateman, Sean Hayes, and Will Arnett surprise-interview a guest.' },
   { id: 'howibuiltthis',   name: 'How I Built This',                 category: 'Business',   cadence: 'Weekly', lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.art19.com/how-i-built-this', feedStatus: 'verified', desc: 'NPR\'s Guy Raz interviews founders on how they built their companies.' },
@@ -1255,14 +1255,14 @@ const SOURCES = [
   { id: 'hardcorehistory', name: 'Hardcore History',                   category: 'History', cadence: 'Seasonal', lengthMin: 270, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.feedburner.com/dancarlin/history',            feedStatus: 'unverified', desc: 'Dan Carlin\'s marathon-length explorations of major historical events — episodes routinely run 4–6 hours.' },
   { id: 'revolutions',    name: 'Revolutions',                         category: 'History', cadence: 'Seasonal', lengthMin: 25,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://revolutionspodcast.libsyn.com/rss',                  feedStatus: 'unverified', desc: 'Mike Duncan traces the English, American, French, Haitian, and other world revolutions, one season each.' },
   { id: 'symisc',         name: 'Stuff You Missed in History Class',   category: 'History', cadence: 'Biweekly', lengthMin: 35,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/stuffyoumissedinhistoryclass',      feedStatus: 'unverified', desc: 'Lively dives into overlooked and underreported history — royal scandals to lost inventions.' },
-  { id: 'aht',            name: 'American History Tellers',            category: 'History', cadence: 'Weekly',   lengthMin: 30,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/33N6zHST',                      feedStatus: 'unverified', desc: 'Wondery\'s narrative tour through pivotal moments in American history.' },
+  { id: 'aht',            name: 'American History Tellers',            category: 'History', cadence: 'Weekly',   lengthMin: 30,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.art19.com/american-history-tellers',             feedStatus: 'unverified', desc: 'Wondery\'s narrative tour through pivotal moments in American history.' },
   { id: 'throughline',    name: 'Throughline',                         category: 'History', cadence: 'Weekly',   lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.npr.org/510333/podcast.xml',                    feedStatus: 'verified',   desc: 'NPR traces the roots of today\'s news back through history.' },
-  { id: 'fallofciv',      name: 'Fall of Civilizations',               category: 'History', cadence: 'Seasonal', lengthMin: 90,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.acast.com/public/shows/fallofcivilizations',    feedStatus: 'unverified', desc: 'Paul Cooper\'s beautifully produced narrative histories of lost and fallen civilizations.' },
+  { id: 'fallofciv',      name: 'Fall of Civilizations',               category: 'History', cadence: 'Seasonal', lengthMin: 90,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.acast.com/public/shows/fallofcivilizations',    feedStatus: 'none',       desc: 'Paul Cooper\'s beautifully produced narrative histories of lost and fallen civilizations. Feed has been taken down.' },
 
   // Sleep podcasts
   { id: 'sleepwithme',       name: 'Sleep With Me',         category: 'Sleep', cadence: 'Nightly', lengthMin: 60, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://sleepwithmepodcast.libsyn.com/rss', feedStatus: 'unverified', desc: 'Scooter\'s meandering bedtime stories intentionally bore your active mind into rest.' },
-  { id: 'nothingmuchhappens', name: 'Nothing Much Happens', category: 'Sleep', cadence: 'Weekly',  lengthMin: 30, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/YuKkh2ZV',    feedStatus: 'unverified', desc: 'Kathryn Nicolai\'s slow, detailed stories about nothing in particular, designed to quiet an anxious mind.' },
-  { id: 'getsleepy',         name: 'Get Sleepy',            category: 'Sleep', cadence: 'Weekly',  lengthMin: 40, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.buzzsprout.com/702443.rss',   feedStatus: 'unverified', desc: 'Guided relaxation followed by original sleep stories with ambient soundscapes.' },
+  { id: 'nothingmuchhappens', name: 'Nothing Much Happens', category: 'Sleep', cadence: 'Weekly',  lengthMin: 30, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/YuKkh2ZV',    feedStatus: 'none',       desc: 'Kathryn Nicolai\'s slow, detailed stories about nothing in particular. Feed has moved; no public RSS currently available.' },
+  { id: 'getsleepy',         name: 'Get Sleepy',            category: 'Sleep', cadence: 'Weekly',  lengthMin: 40, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.buzzsprout.com/702443.rss',   feedStatus: 'none',       desc: 'Guided relaxation followed by original sleep stories with ambient soundscapes. No public RSS currently available.' },
   { id: 'rb-ambient',        name: 'Ambient (Radio)',        category: 'Sleep', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:ambient', feedStatus: 'verified', desc: 'Ambient/drone music stations via Radio-Browser, good for sleep or focus.' },
 
   // More NPR shows
@@ -1272,8 +1272,8 @@ const SOURCES = [
   { id: 'pop-culture-hh',  name: 'Pop Culture Happy Hour',      category: 'Comedy',       cadence: 'Daily',    lengthMin: 20,  flexible: false, sourceType: 'podcast-rss', network: 'NPR', feedUrl: 'https://feeds.npr.org/510282/podcast.xml',                     feedStatus: 'verified',   desc: 'NPR\'s weekly roundtable on movies, TV, music, books, and other pop culture.' },
   { id: 'rough-translation', name: 'Rough Translation',         category: 'International', cadence: 'Weekly',  lengthMin: 30,  flexible: false, sourceType: 'podcast-rss', network: 'NPR', feedUrl: 'https://feeds.npr.org/510324/podcast.xml',                     feedStatus: 'verified',   desc: 'NPR explores how the same things play out very differently around the world.' },
   { id: 'wow-in-the-world', name: 'Wow in the World',           category: 'Science',      cadence: 'Daily',    lengthMin: 25,  flexible: false, sourceType: 'podcast-rss', network: 'NPR', feedUrl: 'https://feeds.npr.org/510335/podcast.xml',                     feedStatus: 'verified',   desc: 'Science and wonder for curious minds of all ages, from Mindy Thomas and Guy Raz.' },
-  { id: 'levar-reads',     name: 'LeVar Burton Reads',          category: 'Storytelling', cadence: 'Weekly',   lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', network: 'LeVar Burton', feedUrl: 'https://feeds.simplecast.com/l22RdML4',            feedStatus: 'verified',   desc: 'LeVar Burton reads short fiction, from the host of Reading Rainbow.' },
-  { id: 'ologies',         name: 'Ologies with Alie Ward',      category: 'Science',      cadence: 'Biweekly', lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', network: 'Earwolf', feedUrl: 'https://feeds.simplecast.com/pK4RXaD1',                 feedStatus: 'verified',   desc: 'Alie Ward asks top scientists quirky, in-depth questions about their specific field.' },
+  { id: 'levar-reads',     name: 'LeVar Burton Reads',          category: 'Storytelling', cadence: 'Weekly',   lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', network: 'LeVar Burton', feedUrl: 'https://rss.art19.com/levar-burton-reads',          feedStatus: 'verified',   desc: 'LeVar Burton reads short fiction, from the host of Reading Rainbow.' },
+  { id: 'ologies',         name: 'Ologies with Alie Ward',      category: 'Science',      cadence: 'Biweekly', lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', network: 'Earwolf', feedUrl: 'https://rss.art19.com/ologies',                          feedStatus: 'unverified', desc: 'Alie Ward asks top scientists quirky, in-depth questions about their specific field.' },
   { id: 'conan-friend',    name: 'Conan O\'Brien Needs a Friend', category: 'Comedy',     cadence: 'Weekly',   lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', network: 'Team Coco', feedUrl: 'https://feeds.simplecast.com/dHoohVNH',              feedStatus: 'verified',   desc: 'Conan tries to make a real friend — with celebrity guests as his only social outlet.' },
   { id: 'all-songs',       name: 'All Songs Considered',        category: 'Music',        cadence: 'Weekly',   lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', network: 'NPR', feedUrl: 'https://feeds.npr.org/510019/podcast.xml',                     feedStatus: 'verified',   desc: 'NPR Music\'s guide to new music, from the passionate team behind the long-running radio show.' },
 ];
@@ -2322,29 +2322,45 @@ async function fetchLatestEpisode(feedUrl) {
   const xmlText = await fetchTextWithProxies(feedUrl);
   const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
   if (doc.querySelector('parsererror')) throw new Error('Feed did not parse as XML');
-  const item = doc.querySelector('item') || doc.querySelector('entry');
-  if (!item) throw new Error('Feed has no episodes');
-  let audioUrl = null;
-  const enclosure = item.querySelector('enclosure');
-  if (enclosure && enclosure.getAttribute('url')) {
-    audioUrl = enclosure.getAttribute('url');
+  // Collect up to 5 recent episodes as candidates so tryLoadAudio can fall through to an
+  // older episode if the latest CDN link is temporarily broken or unreachable.
+  const items = [...doc.querySelectorAll('item, entry')].slice(0, 5);
+  if (items.length === 0) throw new Error('Feed has no episodes');
+  const candidates = [];
+  for (const item of items) {
+    let audioUrl = null;
+    const enclosure = item.querySelector('enclosure');
+    if (enclosure && enclosure.getAttribute('url')) audioUrl = enclosure.getAttribute('url');
+    if (!audioUrl) {
+      const mc = item.getElementsByTagNameNS('*', 'content')[0];
+      if (mc && mc.getAttribute('url')) audioUrl = mc.getAttribute('url');
+    }
+    if (!audioUrl) continue;
+    const titleEl = item.querySelector('title');
+    const title = titleEl ? titleEl.textContent.trim() : 'Latest episode';
+    // On HTTPS pages, HTTP audio is blocked as mixed content. Try upgrading the URL to
+    // HTTPS first — most podcast CDNs (Libsyn, Podtrac, Buzzsprout, etc.) support both.
+    if (audioUrl.startsWith('http://')) {
+      candidates.push({ audioUrl: audioUrl.replace('http://', 'https://'), title });
+    }
+    candidates.push({ audioUrl, title });
   }
-  if (!audioUrl) {
-    const mediaContent = item.getElementsByTagNameNS('*', 'content')[0];
-    if (mediaContent && mediaContent.getAttribute('url')) audioUrl = mediaContent.getAttribute('url');
-  }
-  if (!audioUrl) {
-    // Internet Archive collection feeds link to an item details page rather than an enclosure —
-    // resolve the actual audio file via Archive.org's metadata API.
-    const linkEl = item.querySelector('link');
+  // Legacy: if no enclosures found in any item, try archive.org link from first item.
+  if (candidates.length === 0) {
+    const firstItem = items[0];
+    const linkEl = firstItem.querySelector('link');
     const link = linkEl ? linkEl.textContent : '';
     const m = link.match(/archive\.org\/details\/([^/?#]+)/);
-    if (m) audioUrl = await resolveArchiveOrgAudio(m[1]);
+    if (m) {
+      const archiveUrl = await resolveArchiveOrgAudio(m[1]);
+      if (archiveUrl) {
+        const titleEl = firstItem.querySelector('title');
+        candidates.push({ audioUrl: archiveUrl, title: titleEl ? titleEl.textContent.trim() : 'Episode' });
+      }
+    }
   }
-  if (!audioUrl) throw new Error('No audio enclosure found in latest episode');
-  const titleEl = item.querySelector('title');
-  const title = titleEl ? titleEl.textContent : 'Latest episode';
-  return { candidates: [{ audioUrl, title }] };
+  if (candidates.length === 0) throw new Error('No audio enclosure found in latest episode');
+  return { candidates };
 }
 
 // ---------- Sequencer: walks the timeline, playing each block through the audio element in order ----------
