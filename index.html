@@ -992,7 +992,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.3.13';
+const VERSION = '3.3.16';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1046,7 +1046,7 @@ const SOURCES = [
   { id: 'nhk-newsline',    name: 'NHK World Radio Japan: English News', category: 'International', cadence: 'Daily', lengthMin: 20, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www3.nhk.or.jp/rj/podcast/rss/english.xml', feedStatus: 'unverified', desc: 'Daily English-language news from Japan\'s national broadcaster.' },
   { id: 'witness-history', name: 'BBC Witness History',              category: 'History',   cadence: 'Daily',  lengthMin: 9,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcasts.files.bbci.co.uk/p004t1hd.rss', feedStatus: 'verified', desc: 'A historical event, told by someone who was there.' },
   { id: 'thought-for-day', name: 'BBC Thought for the Day',          category: 'Reflection', cadence: 'Daily',  lengthMin: 3,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcasts.files.bbci.co.uk/p00szxv6.rss', feedStatus: 'verified', desc: 'Short daily reflection from Radio 4\'s Today programme.' },
-  { id: 'as-it-happens',   name: 'CBC As It Happens',                category: 'News',       cadence: 'Daily',  lengthMin: 54,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.cbc.ca/podcasting/includes/asithappens.xml', feedStatus: 'unverified', desc: 'Canadian nightly news and interviews from CBC Radio. Episodes may not be available in all regions.' },
+  { id: 'as-it-happens',   name: 'CBC As It Happens',                category: 'News',       cadence: 'Daily',  lengthMin: 54,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.cbc.ca/podcasting/includes/asithappens.xml', feedStatus: 'none',       desc: 'CBC\'s flagship nightly news radio show. Feed is blocked by CBC\'s servers when accessed through CORS proxies.' },
   { id: 'tal',             name: 'This American Life',               category: 'Storytelling', cadence: 'Weekly', lengthMin: 59, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.thisamericanlife.org/podcast/rss.xml', feedStatus: 'verified', desc: 'Weekly theme, told in a few first-person stories.' },
   { id: 'the-moth',        name: 'The Moth',                         category: 'Storytelling', cadence: 'Weekly', lengthMin: 10, flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feeds.themoth.org/themothpodcast', feedStatus: 'verified', desc: 'A single true story, told live, no notes.' },
   { id: 'radiolab',        name: 'Radiolab',                         category: 'Science',   cadence: 'Weekly', lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.wnyc.org/radiolab', feedStatus: 'unverified', desc: 'Sound-rich explorations of science and philosophy from WNYC Studios. Episodes may not be available in all regions.' },
@@ -1169,7 +1169,7 @@ const SOURCES = [
   // Sports podcasts
   { id: 'pardonmytake',  name: 'Pardon My Take',           category: 'Sports', cadence: 'Daily',    lengthMin: 75, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://mcsorleys.barstoolsports.com/feed/pardon-my-take', feedStatus: 'verified', desc: 'Barstool\'s flagship comedy sports pod — big interviews, meatball analysis, daily takes.' },
   { id: '30for30',       name: '30 for 30 Podcast',        category: 'Sports', cadence: 'Seasonal', lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/ESP5765452710',        feedStatus: 'verified', desc: 'ESPN\'s audio-documentary series on the most compelling stories in sports history.' },
-  { id: 'aroundthenfl',  name: 'Around the NFL',           category: 'Sports', cadence: 'Daily',    lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/aroundthenfl',         feedStatus: 'unverified', desc: 'NFL.com writers break down every week in professional football.' },
+  { id: 'aroundthenfl',  name: 'Around the NFL',           category: 'Sports', cadence: 'Daily',    lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/aroundthenfl',         feedStatus: 'none',       desc: 'NFL.com writers\' weekly breakdown — podcast rebranded to NFL Daily; original feed is no longer active.' },
   { id: 'rb-sportstalk', name: 'Sports Talk (Radio)',      category: 'Sports', cadence: 'Anytime',  lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:sports talk',             feedStatus: 'verified',   desc: 'Live sports talk stations via Radio-Browser, length you set.' },
   { id: 'rb-espn',       name: 'ESPN Radio',               category: 'Sports', cadence: 'Anytime',  lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:name:espn radio',             feedStatus: 'verified',   desc: 'ESPN Radio stations via Radio-Browser, length you set.' },
 
@@ -1515,6 +1515,7 @@ function renderTimeline() {
           <div class="block-name">${b.name}</div>
           <div class="block-meta">
             ${b.category} · ${src ? src.cadence : '<span class="feed-badge none">source removed</span>'}
+            ${src?.feedStatus === 'none' ? '<span class="feed-badge none">unavailable</span>' : ''}
             ${isFlexible ? `<span class="flex-badge" title="You set how long this one plays -- it's a live stream or open-ended queue, not a fixed episode.">Flexible</span>` : ''}
           </div>
         </div>
@@ -2456,6 +2457,12 @@ async function playBlockAt(index) {
     return;
   }
 
+  if (src.feedStatus === 'none') {
+    setNowPlaying(block.name, '', 'No public feed available for this source — skipping in 2s…');
+    playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
+    return;
+  }
+
   if (src.sourceType === 'podcast-rss' || src.sourceType === 'archive' || src.sourceType === 'internet-radio') {
     if (!src.feedUrl) {
       setNowPlaying(block.name, '', 'No working feed for this source — skipping in 2s…');
@@ -2478,7 +2485,7 @@ async function playBlockAt(index) {
       playerState.blockIsLiveStream = src.sourceType === 'internet-radio';
       playerState.currentStreamUrl = winner.audioUrl;
       playerState.blockStartedAt = Date.now();
-      playerState.blockBudgetSec = block.lengthMin * 60;
+      playerState.blockBudgetSec = (block.lengthMin || 30) * 60;
       await audioEl.play();
       if (myGen !== playGeneration) return;
       setNowPlaying(block.name, winner.title, playerState.blockIsLiveStream ? 'Live stream' : 'Playing');
