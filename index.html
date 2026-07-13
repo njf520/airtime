@@ -1007,7 +1007,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.4.0';
+const VERSION = '3.5.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1227,13 +1227,41 @@ const SOURCES = [
 
   // Sports — replacement for dead aroundthenfl
   { id: 'espn-daily',      name: 'ESPN Daily',                     category: 'Sports',        cadence: 'Daily',    lengthMin: 20,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/ESP8348692127',                                                                                                                       feedStatus: 'verified', desc: 'ESPN\'s weekday sports news story told in depth by their top reporters and insiders.' },
+
+  // Technology — new category; AI/tech culture and security
+  { id: 'hard-fork',        name: 'Hard Fork',                     category: 'Technology',    cadence: 'Weekly',   lengthMin: 35,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/6HKOhNgS',                                                                                                                          feedStatus: 'verified', desc: 'Casey Newton and Kevin Roose of The New York Times break down the week in big tech and AI — lively, funny, and genuinely informed.' },
+  { id: 'darknet-diaries',  name: 'Darknet Diaries',               category: 'Technology',    cadence: 'Monthly',  lengthMin: 55,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://podcast.darknetdiaries.com',                                                                                                                              feedStatus: 'verified', desc: 'Jack Rhysider\'s deeply researched true stories from the dark side of the internet — hackers, breaches, nation-state ops, and the people behind them.' },
+
+  // Business — additions to existing category
+  { id: 'pivot',            name: 'Pivot',                          category: 'Business',      cadence: 'Weekly',   lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/pivot',                                                                                                                                feedStatus: 'verified', desc: 'Kara Swisher and Scott Galloway dissect the week\'s biggest stories in tech, business, and politics with sharp opinions and zero deference.' },
+  { id: 'odd-lots',         name: 'Odd Lots',                       category: 'Business',      cadence: 'Weekly',   lengthMin: 55,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/8a94442e-5a74-4fa2-8b8d-ae27003a8d6b/982f5071-765c-403d-969d-ae27003a8d83/podcast.rss', feedStatus: 'verified', desc: 'Joe Weisenthal and Tracy Alloway explore the most interesting topics in finance, markets, and economics — with the people who actually know.' },
+
+  // News — additions
+  { id: 'plain-english',    name: 'Plain English',                  category: 'News',          cadence: 'Daily',    lengthMin: 25,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/plain-english',                                                                                                                        feedStatus: 'verified', desc: 'Derek Thompson of The Atlantic makes sense of one big story per episode — clear, fast, and surprisingly fun for a news show.' },
+
+  // History — additions to existing category
+  { id: 'rest-is-history',  name: 'The Rest Is History',            category: 'History',       cadence: 'Weekly',   lengthMin: 55,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/GLT4787413333',                                                                                                                        feedStatus: 'verified', desc: 'Tom Holland and Dominic Sandbrook range across world history with wit, argument, and obvious delight — the top history podcast in the UK.' },
+  { id: 'american-scandal', name: 'American Scandal',               category: 'History',       cadence: 'Biweekly', lengthMin: 30,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.art19.com/american-scandal',                                                                                                                           feedStatus: 'verified', desc: 'Wondery\'s serialized narrative histories of America\'s defining scandals — Enron, Theranos, the opioid crisis, and beyond.' },
+
+  // Storytelling — additions to existing category
+  { id: 'cautionary-tales', name: 'Cautionary Tales',               category: 'Storytelling',  cadence: 'Weekly',   lengthMin: 35,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/c0ae8c6e-22f0-4e9b-ac1c-ae390037ac53/7f5a4714-6b10-4ccf-a424-ae390037ac70/podcast.rss', feedStatus: 'verified', desc: 'Tim Harford tells stories of human folly and unintended consequences — cautionary, compassionate, and beautifully produced.' },
+  { id: 'mike-rowe',        name: 'The Way I Heard It',             category: 'Storytelling',  cadence: 'Biweekly', lengthMin: 20,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.libsyn.com/shows/74011/destinations/323283.xml',                                                                                                    feedStatus: 'verified', desc: 'Mike Rowe tells short, surprising stories about remarkable people — often with a twist ending that reveals who the subject really was.' },
+
+  // Science — additions to existing category
+  { id: 'no-stupid-questions', name: 'No Stupid Questions',         category: 'Science',       cadence: 'Weekly',   lengthMin: 35,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/dfh_verV',                                                                                                                           feedStatus: 'verified', desc: 'Angela Duckworth and Mike Maughan ask each other genuinely dumb questions and get surprisingly smart answers — from the Freakonomics Radio Network.' },
+
+  // Health — new category; nutrition and longevity science
+  { id: 'zoe-nutrition',    name: 'ZOE Science & Nutrition',        category: 'Health',        cadence: 'Weekly',   lengthMin: 50,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/ZOELIMITED9301524082',                                                                                                                feedStatus: 'verified', desc: 'Jonathan Wolf interviews world-leading scientists on nutrition, gut health, and metabolic science — evidence-based, accessible, and practical.' },
+
+  // Comedy — additions to existing category
+  { id: 'scam-goddess',     name: 'Scam Goddess',                   category: 'Comedy',        cadence: 'Biweekly', lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/4YELvXgu',                                                                                                                          feedStatus: 'verified', desc: 'Laci Mosley and a comedy guest break down true scam stories with infectious energy — equal parts outrage and laugh-out-loud funny.' },
 ];
 
 const CATEGORY_COLORS = {
   NPR: '#d4706a', News: '#7aafc4', International: '#5fada8', Business: '#5aab86',
   Storytelling: '#d4954a', Comedy: '#c468a8', Science: '#8a8fd4', Poetry: '#c9954a',
   Reflection: '#9aa0ab', History: '#c98a4a', Drama: '#c9564a', Weather: '#4fd1ff', Music: '#3ecf8e',
-  Sports: '#4a9fd4', Sleep: '#8a6fad',
+  Sports: '#4a9fd4', Sleep: '#8a6fad', Technology: '#3b82c4', Health: '#4aad6e',
   'True Crime': '#c94f5c',
 };
 
@@ -1288,6 +1316,11 @@ const NETWORK_MAP = {
   'wsm650': 'Grand Ole Opry',
   'aljazeera-news': 'Al Jazeera', 'rnz-news': 'RNZ', 'abc-australia': 'ABC Australia', 'france24-51': 'France 24',
   'criminal': 'Vox Media', 'espn-daily': 'ESPN',
+  'hard-fork': 'The New York Times', 'plain-english': 'The Atlantic',
+  'pivot': 'Vox Media', 'odd-lots': 'Bloomberg',
+  'rest-is-history': 'Goalhanger', 'american-scandal': 'Wondery', 'cautionary-tales': 'Pushkin Industries',
+  'no-stupid-questions': 'Freakonomics Radio Network', 'mike-rowe': 'MikeRoweWORKS',
+  'zoe-nutrition': 'ZOE', 'scam-goddess': 'Earwolf',
 };
 SOURCES.forEach(s => {
   if (s.network) return;
