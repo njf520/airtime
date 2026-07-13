@@ -1027,7 +1027,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.6.0';
+const VERSION = '3.6.1';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -2172,14 +2172,22 @@ async function radioBrowserTry(host, params) {
 // multi-decade station was the clickcount-sorted #1 hit for the "90s" tag despite not being
 // decade-specific at all. Deprioritize (not fully exclude, in case nothing else is left) any
 // station tagged with 3+ distinct decades.
-const DECADE_TAG_RE = /^(50s|60s|70s|80s|90s|00s|2000s|2010s|50's|60's|70's|80's|90's)$/;
+//
+// Captures just the "tens" digit so every spelling of the same decade -- "90s", "1990s", "90's" --
+// normalizes to one value. The original version matched only the bare "90s" shorthand, so a station
+// tagged "1960s,1970s,1980s,1990s,classic hits" (the actual four-digit format most Radio-Browser
+// oldies stations use) scored as zero decades and slipped through this filter entirely -- which is
+// exactly the "1990s Britpop plays 1970s easy listening" bug reported live, still happening with the
+// original regex despite this filter existing specifically to prevent it.
+const DECADE_TAG_RE = /^(?:19|20)?(\d)0'?s$/;
 function filterWithFallback(stations, predicate) {
   const filtered = stations.filter(predicate);
   return filtered.length > 0 ? filtered : stations;
 }
 function hasFocusedDecadeTags(s) {
   const decadeCount = new Set(
-    (s.tags || '').split(',').map(t => t.trim()).filter(t => DECADE_TAG_RE.test(t))
+    (s.tags || '').split(',').map(t => t.trim().toLowerCase())
+      .map(t => DECADE_TAG_RE.exec(t)?.[1]).filter(Boolean)
   ).size;
   return decadeCount <= 2;
 }
@@ -2233,7 +2241,13 @@ async function radioBrowserSearch(query, limit = 20) {
   // Radio-Browser tags are individual words, not compound phrases -- collect from ALL words and
   // deduplicate so a query like "1990s alternative" yields a large pool from both tags rather than
   // stopping at the first word that has even a single playable candidate.
-  const words = [...new Set(query.split(/\s+/).filter(w => w.length > 2))];
+  // Genre/mood words go first, decade words last: a decade tag alone is a weak, generic signal
+  // (any given decade has far more "classic hits" grab-bag stations tagged with it than stations
+  // specific to a genre), so if "1990s britpop" is typed, britpop's results should fill the front
+  // of the candidate list and 1990s's should only pad out the rest -- not bury the genre-specific
+  // hits behind a wall of generic decade stations just because the decade word came first.
+  const words = [...new Set(query.split(/\s+/).filter(w => w.length > 2))]
+    .sort((a, b) => (DECADE_TAG_RE.test(a.toLowerCase()) ? 1 : 0) - (DECADE_TAG_RE.test(b.toLowerCase()) ? 1 : 0));
   const combined = [];
   const seenUrls = new Set();
   for (const word of words) {
