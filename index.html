@@ -391,6 +391,26 @@
     overflow-wrap: break-word;
     padding-right: 4px;
   }
+  .sequential-progress {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .sequential-reset-btn {
+    font-family: inherit;
+    font-size: 10px;
+    color: var(--text-dim);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    cursor: pointer;
+  }
+  .sequential-reset-btn:hover { border-color: var(--accent); color: var(--accent); }
   .empty-state {
     color: var(--text-dim);
     font-size: 13px;
@@ -1007,7 +1027,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.5.0';
+const VERSION = '3.6.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1080,7 +1100,7 @@ const SOURCES = [
   { id: 'syskshouldknow',  name: 'Stuff You Should Know',            category: 'Science',    cadence: '3x/week', lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/A91018A4-EA4F-4130-BF55-AE270180C327/44710ECC-10BB-48D1-93C7-AE270180C33E/podcast.rss', feedStatus: 'verified', desc: 'An explainer on just about anything.' },
   { id: 'crimejunkie',     name: 'Crime Junkie',                     category: 'True Crime', cadence: 'Weekly',   lengthMin: 40,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/qm_9xx0g',                             feedStatus: 'verified',   desc: 'A true crime case, researched and told simply.' },
   { id: 'myfavmurder',    name: 'My Favorite Murder',               category: 'True Crime', cadence: 'Weekly',   lengthMin: 80,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/Xe9NGNHZ',                             feedStatus: 'none',       desc: 'Karen Kilgariff and Georgia Hardstark cover true crime cases with humor and candor. Feed appears to have moved to a premium platform.' },
-  { id: 'serial',         name: 'Serial',                           category: 'True Crime', cadence: 'Seasonal', lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.thisamericanlife.org/SerialPodcast',                   feedStatus: 'verified',   desc: 'Sarah Koenig\'s groundbreaking investigative journalism — one story told over a whole season.' },
+  { id: 'serial',         name: 'Serial',                           category: 'True Crime', cadence: 'Seasonal', lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.thisamericanlife.org/SerialPodcast',                   feedStatus: 'verified',   sequential: true, desc: 'Sarah Koenig\'s groundbreaking investigative journalism — one story told over a whole season. Plays in order starting from Season 1, Episode 1.' },
   { id: 'casefiletc',     name: 'Casefile True Crime',              category: 'True Crime', cadence: 'Biweekly', lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://casefile.libsyn.com/rss',                                    feedStatus: 'verified',   desc: 'Meticulously researched international true crime, presented by an anonymous Australian host.' },
   { id: 'inthedark',      name: 'In the Dark',                      category: 'True Crime', cadence: 'Seasonal', lengthMin: 50,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.apmreports.org/APMReports_InTheDark',                  feedStatus: 'none',       desc: 'APM Reports\' investigative series exposing systemic failures in the criminal justice system. Feed appears to have been taken down.' },
   { id: 'morbid',         name: 'Morbid',                           category: 'True Crime', cadence: 'Weekly',   lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/oE9TPBJK',                             feedStatus: 'none',       desc: 'Alaina Urquhart and Ash Kelley cover true crime cases with personality and wit. Feed appears to have moved to a premium platform.' },
@@ -1189,8 +1209,8 @@ const SOURCES = [
   { id: 'rb-espn',       name: 'ESPN Radio',               category: 'Sports', cadence: 'Anytime',  lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:name:espn radio',             feedStatus: 'verified',   desc: 'ESPN Radio stations via Radio-Browser, length you set.' },
 
   // History (expanding beyond the 2 existing entries)
-  { id: 'hardcorehistory', name: 'Hardcore History',                   category: 'History', cadence: 'Seasonal', lengthMin: 270, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.feedburner.com/dancarlin/history',            feedStatus: 'unverified', desc: 'Dan Carlin\'s marathon-length explorations of major historical events — episodes routinely run 4–6 hours.' },
-  { id: 'revolutions',    name: 'Revolutions',                         category: 'History', cadence: 'Seasonal', lengthMin: 25,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://revolutionspodcast.libsyn.com/rss',                  feedStatus: 'unverified', desc: 'Mike Duncan traces the English, American, French, Haitian, and other world revolutions, one season each.' },
+  { id: 'hardcorehistory', name: 'Hardcore History',                   category: 'History', cadence: 'Seasonal', lengthMin: 270, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.feedburner.com/dancarlin/history',            feedStatus: 'unverified', sequential: true, desc: 'Dan Carlin\'s marathon-length explorations of major historical events — episodes routinely run 4–6 hours. Plays in order from the oldest available episode.' },
+  { id: 'revolutions',    name: 'Revolutions',                         category: 'History', cadence: 'Seasonal', lengthMin: 25,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://revolutionspodcast.libsyn.com/rss',                  feedStatus: 'unverified', sequential: true, desc: 'Mike Duncan traces the English, American, French, Haitian, and other world revolutions, one season each. Plays in order from Episode 1.' },
   { id: 'symisc',         name: 'Stuff You Missed in History Class',   category: 'History', cadence: 'Biweekly', lengthMin: 35,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://omny.fm/shows/stuff-you-missed-in-history-class/playlists/podcast.rss', feedStatus: 'verified', desc: 'Lively dives into overlooked and underreported history — royal scandals to lost inventions.' },
   { id: 'aht',            name: 'American History Tellers',            category: 'History', cadence: 'Weekly',   lengthMin: 30,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.art19.com/american-history-tellers',             feedStatus: 'unverified', desc: 'Wondery\'s narrative tour through pivotal moments in American history.' },
   { id: 'throughline',    name: 'Throughline',                         category: 'History', cadence: 'Weekly',   lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.npr.org/510333/podcast.xml',                    feedStatus: 'verified',   desc: 'NPR traces the roots of today\'s news back through history.' },
@@ -1404,6 +1424,29 @@ function recordSourceFailure(srcId) {
   save('airtime_source_health_v1', sourceHealthOverrides);
 }
 
+// ---------- Sequential episode tracking ----------
+// Serialized narrative shows (Serial, Revolutions, Hardcore History -- anything with
+// `sequential: true` in SOURCES) must be heard in order, unlike every other podcast-rss source
+// which always plays whatever's latest. Progress is keyed by RSS guid (falling back to the
+// episode's audio URL when a feed omits guid) rather than array index, so it stays correct even if
+// the feed's episode count or ordering shifts between visits. Stored per-device only -- there's no
+// account system, so listening on a second device starts that device from episode 1 independently.
+let sequentialProgress = load('airtime_sequential_progress_v1', {});
+function getSequentialProgress(srcId) {
+  return sequentialProgress[srcId] || null;
+}
+// episodeIndex/totalEpisodes are cached from the feed snapshot at play time purely so the library
+// card can show "Next: Episode N of M" without re-fetching the whole feed on every render -- if the
+// show adds episodes between visits, totalEpisodes just reflects the count as of the last play.
+function saveSequentialProgress(srcId, episodeGuid, episodeIndex, totalEpisodes) {
+  sequentialProgress[srcId] = { episodeGuid, episodeIndex, totalEpisodes, playedAt: Date.now() };
+  save('airtime_sequential_progress_v1', sequentialProgress);
+}
+function resetSequentialProgress(srcId) {
+  delete sequentialProgress[srcId];
+  save('airtime_sequential_progress_v1', sequentialProgress);
+}
+
 function load(key, fallback) {
   try {
     const v = localStorage.getItem(key);
@@ -1500,6 +1543,27 @@ function renderFilters() {
   });
 }
 
+// Renders the "Next: Episode N of M" line (or "Starts from Episode 1" if never played) shown on
+// sequential-source cards, plus a reset control once progress exists. totalEpisodes is a snapshot
+// from the last time this show was played (see saveSequentialProgress), not a live feed count.
+function sequentialBadgeHtml(s) {
+  const p = getSequentialProgress(s.id);
+  if (!p || !p.totalEpisodes) {
+    return `<div class="sequential-progress">▶ Starts from Episode 1</div>`;
+  }
+  const finished = p.episodeIndex >= p.totalEpisodes - 1;
+  const nextNum = finished ? 1 : p.episodeIndex + 2;
+  const label = finished
+    ? `↺ Finished all ${p.totalEpisodes} — replays from Episode 1`
+    : `▶ Next: Episode ${nextNum} of ${p.totalEpisodes}`;
+  return `
+    <div class="sequential-progress">
+      <span>${label}</span>
+      <button class="sequential-reset-btn" data-id="${s.id}" title="Start this show over from Episode 1">↺ reset</button>
+    </div>
+  `;
+}
+
 function renderLibrary() {
   const list = document.getElementById('source-list');
   list.innerHTML = '';
@@ -1567,6 +1631,7 @@ function renderLibrary() {
           <span class="tag">${s.flexible ? 'flex' : s.lengthMin + ' min'}</span>
           ${badgeText ? `<span class="feed-badge ${badgeClass}">${badgeText}</span>` : ''}
         </div>
+        ${s.sequential ? sequentialBadgeHtml(s) : ''}
       `;
       card.addEventListener('dragstart', e => {
         card.classList.add('dragging');
@@ -1579,6 +1644,15 @@ function renderLibrary() {
         addSourceToTimeline(s.id);
       });
       card.addEventListener('dblclick', () => addSourceToTimeline(s.id));
+      const resetBtn = card.querySelector('.sequential-reset-btn');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          if (!confirm('Start "' + s.name + '" over from Episode 1?')) return;
+          resetSequentialProgress(s.id);
+          renderLibrary();
+        });
+      }
       list.appendChild(card);
   });
 }
@@ -2420,6 +2494,63 @@ async function fetchLatestEpisode(feedUrl) {
   return { candidates };
 }
 
+// Fetches every episode in a feed (not just the most recent 5, unlike fetchLatestEpisode) and
+// returns them oldest-first, for serialized shows where playback order matters. Feeds list newest
+// episode first by convention with no ordering guarantee in the RSS spec itself, so we sort
+// ascending by pubDate when every item has one -- falling back to simply reversing feed order for
+// the (rare) feed that omits dates entirely.
+async function fetchAllEpisodesChronological(feedUrl) {
+  const xmlText = await fetchTextWithProxies(feedUrl);
+  const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+  if (doc.querySelector('parsererror')) throw new Error('Feed did not parse as XML');
+  const items = [...doc.querySelectorAll('item, entry')];
+  if (items.length === 0) throw new Error('Feed has no episodes');
+  const episodes = items.map(item => {
+    const enclosure = item.querySelector('enclosure');
+    let audioUrl = enclosure && enclosure.getAttribute('url') ? enclosure.getAttribute('url') : null;
+    if (!audioUrl) {
+      const mc = item.getElementsByTagNameNS('*', 'content')[0];
+      if (mc && mc.getAttribute('url')) audioUrl = mc.getAttribute('url');
+    }
+    const title = item.querySelector('title')?.textContent?.trim() || 'Episode';
+    // guid is the standard stable identifier for "have I played this one" -- audioUrl is the
+    // fallback for the rare feed that omits it, since that's still unique per episode.
+    const guid = item.querySelector('guid')?.textContent?.trim() || audioUrl;
+    const pubDateText = item.querySelector('pubDate')?.textContent?.trim()
+      || item.querySelector('published')?.textContent?.trim()
+      || item.querySelector('updated')?.textContent?.trim();
+    const pubDate = pubDateText ? new Date(pubDateText) : null;
+    return { guid, title, audioUrl, pubDate: pubDate && !isNaN(pubDate) ? pubDate : null };
+  }).filter(e => e.audioUrl && e.guid);
+  if (episodes.length === 0) throw new Error('No audio enclosures found in this feed');
+  const allHaveDates = episodes.every(e => e.pubDate);
+  return allHaveDates ? episodes.sort((a, b) => a.pubDate - b.pubDate) : episodes.reverse();
+}
+
+// Resolves the next unplayed episode for a `sequential: true` source. Only ever returns candidates
+// for that ONE episode (an https-upgrade attempt plus the original URL) -- unlike fetchLatestEpisode,
+// which can fall through to an older episode if the newest is unreachable, sequential playback can't
+// silently substitute a different episode without breaking the ordering the whole feature exists for.
+// Once every episode has been heard, wraps back around to episode 1 rather than getting stuck.
+async function fetchSequentialEpisode(src) {
+  const episodes = await fetchAllEpisodesChronological(src.feedUrl);
+  const progress = getSequentialProgress(src.id);
+  let nextIndex = 0;
+  if (progress) {
+    const lastIndex = episodes.findIndex(e => e.guid === progress.episodeGuid);
+    nextIndex = lastIndex === -1 ? 0 : lastIndex + 1;
+    if (nextIndex >= episodes.length) nextIndex = 0; // heard them all -- start over
+  }
+  const ep = episodes[nextIndex];
+  const progressSuffix = ` — Episode ${nextIndex + 1} of ${episodes.length}`;
+  const candidates = [];
+  if (ep.audioUrl.startsWith('http://')) {
+    candidates.push({ audioUrl: ep.audioUrl.replace('http://', 'https://'), title: ep.title + progressSuffix });
+  }
+  candidates.push({ audioUrl: ep.audioUrl, title: ep.title + progressSuffix });
+  return { candidates, episodeGuid: ep.guid, episodeIndex: nextIndex, totalEpisodes: episodes.length };
+}
+
 // ---------- Sequencer: walks the timeline, playing each block through the audio element in order ----------
 // Incremented at the start of every playBlockAt() call. Async work (fetches, tryLoadAudio's
 // candidate loop) checks this before touching shared state like audioEl.src, so a user rapidly
@@ -2610,14 +2741,19 @@ async function playBlockAt(index) {
       playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
       return;
     }
-    setNowPlaying(block.name, 'Loading latest episode…', '');
+    setNowPlaying(block.name, src.sequential ? 'Loading next episode…' : 'Loading latest episode…', '');
     try {
-      const { candidates } = await fetchLatestEpisode(src.feedUrl);
+      const { candidates, episodeGuid, episodeIndex, totalEpisodes } = src.sequential
+        ? await fetchSequentialEpisode(src)
+        : await fetchLatestEpisode(src.feedUrl);
       if (myGen !== playGeneration) return;
       if (candidates.length > 1) setNowPlaying(block.name, 'Checking for a working recording…', '');
       const winner = await tryLoadAudio(candidates, myGen);
       if (myGen !== playGeneration) return;
       recordSourceSuccess(src.id); // health: promote unverified, reset fail count
+      // Only advance progress once the episode actually loads -- a dead link shouldn't burn a
+      // turn, since fetchSequentialEpisode would just be asked to resolve the same episode again.
+      if (src.sequential) saveSequentialProgress(src.id, episodeGuid, episodeIndex, totalEpisodes);
       // Fixed-length content (a podcast/OTR episode with a real end) should play to its natural
       // finish rather than being cut off at the assigned estimate -- a "5 min" news update that's
       // actually 5:22 shouldn't get faded out 22 seconds early. Internet radio streams (including
