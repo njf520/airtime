@@ -610,6 +610,7 @@
   }
   .feed-badge.unverified { background: rgba(224,162,51,0.1); color: var(--text-dim); border: 1px solid rgba(224,162,51,0.3); }
   .feed-badge.none { background: rgba(224,90,90,0.1); color: var(--text-dim); border: 1px solid rgba(224,90,90,0.3); }
+  .feed-badge.degraded { background: rgba(224,120,0,0.1); color: var(--text-dim); border: 1px solid rgba(224,120,0,0.35); }
   .header-buttons {
     display: flex;
     align-items: center;
@@ -888,9 +889,23 @@
       min-height: 80px;
     }
   }
+  #offline-banner {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 9000;
+    background: #b83232;
+    color: #fff;
+    text-align: center;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
 </style>
 </head>
 <body>
+<div id="offline-banner" aria-live="assertive"></div>
 
 <header>
   <div class="header-brand">
@@ -1328,6 +1343,34 @@ let searchText = '';
 let timelineBlocks = load('airtime_timeline_v1', []);
 let rundowns = load('airtime_rundowns_v1', []);
 
+// ---------- Source health ----------
+// Local overrides on top of feedStatus: 'unverified' sources get promoted to 'verified' when they
+// successfully play; sources that fail 3+ times in a row get flagged 'degraded'. Both states are
+// transient (degraded expires after 24h) and affect only library badges — not core playback logic.
+let sourceHealthOverrides = load('airtime_source_health_v1', {});
+function getLocalStatus(src) {
+  const h = sourceHealthOverrides[src.id];
+  if (!h) return null;
+  if (h.localStatus === 'degraded' && h.lastFailAt && (Date.now() - h.lastFailAt > 86400000)) {
+    delete sourceHealthOverrides[src.id];
+    save('airtime_source_health_v1', sourceHealthOverrides);
+    return null;
+  }
+  return h.localStatus || null;
+}
+function recordSourceSuccess(srcId) {
+  const prev = sourceHealthOverrides[srcId] || {};
+  sourceHealthOverrides[srcId] = { ...prev, failCount: 0, lastSuccessAt: Date.now(), localStatus: 'verified' };
+  save('airtime_source_health_v1', sourceHealthOverrides);
+}
+function recordSourceFailure(srcId) {
+  const prev = sourceHealthOverrides[srcId] || { failCount: 0 };
+  const failCount = (prev.failCount || 0) + 1;
+  const localStatus = failCount >= 3 ? 'degraded' : (prev.localStatus || null);
+  sourceHealthOverrides[srcId] = { ...prev, failCount, lastFailAt: Date.now(), localStatus };
+  save('airtime_source_health_v1', sourceHealthOverrides);
+}
+
 function load(key, fallback) {
   try {
     const v = localStorage.getItem(key);
@@ -1468,7 +1511,10 @@ function renderLibrary() {
       card.className = 'source-card';
       card.draggable = true;
       card.style.setProperty('--card-color', CATEGORY_COLORS[s.category] || 'var(--accent)');
-      const badgeText = s.feedStatus === 'verified' ? '' : s.feedStatus === 'unverified' ? 'may not load' : 'unavailable';
+      const localStatus = getLocalStatus(s);
+      const effectiveStatus = localStatus || s.feedStatus;
+      const badgeText = effectiveStatus === 'verified' ? '' : effectiveStatus === 'degraded' ? '⚠ recent errors' : effectiveStatus === 'unverified' ? 'may not load' : 'unavailable';
+      const badgeClass = effectiveStatus === 'degraded' ? 'degraded' : s.feedStatus;
       card.innerHTML = `
         <div class="source-card-top">
           <div class="source-name">${s.name}</div>
@@ -1480,7 +1526,7 @@ function renderLibrary() {
           <span class="tag">${s.category}</span>
           <span class="tag">${s.cadence}</span>
           <span class="tag">${s.flexible ? 'flex' : s.lengthMin + ' min'}</span>
-          ${badgeText ? `<span class="feed-badge ${s.feedStatus}">${badgeText}</span>` : ''}
+          ${badgeText ? `<span class="feed-badge ${badgeClass}">${badgeText}</span>` : ''}
         </div>
       `;
       card.addEventListener('dragstart', e => {
@@ -1861,6 +1907,31 @@ const CORS_PROXIES = [
   url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
 ];
 
+// Per-domain proxy hint cache: remember which proxy index succeeded for each feed hostname.
+// On the next fetch for the same domain, try that proxy first and fall through to the others
+// only if it fails. This cuts median load time by skipping failed proxies on repeat visits.
+// Hints expire after 7 days since proxy reliability can shift over time.
+const PROXY_HINT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+let proxyHintCache = load('airtime_proxy_hints_v1', {});
+function getProxyOrder(url) {
+  try {
+    const host = new URL(url).hostname;
+    const hint = proxyHintCache[host];
+    if (hint && (Date.now() - hint.savedAt < PROXY_HINT_TTL_MS) && hint.index < CORS_PROXIES.length) {
+      const rest = CORS_PROXIES.map((_, i) => i).filter(i => i !== hint.index);
+      return [hint.index, ...rest];
+    }
+  } catch (e) {}
+  return CORS_PROXIES.map((_, i) => i);
+}
+function saveProxyHint(url, index) {
+  try {
+    const host = new URL(url).hostname;
+    proxyHintCache[host] = { index, savedAt: Date.now() };
+    save('airtime_proxy_hints_v1', proxyHintCache);
+  } catch (e) {}
+}
+
 async function fetchWithTimeout(url, opts, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -1882,12 +1953,16 @@ function looksLikeXml(text) {
 
 async function fetchTextWithProxiesOnce(url) {
   let lastErr;
-  for (const wrap of CORS_PROXIES) {
+  for (const i of getProxyOrder(url)) {
+    const wrap = CORS_PROXIES[i];
     try {
       const res = await fetchWithTimeout(wrap(url), { cache: 'no-store' }, 15000);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const text = await res.text();
-      if (text && text.trim().length > 0 && looksLikeXml(text)) return text;
+      if (text && text.trim().length > 0 && looksLikeXml(text)) {
+        saveProxyHint(url, i); // remember this proxy worked for this domain
+        return text;
+      }
       if (text && text.trim().length > 0) throw new Error('Response did not look like a valid feed (possibly a proxy error page)');
     } catch (e) {
       lastErr = e;
@@ -2330,9 +2405,15 @@ audioEl.addEventListener('ended', () => {
 audioEl.addEventListener('error', () => {
   if (probingAudio) return;
   if (!playerState.playing) return;
-  const myGen = playGeneration;
   const name = timelineBlocks[playerState.currentIndex]?.name || '';
   stopTick();
+  // If the device is offline, the audio drop is expected -- hold the broadcast here rather than
+  // skipping the block. The 'online' handler will retry the current block when connectivity returns.
+  if (!navigator.onLine) {
+    setNowPlaying(name, '', 'Waiting for internet connection…');
+    return;
+  }
+  const myGen = playGeneration;
   setNowPlaying(name, '', 'Playback error (unsupported format or connection drop) — skipping in 2s…');
   clearTimeout(playerState.blockTimer);
   playerState.blockTimer = setTimeout(() => { if (myGen === playGeneration) advanceBlock(); }, 2000);
@@ -2492,6 +2573,7 @@ async function playBlockAt(index) {
       if (candidates.length > 1) setNowPlaying(block.name, 'Checking for a working recording…', '');
       const winner = await tryLoadAudio(candidates, myGen);
       if (myGen !== playGeneration) return;
+      recordSourceSuccess(src.id); // health: promote unverified, reset fail count
       // Fixed-length content (a podcast/OTR episode with a real end) should play to its natural
       // finish rather than being cut off at the assigned estimate -- a "5 min" news update that's
       // actually 5:22 shouldn't get faded out 22 seconds early. Internet radio streams (including
@@ -2510,6 +2592,7 @@ async function playBlockAt(index) {
       if (playerState.blockIsLiveStream) startIcyPolling(winner.audioUrl);
     } catch (err) {
       if (myGen !== playGeneration) return;
+      recordSourceFailure(src.id); // health: increment fail count, degrade after 3 failures
       setNowPlaying(block.name, '', 'Could not load this feed (' + err.message + ') — skipping in 2s…');
       playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
     }
@@ -2584,6 +2667,38 @@ document.getElementById('np-scrub').addEventListener('click', e => {
   const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
   audioEl.currentTime = frac * audioEl.duration;
   playerState.blockStartedAt = Date.now() - audioEl.currentTime * 1000;
+});
+
+// ---------- Network connectivity ----------
+let offlineSince = null;
+function showOfflineBanner(show) {
+  const el = document.getElementById('offline-banner');
+  if (!el) return;
+  if (show) {
+    el.textContent = 'No internet connection — broadcast timer paused';
+    el.style.display = '';
+  } else {
+    el.textContent = 'Back online — resuming';
+    setTimeout(() => { el.style.display = 'none'; }, 2000);
+  }
+}
+window.addEventListener('offline', () => {
+  offlineSince = Date.now();
+  stopTick(); // pause budget countdown so offline time doesn't burn the block
+  showOfflineBanner(true);
+});
+window.addEventListener('online', () => {
+  const gap = offlineSince !== null ? Date.now() - offlineSince : 0;
+  if (gap > 0 && playerState.blockStartedAt) playerState.blockStartedAt += gap; // skip the gap
+  offlineSince = null;
+  showOfflineBanner(false);
+  if (playerState.playing && playerState.currentIndex >= 0) {
+    if (audioEl.error || audioEl.paused) {
+      playBlockAt(playerState.currentIndex); // retry the current block from scratch
+    } else {
+      startTick(); // audio was buffered through — just resume the timer
+    }
+  }
 });
 
 // ---------- Init ----------
