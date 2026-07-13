@@ -1429,12 +1429,16 @@ const FORMAT_GROUPS = [
   { id: 'radio',   label: 'Internet Radio', test: s => s.sourceType === 'internet-radio' },
 ];
 
+// Returns true when the source's delivery format matches the active format chip, or no filter is active.
 function matchesFormat(s) {
   if (!activeFormat) return true;
   const group = FORMAT_GROUPS.find(g => g.id === activeFormat);
   return group ? group.test(s) : true;
 }
 
+// Returns true when the source's length fits the active length bucket, or no filter is active.
+// Flexible sources always pass regardless of bucket — their duration is set by the user at drop
+// time, not fixed by the source, so they legitimately fit any length the user will choose.
 function matchesLengthBucket(s) {
   if (!activeLengthBucket) return true;
   if (s.flexible) return true; // length is user-set at drop time, so it fits every bucket
@@ -1442,6 +1446,8 @@ function matchesLengthBucket(s) {
   return bucket ? bucket.test(s.lengthMin) : true;
 }
 
+// Rebuilds the category, length, and format chip rows, keeping the currently active chip highlighted.
+// NPR sorts first in the category list — it has the most entries and is the most-used filter.
 function renderFilters() {
   const cats = [...new Set(SOURCES.map(s => s.category))].sort((a, b) => {
     if (a === 'NPR') return -1;
@@ -1689,6 +1695,7 @@ function renderTimeline() {
   renderProgress();
 }
 
+// Updates the running total time and block count shown below the timeline.
 function renderProgress() {
   const total = timelineBlocks.reduce((sum, b) => sum + b.lengthMin, 0);
   const h = Math.floor(total / 60), m = total % 60;
@@ -1700,6 +1707,7 @@ function renderProgress() {
   renderTimelineRuler();
 }
 
+// Draws the proportional color-coded bar under the timeline — one segment per block, sized by share of total time.
 function renderTimelineRuler() {
   const ruler = document.getElementById('timeline-ruler');
   if (!ruler) return;
@@ -1819,6 +1827,7 @@ function addSourceToTimeline(sourceId) {
   renderLibrary();
 }
 
+// Swaps the block identified by uid one position in the given direction (+1 down, -1 up) and re-renders.
 function moveBlock(uid, direction) {
   const idx = timelineBlocks.findIndex(b => b.uid === uid);
   if (idx === -1) return;
@@ -2229,6 +2238,7 @@ async function fetchIcyTitle(url) {
   }
 }
 
+// Starts polling for ICY stream title every 25 seconds and updates the Now Playing episode field.
 let icyPoller = null;
 function startIcyPolling(url) {
   stopIcyPolling();
@@ -2527,6 +2537,7 @@ function startTick() {
 }
 function stopTick() { clearInterval(playerState.tickTimer); }
 
+// Keeps the main Play/Pause/Resume button label in sync with current player state.
 function updatePlayButtonLabel() {
   const btn = document.getElementById('play-broadcast-btn');
   if (playerState.currentIndex === -1) { btn.textContent = '▶ Play Broadcast'; return; }
@@ -2634,6 +2645,7 @@ async function playBlockAt(index) {
   }
 }
 
+// Moves the sequencer to the next block; called by the tick timer, 'ended' event, and error/skip paths.
 function advanceBlock() {
   stopTick();
   if (!playerState.playing) return;
@@ -2665,6 +2677,7 @@ function togglePlayPause() {
   updatePlayButtonLabel();
 }
 
+// Stops playback completely, resets all player state, and returns the UI to the idle state.
 function stopBroadcast() {
   playGeneration++; // invalidate any in-flight playBlockAt/tryLoadAudio work
   playerState.playing = false;

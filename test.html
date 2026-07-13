@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Airtime Feed Tester</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; font-size: 14px; background: #111; color: #ddd; padding: 20px; }
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; color: #fff; }
+  .subtitle { color: #888; font-size: 12px; margin-bottom: 16px; }
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+  button { background: #222; border: 1px solid #444; color: #ddd; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  button:hover:not(:disabled) { background: #333; border-color: #666; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  button.primary { background: #1a5fb4; border-color: #2d77d4; color: #fff; }
+  button.primary:hover:not(:disabled) { background: #2d77d4; }
+  .summary { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+  .stat { font-size: 13px; }
+  .stat span { font-weight: 700; font-size: 15px; }
+  .stat-pass span { color: #4aad6e; }
+  .stat-fail span { color: #e05c5c; }
+  .stat-skip span { color: #888; }
+  .stat-running span { color: #7aafc4; }
+  .progress-bar { height: 6px; background: #222; border-radius: 3px; overflow: hidden; margin-bottom: 16px; }
+  .progress-fill { height: 100%; background: #1a5fb4; transition: width 0.3s; }
+  .filter-row { display: flex; gap: 6px; margin-bottom: 12px; }
+  .filter-btn { padding: 4px 10px; font-size: 12px; border-radius: 4px; }
+  .filter-btn.active { background: #1a5fb4; border-color: #2d77d4; color: #fff; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 10px; background: #1a1a1a; border-bottom: 1px solid #333; color: #aaa; font-weight: 600; position: sticky; top: 0; }
+  td { padding: 7px 10px; border-bottom: 1px solid #1e1e1e; vertical-align: top; }
+  tr:hover td { background: #161616; }
+  .status-icon { font-size: 14px; width: 20px; display: inline-block; }
+  .pass td:first-child { border-left: 2px solid #4aad6e; }
+  .fail td:first-child { border-left: 2px solid #e05c5c; }
+  .skip td:first-child { border-left: 2px solid #555; }
+  .pending td:first-child { border-left: 2px solid #7aafc4; }
+  .source-name { font-weight: 600; color: #eee; }
+  .source-meta { font-size: 11px; color: #666; margin-top: 2px; }
+  .detail-pass { color: #4aad6e; }
+  .detail-fail { color: #e05c5c; }
+  .detail-skip { color: #666; font-style: italic; }
+  .detail-pending { color: #7aafc4; }
+  .episode-title { font-size: 11px; color: #aaa; margin-top: 2px; }
+  .proxy-tag { font-size: 10px; background: #222; border: 1px solid #333; border-radius: 3px; padding: 1px 5px; color: #888; margin-left: 6px; }
+  .elapsed { color: #666; font-size: 11px; }
+  .category-tag { font-size: 10px; background: #1a2030; border: 1px solid #2a3a55; border-radius: 3px; padding: 1px 5px; color: #7aafc4; }
+</style>
+</head>
+<body>
+
+<h1>Airtime Feed Tester</h1>
+<div class="subtitle">Tests all podcast-rss sources from index.html through the same CORS proxy chain used by the app.</div>
+
+<div class="toolbar">
+  <button class="primary" id="run-btn">▶ Run All Tests</button>
+  <button id="stop-btn" disabled>■ Stop</button>
+  <button id="export-json-btn" disabled>↓ Export JSON</button>
+  <button id="export-csv-btn" disabled>↓ Export CSV</button>
+  <span id="elapsed-display" class="elapsed"></span>
+</div>
+
+<div id="summary" class="summary" style="display:none"></div>
+<div class="progress-bar" id="progress-wrap" style="display:none"><div class="progress-fill" id="progress-fill"></div></div>
+
+<div class="filter-row">
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="fail">Failures</button>
+  <button class="filter-btn" data-filter="pass">Passes</button>
+  <button class="filter-btn" data-filter="skip">Skipped</button>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:260px">Source</th>
+      <th style="width:90px">Status</th>
+      <th>Details</th>
+      <th style="width:70px">Time</th>
+    </tr>
+  </thead>
+  <tbody id="results-body"></tbody>
+</table>
+
+<script>
+// ---------- Proxy chain (same as index.html, minus the Worker which only allows production origin) ----------
+const CORS_PROXIES = [
+  url => url,
+  url => `https://airtime-cors-proxy.njf520.workers.dev/?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+];
+
+const CONCURRENCY = 5;
+const FETCH_TIMEOUT_MS = 18000;
+
+// ---------- State ----------
+let sources = [];
+let results = {};    // id -> { status, detail, episode, proxy, ms }
+let running = false;
+let stopRequested = false;
+let activeFilter = 'all';
+let startTime = null;
+let elapsedTimer = null;
+
+// ---------- Load SOURCES from index.html ----------
+async function loadSources() {
+  const res = await fetch('./index.html');
+  const text = await res.text();
+  // Extract the SOURCES array literal from between `const SOURCES = [` and matching `];`
+  const match = text.match(/const SOURCES\s*=\s*(\[[\s\S]*?\n\];)/);
+  if (!match) throw new Error('Could not find SOURCES array in index.html');
+  // Evaluate the array literal in isolation (no global scope access, only string/number/boolean literals)
+  const arr = new Function('return ' + match[1])();
+  return arr;
+}
+
+// ---------- Feed testing ----------
+function looksLikeXml(text) {
+  const head = text.slice(0, 500).trimStart();
+  return head.startsWith('<?xml') || /^<(rss|feed)[\s>]/i.test(head) || /<(rss|feed)[\s>]/i.test(head);
+}
+
+async function fetchWithTimeout(url, timeoutMs) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    return await fetch(url, { cache: 'no-store', signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Returns { ok, text, proxyIndex, error }
+async function fetchFeed(feedUrl) {
+  let lastErr;
+  for (let i = 0; i < CORS_PROXIES.length; i++) {
+    if (stopRequested) throw new Error('Stopped');
+    const wrap = CORS_PROXIES[i];
+    try {
+      const res = await fetchWithTimeout(wrap(feedUrl), FETCH_TIMEOUT_MS);
+      if (!res.ok) { lastErr = new Error('HTTP ' + res.status); continue; }
+      const text = await res.text();
+      if (!text || text.trim().length === 0) { lastErr = new Error('Empty response'); continue; }
+      if (!looksLikeXml(text)) { lastErr = new Error('Response is not XML (proxy error page?)'); continue; }
+      return { ok: true, text, proxyIndex: i };
+    } catch (e) {
+      lastErr = e.name === 'AbortError' ? new Error('Timeout after ' + (FETCH_TIMEOUT_MS/1000) + 's') : e;
+    }
+  }
+  return { ok: false, error: lastErr?.message || 'All proxies failed' };
+}
+
+// Parses the RSS/Atom feed and returns { hasEnclosures, episodeTitle, episodeDate, itemCount }
+function parseFeed(xmlText) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlText, 'application/xml');
+  if (doc.querySelector('parsererror')) return { hasEnclosures: false, error: 'XML parse error' };
+
+  // RSS feed
+  const items = [...doc.querySelectorAll('item')];
+  if (items.length > 0) {
+    const enclosures = items.filter(item => item.querySelector('enclosure[url]') || item.querySelector('enclosure'));
+    const first = items[0];
+    const title = first.querySelector('title')?.textContent?.trim() || '';
+    const pubDate = first.querySelector('pubDate')?.textContent?.trim() || '';
+    return {
+      hasEnclosures: enclosures.length > 0,
+      episodeTitle: title,
+      episodeDate: pubDate ? new Date(pubDate).toLocaleDateString() : '',
+      itemCount: items.length,
+      enclosureCount: enclosures.length,
+    };
+  }
+
+  // Atom feed
+  const entries = [...doc.querySelectorAll('entry')];
+  if (entries.length > 0) {
+    const linksWithAudio = entries.filter(e => [...e.querySelectorAll('link')].some(l => l.getAttribute('type')?.startsWith('audio/')));
+    const first = entries[0];
+    const title = first.querySelector('title')?.textContent?.trim() || '';
+    const updated = first.querySelector('updated')?.textContent?.trim() || '';
+    return {
+      hasEnclosures: linksWithAudio.length > 0,
+      episodeTitle: title,
+      episodeDate: updated ? new Date(updated).toLocaleDateString() : '',
+      itemCount: entries.length,
+      enclosureCount: linksWithAudio.length,
+    };
+  }
+
+  return { hasEnclosures: false, error: 'No items or entries found in feed' };
+}
+
+async function testSource(src) {
+  const t0 = Date.now();
+  const { ok, text, proxyIndex, error } = await fetchFeed(src.feedUrl);
+  if (!ok) return { status: 'fail', detail: error, ms: Date.now() - t0 };
+
+  const parsed = parseFeed(text);
+  const ms = Date.now() - t0;
+
+  if (parsed.error) return { status: 'fail', detail: 'Feed fetched but XML invalid: ' + parsed.error, ms };
+  if (parsed.itemCount === 0) return { status: 'fail', detail: 'Feed has no episodes (0 items)', ms };
+  if (!parsed.hasEnclosures) {
+    return {
+      status: 'fail',
+      detail: `Feed has ${parsed.itemCount} items but 0 audio enclosures — may be text-only or paywalled`,
+      episode: parsed.episodeTitle,
+      ms,
+    };
+  }
+
+  const proxyName = proxyIndex === 0 ? 'direct' : proxyIndex === 1 ? 'Worker' : proxyIndex === 2 ? 'corsproxy.io' : proxyIndex === 3 ? 'allorigins' : 'codetabs';
+  return {
+    status: 'pass',
+    detail: `${parsed.enclosureCount}/${parsed.itemCount} episodes have audio`,
+    episode: parsed.episodeTitle + (parsed.episodeDate ? ' · ' + parsed.episodeDate : ''),
+    proxy: proxyName,
+    ms,
+  };
+}
+
+// ---------- Concurrency runner ----------
+async function runTests() {
+  const testable = sources.filter(s => s.sourceType === 'podcast-rss' && s.feedStatus !== 'none');
+  const skipped = sources.filter(s => s.sourceType === 'podcast-rss' && s.feedStatus === 'none');
+
+  // Pre-populate skipped sources
+  for (const s of skipped) {
+    results[s.id] = { status: 'skip', detail: 'feedStatus is "none" — known dead feed, not tested' };
+  }
+
+  // Mark all testable as pending
+  for (const s of testable) {
+    results[s.id] = { status: 'pending', detail: 'Waiting…' };
+  }
+
+  renderTable();
+  updateSummary();
+
+  // Run with concurrency limit
+  let idx = 0;
+  async function worker() {
+    while (idx < testable.length && !stopRequested) {
+      const src = testable[idx++];
+      results[src.id] = { status: 'running', detail: 'Fetching…' };
+      updateRow(src.id);
+      try {
+        const r = await testSource(src);
+        results[src.id] = r;
+      } catch (e) {
+        results[src.id] = { status: 'fail', detail: e.message };
+      }
+      updateRow(src.id);
+      updateSummary();
+      updateProgress(testable);
+    }
+  }
+
+  const workers = Array.from({ length: CONCURRENCY }, () => worker());
+  await Promise.all(workers);
+}
+
+// ---------- UI ----------
+function statusIcon(status) {
+  return { pass: '✓', fail: '✗', skip: '–', pending: '○', running: '●' }[status] || '?';
+}
+function statusClass(status) {
+  return { pass: 'detail-pass', fail: 'detail-fail', skip: 'detail-skip', pending: 'detail-pending', running: 'detail-pending' }[status] || '';
+}
+
+function renderTable() {
+  const tbody = document.getElementById('results-body');
+  tbody.innerHTML = '';
+  const visibleSources = sources.filter(s => s.sourceType === 'podcast-rss');
+  // Sort: fail first, then running, then pending, then pass, then skip
+  const order = { fail: 0, running: 1, pending: 2, pass: 3, skip: 4 };
+  const sorted = [...visibleSources].sort((a, b) => {
+    const ra = results[a.id] || { status: 'pending' };
+    const rb = results[b.id] || { status: 'pending' };
+    return (order[ra.status] ?? 5) - (order[rb.status] ?? 5);
+  });
+
+  for (const src of sorted) {
+    const r = results[src.id] || { status: 'pending', detail: 'Not run yet' };
+    if (activeFilter === 'fail' && r.status !== 'fail') continue;
+    if (activeFilter === 'pass' && r.status !== 'pass') continue;
+    if (activeFilter === 'skip' && r.status !== 'skip') continue;
+
+    const tr = document.createElement('tr');
+    tr.className = r.status;
+    tr.dataset.id = src.id;
+    tr.innerHTML = `
+      <td>
+        <div class="source-name">${escHtml(src.name)}</div>
+        <div class="source-meta"><span class="category-tag">${escHtml(src.category)}</span> ${escHtml(src.cadence)} · ${src.flexible ? 'flex' : src.lengthMin + ' min'}</div>
+      </td>
+      <td><span class="status-icon ${statusClass(r.status)}">${statusIcon(r.status)}</span> <span class="${statusClass(r.status)}">${r.status}</span></td>
+      <td>
+        <div class="${statusClass(r.status)}">${escHtml(r.detail || '')}</div>
+        ${r.episode ? `<div class="episode-title">Latest: ${escHtml(r.episode)}</div>` : ''}
+        ${r.proxy ? `<span class="proxy-tag">${escHtml(r.proxy)}</span>` : ''}
+      </td>
+      <td class="elapsed">${r.ms != null ? (r.ms / 1000).toFixed(1) + 's' : ''}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+function updateRow(id) {
+  const tr = document.querySelector(`tr[data-id="${id}"]`);
+  if (!tr) { renderTable(); return; }
+  const r = results[id] || {};
+  tr.className = r.status;
+  tr.querySelector('td:nth-child(2)').innerHTML = `<span class="status-icon ${statusClass(r.status)}">${statusIcon(r.status)}</span> <span class="${statusClass(r.status)}">${r.status}</span>`;
+  tr.querySelector('td:nth-child(3)').innerHTML = `
+    <div class="${statusClass(r.status)}">${escHtml(r.detail || '')}</div>
+    ${r.episode ? `<div class="episode-title">Latest: ${escHtml(r.episode)}</div>` : ''}
+    ${r.proxy ? `<span class="proxy-tag">${escHtml(r.proxy)}</span>` : ''}
+  `;
+  tr.querySelector('td:nth-child(4)').textContent = r.ms != null ? (r.ms / 1000).toFixed(1) + 's' : '';
+  // Re-sort fails to top
+  const tbody = document.getElementById('results-body');
+  const order = { fail: 0, running: 1, pending: 2, pass: 3, skip: 4 };
+  const rows = [...tbody.querySelectorAll('tr')];
+  rows.sort((a, b) => (order[a.className] ?? 5) - (order[b.className] ?? 5));
+  rows.forEach(r => tbody.appendChild(r));
+}
+
+function updateSummary() {
+  const all = Object.values(results);
+  const pass = all.filter(r => r.status === 'pass').length;
+  const fail = all.filter(r => r.status === 'fail').length;
+  const skip = all.filter(r => r.status === 'skip').length;
+  const pending = all.filter(r => r.status === 'pending' || r.status === 'running').length;
+  const el = document.getElementById('summary');
+  el.style.display = '';
+  el.innerHTML = `
+    <div class="stat stat-pass"><span>${pass}</span> passed</div>
+    <div class="stat stat-fail"><span>${fail}</span> failed</div>
+    <div class="stat stat-skip"><span>${skip}</span> skipped</div>
+    <div class="stat stat-running"><span>${pending}</span> remaining</div>
+  `;
+}
+
+function updateProgress(testable) {
+  const done = testable.filter(s => {
+    const r = results[s.id];
+    return r && r.status !== 'pending' && r.status !== 'running';
+  }).length;
+  const pct = testable.length ? (done / testable.length * 100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ---------- Export ----------
+function exportJSON() {
+  const data = sources.filter(s => s.sourceType === 'podcast-rss').map(s => ({
+    id: s.id, name: s.name, category: s.category, feedUrl: s.feedUrl,
+    definedStatus: s.feedStatus, ...results[s.id],
+  }));
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  download(blob, 'airtime-test-results-' + new Date().toISOString().slice(0, 10) + '.json');
+}
+
+function exportCSV() {
+  const rows = [['id', 'name', 'category', 'definedStatus', 'testStatus', 'detail', 'episode', 'proxy', 'ms']];
+  sources.filter(s => s.sourceType === 'podcast-rss').forEach(s => {
+    const r = results[s.id] || {};
+    rows.push([s.id, s.name, s.category, s.feedStatus, r.status || '', r.detail || '', r.episode || '', r.proxy || '', r.ms != null ? r.ms : ''].map(v => `"${String(v).replace(/"/g, '""')}"`));
+  });
+  const blob = new Blob([rows.map(r => r.join(',')).join('\n')], { type: 'text/csv' });
+  download(blob, 'airtime-test-results-' + new Date().toISOString().slice(0, 10) + '.csv');
+}
+
+function download(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---------- Init ----------
+document.getElementById('run-btn').addEventListener('click', async () => {
+  if (running) return;
+  running = true;
+  stopRequested = false;
+  results = {};
+  document.getElementById('run-btn').disabled = true;
+  document.getElementById('stop-btn').disabled = false;
+  document.getElementById('export-json-btn').disabled = true;
+  document.getElementById('export-csv-btn').disabled = true;
+  document.getElementById('progress-wrap').style.display = '';
+  document.getElementById('progress-fill').style.width = '0%';
+
+  startTime = Date.now();
+  elapsedTimer = setInterval(() => {
+    const sec = ((Date.now() - startTime) / 1000).toFixed(0);
+    document.getElementById('elapsed-display').textContent = sec + 's elapsed';
+  }, 1000);
+
+  try {
+    await runTests();
+  } finally {
+    running = false;
+    stopRequested = false;
+    clearInterval(elapsedTimer);
+    document.getElementById('run-btn').disabled = false;
+    document.getElementById('stop-btn').disabled = true;
+    document.getElementById('export-json-btn').disabled = false;
+    document.getElementById('export-csv-btn').disabled = false;
+    const sec = ((Date.now() - startTime) / 1000).toFixed(1);
+    document.getElementById('elapsed-display').textContent = 'Done in ' + sec + 's';
+    renderTable();
+    updateSummary();
+  }
+});
+
+document.getElementById('stop-btn').addEventListener('click', () => {
+  stopRequested = true;
+  document.getElementById('stop-btn').disabled = true;
+});
+document.getElementById('export-json-btn').addEventListener('click', exportJSON);
+document.getElementById('export-csv-btn').addEventListener('click', exportCSV);
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    activeFilter = btn.dataset.filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b === btn));
+    renderTable();
+  });
+});
+
+// Load sources on page load
+(async () => {
+  const btn = document.getElementById('run-btn');
+  try {
+    btn.textContent = '⟳ Loading sources…';
+    btn.disabled = true;
+    sources = await loadSources();
+    const count = sources.filter(s => s.sourceType === 'podcast-rss' && s.feedStatus !== 'none').length;
+    btn.textContent = `▶ Run All Tests (${count} feeds)`;
+    btn.disabled = false;
+  } catch (e) {
+    btn.textContent = '⚠ Failed to load sources: ' + e.message;
+  }
+})();
+</script>
+</body>
+</html>
