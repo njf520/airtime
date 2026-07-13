@@ -992,7 +992,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.3.16';
+const VERSION = '3.4.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1182,9 +1182,10 @@ const SOURCES = [
   { id: 'fallofciv',      name: 'Fall of Civilizations',               category: 'History', cadence: 'Seasonal', lengthMin: 90,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.acast.com/public/shows/fallofcivilizations',    feedStatus: 'none',       desc: 'Paul Cooper\'s beautifully produced narrative histories of lost and fallen civilizations. Feed has been taken down.' },
 
   // Sleep podcasts
-  { id: 'sleepwithme',       name: 'Sleep With Me',         category: 'Sleep', cadence: 'Nightly', lengthMin: 60, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://sleepwithmepodcast.libsyn.com/rss', feedStatus: 'unverified', desc: 'Scooter\'s meandering bedtime stories intentionally bore your active mind into rest.' },
+  { id: 'sleepwithme',       name: 'Sleep With Me',         category: 'Sleep', cadence: 'Nightly', lengthMin: 60, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feed.sleepwithmepodcast.com/', feedStatus: 'verified', desc: 'Scooter\'s meandering bedtime stories intentionally bore your active mind into rest.' },
   { id: 'nothingmuchhappens', name: 'Nothing Much Happens', category: 'Sleep', cadence: 'Weekly',  lengthMin: 30, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/YuKkh2ZV',    feedStatus: 'none',       desc: 'Kathryn Nicolai\'s slow, detailed stories about nothing in particular. Feed has moved; no public RSS currently available.' },
   { id: 'getsleepy',         name: 'Get Sleepy',            category: 'Sleep', cadence: 'Weekly',  lengthMin: 40, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.buzzsprout.com/702443.rss',   feedStatus: 'none',       desc: 'Guided relaxation followed by original sleep stories with ambient soundscapes. No public RSS currently available.' },
+  { id: 'meditation-minis',  name: 'Meditation Minis',      category: 'Sleep', cadence: 'Weekly',  lengthMin: 10, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.buzzsprout.com/2556039.rss',    feedStatus: 'verified',   desc: 'Award-winning 5–15 minute guided meditations by hypnotherapist Chel Hamilton.' },
   { id: 'rb-ambient',        name: 'Ambient (Radio)',        category: 'Sleep', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:ambient', feedStatus: 'verified', desc: 'Ambient/drone music stations via Radio-Browser, good for sleep or focus.' },
 
   // More NPR shows
@@ -1198,6 +1199,19 @@ const SOURCES = [
   { id: 'ologies',         name: 'Ologies with Alie Ward',      category: 'Science',      cadence: 'Biweekly', lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', network: 'Earwolf', feedUrl: 'https://rss.art19.com/ologies',                          feedStatus: 'unverified', desc: 'Alie Ward asks top scientists quirky, in-depth questions about their specific field.' },
   { id: 'conan-friend',    name: 'Conan O\'Brien Needs a Friend', category: 'Comedy',     cadence: 'Weekly',   lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', network: 'Team Coco', feedUrl: 'https://feeds.simplecast.com/dHoohVNH',              feedStatus: 'verified',   desc: 'Conan tries to make a real friend — with celebrity guests as his only social outlet.' },
   { id: 'all-songs',       name: 'All Songs Considered',        category: 'Music',        cadence: 'Weekly',   lengthMin: 45,  flexible: false, sourceType: 'podcast-rss', network: 'NPR', feedUrl: 'https://feeds.npr.org/510019/podcast.xml',                     feedStatus: 'verified',   desc: 'NPR Music\'s guide to new music, from the passionate team behind the long-running radio show.' },
+
+  // International English-language news — non-BBC/DW sources
+  { id: 'aljazeera-news',  name: 'Al Jazeera News Updates',        category: 'International', cadence: 'Daily',    lengthMin: 3,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.omnycontent.com/d/playlist/9c074afa-3313-47e8-b802-a9f900789975/63048eda-2427-408a-b47c-ad5001293fca/6677d422-fd43-4aaa-be74-ad5001293fd8/podcast.rss', feedStatus: 'verified', desc: 'Al Jazeera\'s 3-minute news bulletin, three times per day from Doha.' },
+  { id: 'rnz-news',        name: 'RNZ News Bulletin',              category: 'International', cadence: 'Daily',    lengthMin: 3,   flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.rnz.co.nz/acast/news-bulletin-podcast.rss',                                                                                                         feedStatus: 'verified', desc: 'Radio New Zealand\'s short news bulletin, published four times per day (7am, noon, 5pm, 10pm NZST).' },
+  { id: 'abc-australia',   name: 'ABC News Australia: Top Stories', category: 'International', cadence: 'Daily',    lengthMin: 10,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.abc.net.au/feeds/101858056/podcast.xml',                                                                                                            feedStatus: 'verified', desc: 'Breaking and major stories across the day from Australia\'s national public broadcaster.' },
+  { id: 'france24-51',     name: 'France 24: The 51%',             category: 'International', cadence: 'Weekly',   lengthMin: 13,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.france24.com/en/tv-shows/51-percent/podcast',                                                                                                       feedStatus: 'verified', desc: 'France 24\'s current-affairs show on how women are reshaping the world.' },
+
+  // True crime — new additions to replace dead feeds
+  { id: 'criminal',        name: 'Criminal',                       category: 'True Crime',    cadence: 'Biweekly', lengthMin: 15,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/VMP7924981569',                                                                                                                       feedStatus: 'verified', desc: 'Phoebe Judge\'s intimate stories of people who\'ve done wrong, been wronged, or ended up somewhere in the middle.' },
+  { id: 'tcgarage',        name: 'True Crime Garage',              category: 'True Crime',    cadence: 'Weekly',   lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/zatU8XEL',                                                                                                                          feedStatus: 'verified', desc: 'Nic and the Captain crack cold cases with smart storytelling, sharp banter, and a beer in hand.' },
+
+  // Sports — replacement for dead aroundthenfl
+  { id: 'espn-daily',      name: 'ESPN Daily',                     category: 'Sports',        cadence: 'Daily',    lengthMin: 20,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/ESP8348692127',                                                                                                                       feedStatus: 'verified', desc: 'ESPN\'s weekday sports news story told in depth by their top reporters and insiders.' },
 ];
 
 const CATEGORY_COLORS = {
@@ -1257,6 +1271,8 @@ const NETWORK_MAP = {
   'kroq': 'Audacy',
   'kiisfm': 'iHeartMedia', 'z100nyc': 'iHeartMedia',
   'wsm650': 'Grand Ole Opry',
+  'aljazeera-news': 'Al Jazeera', 'rnz-news': 'RNZ', 'abc-australia': 'ABC Australia', 'france24-51': 'France 24',
+  'criminal': 'Vox Media', 'espn-daily': 'ESPN',
 };
 SOURCES.forEach(s => {
   if (s.network) return;
