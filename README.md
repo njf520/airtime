@@ -4,9 +4,7 @@
 
 ### [▶ Try it live — no sign-up, no account](https://njf520.github.io/airtime/)
 
-<!-- TODO: add a screenshot of the timeline view here, e.g.
 ![Airtime timeline screenshot](screenshot.png)
--->
 
 Drag news briefings, science shorts, comedy, true crime, old-time radio drama, and internet-radio genre/decade/mood mixes into a single timeline, and Airtime plays it back to back like a real broadcast — each podcast block streams its actual latest episode, each radio block streams a real live station. When one block ends (or its time is up), the next one starts automatically.
 
