@@ -826,6 +826,24 @@
     gap: 24px;
     margin-top: 40px;
   }
+  #footer-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  #feedback-link {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 10px;
+    white-space: nowrap;
+  }
+  #feedback-link:hover { border-color: var(--accent); color: var(--accent); }
   #footer-status {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
@@ -856,6 +874,7 @@
       flex-direction: column;
       gap: 12px;
     }
+    #footer-right { align-items: flex-start; }
     .brand-wordmark { font-size: 22px; }
     .header-buttons {
       width: 100%;
@@ -1028,13 +1047,16 @@
       <button class="btn" id="copy-log-btn" title="Copy the full log to your clipboard">Copy log</button>
     </div>
   </details>
-  <span id="footer-status"></span>
+  <div id="footer-right">
+    <a href="#" id="feedback-link" title="Opens a pre-filled bug report on GitHub (includes your version, browser, and recent playback log to help diagnose the issue) -- you'll need a free GitHub account to submit it">🐛 Report a bug / feedback</a>
+    <span id="footer-status"></span>
+  </div>
 </footer>
 
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.9.1';
+const VERSION = '3.10.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1325,10 +1347,6 @@ const SOURCES = [
 
   // Daily Science & Nature
   { id: 'birdnote-daily',   name: 'BirdNote Daily',                 category: 'Science', cadence: 'Daily', lengthMin: 2,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/OB7SrYSf', feedStatus: 'verified', desc: 'A two-minute daily story about birds and the natural world, rich in sound and imagery.' },
-  // AI-generated show (Inception Point AI) -- flagged here since every other source in this catalog
-  // is human-produced. Included because it matches the requested description closely and the feed
-  // is real and actively publishing, but worth knowing before adding it to a broadcast.
-  { id: 'sciencehistory-daily', name: 'Science History - Daily',    category: 'Science', cadence: 'Daily', lengthMin: 4,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/NPTNI1335956562', feedStatus: 'verified', desc: 'Daily scientific milestones, discoveries, and the people behind them (also listed as "This Day in History - Science"). AI-generated content.' },
 
   // History & Storytelling
   { id: 'memory-palace',    name: 'The Memory Palace',              category: 'Storytelling', cadence: 'Monthly', lengthMin: 12, flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feeds.thememorypalace.us/thememorypalace', feedStatus: 'verified', desc: 'Nate DiMeo\'s meditative, beautifully told short stories about specific, tiny moments in history.' },
@@ -1416,7 +1434,7 @@ const NETWORK_MAP = {
   'zoe-nutrition': 'ZOE', 'scam-goddess': 'Earwolf',
   'wx-nyc': 'NOAA', 'wx-phoenix': 'NOAA', 'wx-philadelphia': 'NOAA', 'wx-dallas': 'NOAA',
   'wx-fortworth': 'NOAA', 'wx-austin': 'NOAA', 'wx-columbus': 'NOAA', 'wx-indianapolis': 'NOAA', 'wx-seattle': 'NOAA',
-  'birdnote-daily': 'BirdNote', 'sciencehistory-daily': 'Inception Point AI',
+  'birdnote-daily': 'BirdNote',
   'memory-palace': 'PRX', 'mahnke-cabinet': 'Grim & Mild',
   'sawbones': 'Maximum Fun', 'ridiculous-history': 'iHeartPodcasts', 'articles-of-interest': 'Radiotopia',
 };
@@ -2111,6 +2129,29 @@ document.getElementById('copy-log-btn').addEventListener('click', async () => {
     // Clipboard API can be blocked (permissions, insecure context) -- fall back to a selectable prompt
     prompt('Copy this log (Ctrl+A, Ctrl+C):', text);
   }
+});
+// Opens a pre-filled GitHub issue rather than collecting feedback ourselves -- this app has no
+// backend and no server to receive a submission, so a GitHub issue (which needs a free account to
+// actually submit, but nothing to set up on our end) is the only zero-infrastructure option that
+// still gives a durable, trackable place for reports to land. Pre-filling version/browser/recent
+// log turns a vague "a feed doesn't work" into something actually diagnosable without back-and-forth.
+document.getElementById('feedback-link').addEventListener('click', e => {
+  e.preventDefault();
+  const recentLog = playbackLog.slice(-8).map(l => `[${l.time}] ${l.message}`).join('\n') || '(nothing played yet this session)';
+  const body = [
+    'Describe the issue:\n',
+    '\n---',
+    `Airtime version: ${VERSION}`,
+    `Browser: ${navigator.userAgent}`,
+    `Online: ${navigator.onLine}`,
+    `Timeline blocks: ${timelineBlocks.length}`,
+    '\nRecent playback log:',
+    '```',
+    recentLog,
+    '```',
+  ].join('\n');
+  const url = 'https://github.com/njf520/airtime/issues/new?' + new URLSearchParams({ title: '', body, labels: 'bug' });
+  window.open(url, '_blank', 'noopener');
 });
 document.getElementById('custom-radio-add').addEventListener('click', () => {
   const query = prompt('Enter a genre, mood, or format to find radio stations:\n(e.g. "lofi", "salsa", "80s rock", "talk radio")');
