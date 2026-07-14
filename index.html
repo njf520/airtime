@@ -342,7 +342,12 @@
     justify-content: space-between;
     gap: 10px;
   }
-  .source-add-btn {
+  .source-card-btns {
+    flex-shrink: 0;
+    display: flex;
+    gap: 6px;
+  }
+  .source-add-btn, .source-remove-btn {
     flex-shrink: 0;
     width: 28px;
     height: 28px;
@@ -358,6 +363,8 @@
     justify-content: center;
   }
   .source-add-btn:hover { border-color: var(--accent); background: var(--accent-tint); }
+  .source-remove-btn { color: var(--bad); font-size: 13px; }
+  .source-remove-btn:hover { border-color: var(--bad); background: rgba(217,132,127,0.12); }
   .source-name {
     font-family: 'Spectral', Georgia, serif;
     font-size: 17px;
@@ -885,7 +892,7 @@
        mobile override is needed — the h2 row stays horizontal at all widths. */
     /* Touch targets under ~40px are notoriously hard to tap precisely on a phone — grow the
        icon-only buttons instead of leaving them at their comfortable-with-a-mouse desktop size. */
-    .block-move, .block-remove, .source-add-btn {
+    .block-move, .block-remove, .source-add-btn, .source-remove-btn {
       width: 40px;
       height: 40px;
       font-size: 18px;
@@ -1027,7 +1034,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.6.2';
+const VERSION = '3.7.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1125,35 +1132,43 @@ const SOURCES = [
   { id: 'otr-shadow',      name: 'The Shadow (Old-Time Radio, archive)',      category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:the-shadow-radio-show-1937-1954-old-time-radio-all-available-episodes', feedStatus: 'verified', desc: 'A random episode of the classic pulp-mystery drama, original 1937-1954 broadcasts (Internet Archive, public domain, 164 episodes).' },
   { id: 'otr-holmes',      name: 'Sherlock Holmes (Old-Time Radio, archive)', category: 'Drama',      cadence: 'Anytime', lengthMin: 27, flexible: false, sourceType: 'archive', feedUrl: 'archive-item:sherlockholmes_otr', feedStatus: 'verified', desc: 'A random episode starring Basil Rathbone and Nigel Bruce (Internet Archive, public domain, 107 episodes).' },
   { id: 'phc-full-show',   name: 'A Prairie Home Companion (full show, archive)', category: 'Storytelling', cadence: 'Anytime', lengthMin: 120, flexible: false, sourceType: 'archive', feedUrl: 'date-archive:prairie-home-companion', feedStatus: 'verified', desc: 'The full ~2-hour variety show (incl. the "News from Lake Wobegon" monologue somewhere within it — it was never released as a standalone clip) for today\'s calendar date, whichever year (1980-2016) is available.' },
-  { id: 'rb-jazz',     name: 'Jazz (Radio)',            category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:jazz', feedStatus: 'verified', desc: 'Live jazz stations via Radio-Browser, length you set.' },
-  { id: 'rb-rock',     name: 'Rock (Radio)',            category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:rock', feedStatus: 'verified', desc: 'Live rock stations via Radio-Browser, length you set.' },
-  { id: 'rb-hiphop',   name: 'Hip-Hop (Radio)',         category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:hip hop', feedStatus: 'verified', desc: 'Live hip-hop stations via Radio-Browser, length you set.' },
-  { id: 'rb-classical', name: 'Classical (Radio)',      category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:classical', feedStatus: 'verified', desc: 'Live classical stations via Radio-Browser, length you set.' },
-  { id: 'rb-country',  name: 'Country (Radio)',         category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:country', feedStatus: 'verified', desc: 'Live country stations via Radio-Browser, length you set.' },
-  { id: 'rb-electronic', name: 'Electronic/Dance (Radio)', category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:electronic', feedStatus: 'verified', desc: 'Live electronic/dance stations via Radio-Browser, length you set.' },
-  { id: 'rb-reggae',   name: 'Reggae (Radio)',          category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:reggae', feedStatus: 'verified', desc: 'Live reggae stations via Radio-Browser, length you set.' },
-  { id: 'rb-blues',    name: 'Blues (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:blues', feedStatus: 'verified', desc: 'Live blues stations via Radio-Browser, length you set.' },
-  { id: 'rb-folk',     name: 'Folk (Radio)',            category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:folk', feedStatus: 'verified', desc: 'Live folk stations via Radio-Browser, length you set.' },
-  { id: 'rb-metal',    name: 'Metal (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:metal', feedStatus: 'verified', desc: 'Live metal stations via Radio-Browser, length you set.' },
-  { id: 'rb-rnb',      name: 'R&B / Soul (Radio)',      category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:rnb', feedStatus: 'verified', desc: 'Live R&B/soul stations via Radio-Browser, length you set.' },
-  { id: 'rb-indie',    name: 'Indie (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:indie', feedStatus: 'verified', desc: 'Live indie stations via Radio-Browser, length you set.' },
-  { id: 'rb-punk',     name: 'Punk (Radio)',            category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:punk', feedStatus: 'verified', desc: 'Live punk stations via Radio-Browser, length you set.' },
-  { id: 'rb-latin',    name: 'Latin (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:latin', feedStatus: 'verified', desc: 'Live Latin stations via Radio-Browser, length you set.' },
-  { id: 'rb-kpop',     name: 'K-Pop (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:kpop', feedStatus: 'verified', desc: 'Live K-Pop stations via Radio-Browser, length you set.' },
-  { id: 'rb-funk',     name: 'Funk (Radio)',            category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:funk', feedStatus: 'verified', desc: 'Live funk stations via Radio-Browser, length you set.' },
-  { id: 'rb-60s',      name: '1960s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:60s', feedStatus: 'verified', desc: 'Live 1960s stations via Radio-Browser, length you set.' },
-  { id: 'rb-70s',      name: '1970s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:70s', feedStatus: 'verified', desc: 'Live 1970s stations via Radio-Browser, length you set.' },
-  { id: 'rb-80s',      name: '1980s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:80s', feedStatus: 'verified', desc: 'Live 1980s stations via Radio-Browser, length you set.' },
-  { id: 'rb-90s',      name: '1990s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:90s', feedStatus: 'verified', desc: 'Live 1990s stations via Radio-Browser, length you set.' },
-  { id: 'rb-2000s',    name: '2000s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:2000s', feedStatus: 'verified', desc: 'Live 2000s stations via Radio-Browser, length you set.' },
-  { id: 'rb-2010s',    name: '2010s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:2010s', feedStatus: 'verified', desc: 'Live 2010s stations via Radio-Browser, length you set.' },
-  { id: 'rb-workout',  name: 'Workout (Radio)',         category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:workout', feedStatus: 'verified', desc: 'Live workout/energy stations via Radio-Browser, length you set.' },
-  { id: 'rb-chill',    name: 'Chill (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:chillout', feedStatus: 'verified', desc: 'Live chill/relax stations via Radio-Browser, length you set.' },
-  { id: 'rb-focus',    name: 'Focus (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:study', feedStatus: 'verified', desc: 'Live focus/study stations via Radio-Browser, length you set.' },
-  { id: 'rb-party',    name: 'Party (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:party', feedStatus: 'verified', desc: 'Live party stations via Radio-Browser, length you set.' },
-  { id: 'rb-sleep',    name: 'Sleep (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:sleep', feedStatus: 'verified', desc: 'Live sleep/ambient stations via Radio-Browser, length you set.' },
-  { id: 'rb-roadtrip', name: 'Road Trip (Radio)',       category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:roadtrip', feedStatus: 'verified', desc: 'Live road-trip stations via Radio-Browser, length you set.' },
-  { id: 'rb-love',     name: 'Love Songs (Radio)',      category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:romantic', feedStatus: 'verified', desc: 'Live love-songs/romantic stations via Radio-Browser, length you set.' },
+  // Radio-Browser built-in genre/decade/mood channels -- commented out (not deleted, so they're
+  // easy to restore) because Radio-Browser is an unfiltered directory of public stations with no
+  // ad-free guarantee, unlike SomaFM below: many of the actual stations it surfaces are simulcasts
+  // of real commercial radio and carry regular ad breaks. Also cut Music down from 68 to ~40
+  // sources, which was too large a single category to browse with only text search to narrow it.
+  // The "+Custom channel" feature still uses Radio-Browser under the hood (opt-in, user-typed, and
+  // now deletable), so the search/resolve code these fed from is untouched -- only the catalog
+  // entries are disabled.
+  // { id: 'rb-jazz',     name: 'Jazz (Radio)',            category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:jazz', feedStatus: 'verified', desc: 'Live jazz stations via Radio-Browser, length you set.' },
+  // { id: 'rb-rock',     name: 'Rock (Radio)',            category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:rock', feedStatus: 'verified', desc: 'Live rock stations via Radio-Browser, length you set.' },
+  // { id: 'rb-hiphop',   name: 'Hip-Hop (Radio)',         category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:hip hop', feedStatus: 'verified', desc: 'Live hip-hop stations via Radio-Browser, length you set.' },
+  // { id: 'rb-classical', name: 'Classical (Radio)',      category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:classical', feedStatus: 'verified', desc: 'Live classical stations via Radio-Browser, length you set.' },
+  // { id: 'rb-country',  name: 'Country (Radio)',         category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:country', feedStatus: 'verified', desc: 'Live country stations via Radio-Browser, length you set.' },
+  // { id: 'rb-electronic', name: 'Electronic/Dance (Radio)', category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:electronic', feedStatus: 'verified', desc: 'Live electronic/dance stations via Radio-Browser, length you set.' },
+  // { id: 'rb-reggae',   name: 'Reggae (Radio)',          category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:reggae', feedStatus: 'verified', desc: 'Live reggae stations via Radio-Browser, length you set.' },
+  // { id: 'rb-blues',    name: 'Blues (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:blues', feedStatus: 'verified', desc: 'Live blues stations via Radio-Browser, length you set.' },
+  // { id: 'rb-folk',     name: 'Folk (Radio)',            category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:folk', feedStatus: 'verified', desc: 'Live folk stations via Radio-Browser, length you set.' },
+  // { id: 'rb-metal',    name: 'Metal (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:metal', feedStatus: 'verified', desc: 'Live metal stations via Radio-Browser, length you set.' },
+  // { id: 'rb-rnb',      name: 'R&B / Soul (Radio)',      category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:rnb', feedStatus: 'verified', desc: 'Live R&B/soul stations via Radio-Browser, length you set.' },
+  // { id: 'rb-indie',    name: 'Indie (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:indie', feedStatus: 'verified', desc: 'Live indie stations via Radio-Browser, length you set.' },
+  // { id: 'rb-punk',     name: 'Punk (Radio)',            category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:punk', feedStatus: 'verified', desc: 'Live punk stations via Radio-Browser, length you set.' },
+  // { id: 'rb-latin',    name: 'Latin (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:latin', feedStatus: 'verified', desc: 'Live Latin stations via Radio-Browser, length you set.' },
+  // { id: 'rb-kpop',     name: 'K-Pop (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:kpop', feedStatus: 'verified', desc: 'Live K-Pop stations via Radio-Browser, length you set.' },
+  // { id: 'rb-funk',     name: 'Funk (Radio)',            category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:funk', feedStatus: 'verified', desc: 'Live funk stations via Radio-Browser, length you set.' },
+  // { id: 'rb-60s',      name: '1960s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:60s', feedStatus: 'verified', desc: 'Live 1960s stations via Radio-Browser, length you set.' },
+  // { id: 'rb-70s',      name: '1970s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:70s', feedStatus: 'verified', desc: 'Live 1970s stations via Radio-Browser, length you set.' },
+  // { id: 'rb-80s',      name: '1980s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:80s', feedStatus: 'verified', desc: 'Live 1980s stations via Radio-Browser, length you set.' },
+  // { id: 'rb-90s',      name: '1990s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:90s', feedStatus: 'verified', desc: 'Live 1990s stations via Radio-Browser, length you set.' },
+  // { id: 'rb-2000s',    name: '2000s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:2000s', feedStatus: 'verified', desc: 'Live 2000s stations via Radio-Browser, length you set.' },
+  // { id: 'rb-2010s',    name: '2010s Music (Radio)',     category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:2010s', feedStatus: 'verified', desc: 'Live 2010s stations via Radio-Browser, length you set.' },
+  // { id: 'rb-workout',  name: 'Workout (Radio)',         category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:workout', feedStatus: 'verified', desc: 'Live workout/energy stations via Radio-Browser, length you set.' },
+  // { id: 'rb-chill',    name: 'Chill (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:chillout', feedStatus: 'verified', desc: 'Live chill/relax stations via Radio-Browser, length you set.' },
+  // { id: 'rb-focus',    name: 'Focus (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:study', feedStatus: 'verified', desc: 'Live focus/study stations via Radio-Browser, length you set.' },
+  // { id: 'rb-party',    name: 'Party (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:party', feedStatus: 'verified', desc: 'Live party stations via Radio-Browser, length you set.' },
+  // { id: 'rb-sleep',    name: 'Sleep (Radio)',           category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:sleep', feedStatus: 'verified', desc: 'Live sleep/ambient stations via Radio-Browser, length you set.' },
+  // { id: 'rb-roadtrip', name: 'Road Trip (Radio)',       category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:roadtrip', feedStatus: 'verified', desc: 'Live road-trip stations via Radio-Browser, length you set.' },
+  // { id: 'rb-love',     name: 'Love Songs (Radio)',      category: 'Music', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:romantic', feedStatus: 'verified', desc: 'Live love-songs/romantic stations via Radio-Browser, length you set.' },
   // Free, commercial-free, no-signup internet radio -- these need zero per-user auth at all
   // (Radio-Browser's tag search above is the same story), so all of Music scales to any number of
   // users with no platform-imposed cap.
@@ -1205,8 +1220,9 @@ const SOURCES = [
   { id: 'pardonmytake',  name: 'Pardon My Take',           category: 'Sports', cadence: 'Daily',    lengthMin: 75, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://mcsorleys.barstoolsports.com/feed/pardon-my-take', feedStatus: 'verified', desc: 'Barstool\'s flagship comedy sports pod — big interviews, meatball analysis, daily takes.' },
   { id: '30for30',       name: '30 for 30 Podcast',        category: 'Sports', cadence: 'Seasonal', lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/ESP5765452710',        feedStatus: 'verified', desc: 'ESPN\'s audio-documentary series on the most compelling stories in sports history.' },
   { id: 'aroundthenfl',  name: 'Around the NFL',           category: 'Sports', cadence: 'Daily',    lengthMin: 45, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/aroundthenfl',         feedStatus: 'none',       desc: 'NFL.com writers\' weekly breakdown — podcast rebranded to NFL Daily; original feed is no longer active.' },
-  { id: 'rb-sportstalk', name: 'Sports Talk (Radio)',      category: 'Sports', cadence: 'Anytime',  lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:sports talk',             feedStatus: 'verified',   desc: 'Live sports talk stations via Radio-Browser, length you set.' },
-  { id: 'rb-espn',       name: 'ESPN Radio',               category: 'Sports', cadence: 'Anytime',  lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:name:espn radio',             feedStatus: 'verified',   desc: 'ESPN Radio stations via Radio-Browser, length you set.' },
+  // Commented out along with the other Radio-Browser built-ins above -- see that comment block.
+  // { id: 'rb-sportstalk', name: 'Sports Talk (Radio)',      category: 'Sports', cadence: 'Anytime',  lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:sports talk',             feedStatus: 'verified',   desc: 'Live sports talk stations via Radio-Browser, length you set.' },
+  // { id: 'rb-espn',       name: 'ESPN Radio',               category: 'Sports', cadence: 'Anytime',  lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:name:espn radio',             feedStatus: 'verified',   desc: 'ESPN Radio stations via Radio-Browser, length you set.' },
 
   // History (expanding beyond the 2 existing entries)
   { id: 'hardcorehistory', name: 'Hardcore History',                   category: 'History', cadence: 'Seasonal', lengthMin: 270, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.feedburner.com/dancarlin/history',            feedStatus: 'unverified', sequential: true, desc: 'Dan Carlin\'s marathon-length explorations of major historical events — episodes routinely run 4–6 hours. Plays in order from the oldest available episode.' },
@@ -1221,7 +1237,10 @@ const SOURCES = [
   { id: 'nothingmuchhappens', name: 'Nothing Much Happens', category: 'Sleep', cadence: 'Weekly',  lengthMin: 30, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/YuKkh2ZV',    feedStatus: 'none',       desc: 'Kathryn Nicolai\'s slow, detailed stories about nothing in particular. Feed has moved; no public RSS currently available.' },
   { id: 'getsleepy',         name: 'Get Sleepy',            category: 'Sleep', cadence: 'Weekly',  lengthMin: 40, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.buzzsprout.com/702443.rss',   feedStatus: 'none',       desc: 'Guided relaxation followed by original sleep stories with ambient soundscapes. No public RSS currently available.' },
   { id: 'meditation-minis',  name: 'Meditation Minis',      category: 'Sleep', cadence: 'Weekly',  lengthMin: 10, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://rss.buzzsprout.com/2556039.rss',    feedStatus: 'verified',   desc: 'Award-winning 5–15 minute guided meditations by hypnotherapist Chel Hamilton.' },
-  { id: 'rb-ambient',        name: 'Ambient (Radio)',        category: 'Sleep', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:ambient', feedStatus: 'verified', desc: 'Ambient/drone music stations via Radio-Browser, good for sleep or focus.' },
+  // Commented out along with the other Radio-Browser built-ins -- see that comment block near the
+  // start of the Music section. SomaFM: Drone Zone (below, Music category) already covers this
+  // exact use case with a guaranteed-ad-free source.
+  // { id: 'rb-ambient',        name: 'Ambient (Radio)',        category: 'Sleep', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'radio-browser:tag:ambient', feedStatus: 'verified', desc: 'Ambient/drone music stations via Radio-Browser, good for sleep or focus.' },
 
   // More NPR shows
   { id: 'ted-radio-hour',  name: 'TED Radio Hour',              category: 'Science',      cadence: 'Weekly',   lengthMin: 55,  flexible: false, sourceType: 'podcast-rss', network: 'NPR', feedUrl: 'https://feeds.npr.org/510298/podcast.xml',                     feedStatus: 'verified',   desc: 'Inspiring talks from TED speakers, woven into a narrative by NPR.' },
@@ -1388,6 +1407,19 @@ function addCustomRadioChannel(query) {
   if (last) last.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
 }
 
+// Removes a user-created custom channel from the catalog for good. Any timeline blocks already
+// referencing it are left alone -- they keep their cached name/lengthMin (see addSourceToTimeline)
+// and simply fail to resolve at play time with the existing "source no longer exists" skip message,
+// same as if any other catalog source were removed. No special-casing needed there.
+function removeCustomRadioChannel(id) {
+  const idx = SOURCES.findIndex(s => s.id === id);
+  if (idx !== -1) SOURCES.splice(idx, 1);
+  customRadioSources = customRadioSources.filter(s => s.id !== id);
+  save('airtime_custom_sources_v1', customRadioSources);
+  renderFilters();
+  renderLibrary();
+}
+
 // ---------- State ----------
 let activeCategory = null;
 let activeLengthBucket = null;
@@ -1395,6 +1427,45 @@ let activeFormat = null;
 let searchText = '';
 let timelineBlocks = load('airtime_timeline_v1', []);
 let rundowns = load('airtime_rundowns_v1', []);
+
+// One-time seed of a few starter broadcasts, so a first-time visitor has something to hit Play on
+// immediately instead of facing an empty timeline and a 100+ source catalog with nothing pre-built.
+// Gated by its own flag rather than "rundowns.length === 0" so that deleting a starter later (they're
+// just regular saved broadcasts once added -- rename/delete both work normally) doesn't cause it to
+// silently come back on the next load.
+const STARTER_RUNDOWNS = [
+  {
+    id: 'starter-morning-commute',
+    name: 'Morning Commute',
+    blocks: [
+      { sourceId: 'up-first', lengthMin: 15 },
+      { sourceId: 'nyt-daily', lengthMin: 25 },
+      { sourceId: 'indicator', lengthMin: 10 },
+      { sourceId: 'short-wave', lengthMin: 12 },
+    ],
+  },
+  {
+    id: 'starter-evening-wind-down',
+    name: 'Evening Wind-Down',
+    blocks: [
+      { sourceId: 'meditation-minis', lengthMin: 10 },
+      { sourceId: 'soma-dronezone', lengthMin: 30 },
+    ],
+  },
+  {
+    id: 'starter-weekend-deep-dive',
+    name: 'Weekend Deep Dive',
+    blocks: [
+      { sourceId: 'tal', lengthMin: 59 },
+      { sourceId: 'throughline', lengthMin: 45 },
+    ],
+  },
+];
+if (!load('airtime_starters_seeded_v1', false)) {
+  rundowns = [...STARTER_RUNDOWNS, ...rundowns];
+  save('airtime_rundowns_v1', rundowns);
+  save('airtime_starters_seeded_v1', true);
+}
 
 // ---------- Source health ----------
 // Local overrides on top of feedStatus: 'unverified' sources get promoted to 'verified' when they
@@ -1621,7 +1692,10 @@ function renderLibrary() {
       card.innerHTML = `
         <div class="source-card-top">
           <div class="source-name">${s.name}</div>
-          <button class="source-add-btn" title="Add to timeline" aria-label="Add ${s.name} to timeline" data-id="${s.id}">+</button>
+          <div class="source-card-btns">
+            ${s.id.startsWith('custom-') ? `<button class="source-remove-btn" title="Delete this custom channel" aria-label="Delete ${s.name}" data-id="${s.id}">✕</button>` : ''}
+            <button class="source-add-btn" title="Add to timeline" aria-label="Add ${s.name} to timeline" data-id="${s.id}">+</button>
+          </div>
         </div>
         <div class="source-desc">${s.desc}</div>
         <div class="source-meta">
@@ -1644,6 +1718,14 @@ function renderLibrary() {
         addSourceToTimeline(s.id);
       });
       card.addEventListener('dblclick', () => addSourceToTimeline(s.id));
+      const removeBtn = card.querySelector('.source-remove-btn');
+      if (removeBtn) {
+        removeBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          if (!confirm('Delete the custom channel "' + s.name + '"? This can\'t be undone.')) return;
+          removeCustomRadioChannel(s.id);
+        });
+      }
       const resetBtn = card.querySelector('.sequential-reset-btn');
       if (resetBtn) {
         resetBtn.addEventListener('click', e => {
