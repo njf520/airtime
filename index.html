@@ -1034,7 +1034,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.8.0';
+const VERSION = '3.9.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1322,6 +1322,32 @@ const SOURCES = [
   { id: 'traffic-chicago', name: 'WLS 890 AM (Chicago)',     category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:http://15723.live.streamtheworld.com/WLSAMAAC_SC',              feedStatus: 'verified', desc: 'Chicago news/talk with regular traffic and weather updates. Commercial radio -- includes ads.' },
   { id: 'traffic-dc',      name: 'WTOP 103.5 FM (Washington DC)', category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://playerservices.streamtheworld.com/api/livestream-redirect/WTOPFM.mp3', feedStatus: 'verified', desc: 'Washington DC\'s famous "traffic and weather together on the 8s" all-news format. Commercial radio -- includes ads.' },
   { id: 'traffic-boston',  name: 'WBZ NewsRadio 1030 (Boston)', category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.revma.ihrhls.com/zc7729',                                  feedStatus: 'verified', desc: 'Boston all-news radio with regular traffic and weather updates. Commercial radio -- includes ads.' },
+
+  // Daily Science & Nature
+  { id: 'birdnote-daily',   name: 'BirdNote Daily',                 category: 'Science', cadence: 'Daily', lengthMin: 2,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/OB7SrYSf', feedStatus: 'verified', desc: 'A two-minute daily story about birds and the natural world, rich in sound and imagery.' },
+  // AI-generated show (Inception Point AI) -- flagged here since every other source in this catalog
+  // is human-produced. Included because it matches the requested description closely and the feed
+  // is real and actively publishing, but worth knowing before adding it to a broadcast.
+  { id: 'sciencehistory-daily', name: 'Science History - Daily',    category: 'Science', cadence: 'Daily', lengthMin: 4,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/NPTNI1335956562', feedStatus: 'verified', desc: 'Daily scientific milestones, discoveries, and the people behind them (also listed as "This Day in History - Science"). AI-generated content.' },
+
+  // History & Storytelling
+  { id: 'memory-palace',    name: 'The Memory Palace',              category: 'Storytelling', cadence: 'Monthly', lengthMin: 12, flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feeds.thememorypalace.us/thememorypalace', feedStatus: 'unverified', desc: 'Nate DiMeo\'s meditative, beautifully told short stories about specific, tiny moments in history.' },
+  { id: 'mahnke-cabinet',   name: 'Aaron Mahnke\'s Cabinet of Curiosities', category: 'History', cadence: '2x/week', lengthMin: 30, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/e062c374-9a39-42fa-888f-ae2c007b3c85/f0f95fe5-d5de-4abe-ada4-ae2c007b3c8e/podcast.rss', feedStatus: 'verified', desc: 'Bite-size episodes of weird historical trivia from the creator of Lore, designed for quick listening.' },
+
+  // News & Knowledge
+  // Ended April 2024 (episode 100 was an explicit farewell) -- kept as an archive since ~100 real
+  // 5-minute episodes are still there and playable, just don't expect new ones.
+  { id: 'daily5-aurooba',   name: 'The Daily 5 with Aurooba',       category: 'Business', cadence: 'Weekly', lengthMin: 5,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.transistor.fm/the-daily-5-with-aurooba', feedStatus: 'verified', desc: 'Short daily-style show on productivity, tech, and motivation. Ended April 2024 (episode 100) -- archive only.' },
+  // Short Stuff (Stuff You Should Know's short-format spinoff) isn't separately addable -- its
+  // episodes were folded back into the main Stuff You Should Know feed in 2023 and aren't
+  // syndicated on their own anymore. See 'syskshouldknow' above for the (mixed-length) main feed.
+
+  // Quirky / discovery picks
+  { id: 'sawbones',         name: 'Sawbones',                       category: 'History', cadence: 'Weekly', lengthMin: 55, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/y1LF_sn2', feedStatus: 'verified', desc: 'Dr. Sydnee McElroy and husband Justin dig up the odd, gross, and wrong ways medicine has tried to fix people throughout history.' },
+  { id: 'ridiculous-history', name: 'Ridiculous History',           category: 'History', cadence: '2x/week', lengthMin: 40, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/DCA0D8AD-E0B8-4A52-A2A8-AE300188D1E2/FE9400D8-DD2A-489F-82D9-AE300188D1EB/podcast.rss', feedStatus: 'verified', desc: 'Bizarre, forgotten, and stranger-than-fiction moments from history, two per week.' },
+  { id: 'articles-of-interest', name: 'Articles of Interest',       category: 'Storytelling', cadence: 'Seasonal', lengthMin: 25, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feed.articlesofinterest.club/', feedStatus: 'verified', desc: 'Avery Trufelman on the hidden histories behind what we wear -- from Hawaiian shirts to hoodies to the "power suit."' },
+  { id: 'twenty-thousand-hertz', name: 'Twenty Thousand Hertz',     category: 'Storytelling', cadence: 'Biweekly', lengthMin: 25, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/20k', feedStatus: 'verified', desc: 'The stories behind the world\'s most recognizable and interesting sounds -- from the THX logo to the Wilhelm scream.' },
+  { id: 'appliance-doctor', name: 'All Four Season Home Show',      category: 'Business', cadence: 'Weekly', lengthMin: 20, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.omnycontent.com/d/playlist/e04eefd4-7e66-4d07-9ab3-a93601155fb1/26c086fd-0f6f-4685-9e4b-ad0a014e572d/719f2fa7-56fd-4c78-94b3-ad0b00e5f858/podcast.rss', feedStatus: 'verified', desc: 'Atlanta home-improvement call-in show featuring recurring "Appliance Doctor" segments on when to repair vs. replace.' },
 ];
 
 const CATEGORY_COLORS = {
@@ -1390,6 +1416,9 @@ const NETWORK_MAP = {
   'zoe-nutrition': 'ZOE', 'scam-goddess': 'Earwolf',
   'wx-nyc': 'NOAA', 'wx-phoenix': 'NOAA', 'wx-philadelphia': 'NOAA', 'wx-dallas': 'NOAA',
   'wx-fortworth': 'NOAA', 'wx-austin': 'NOAA', 'wx-columbus': 'NOAA', 'wx-indianapolis': 'NOAA', 'wx-seattle': 'NOAA',
+  'birdnote-daily': 'BirdNote', 'sciencehistory-daily': 'Inception Point AI',
+  'memory-palace': 'PRX', 'mahnke-cabinet': 'Grim & Mild',
+  'sawbones': 'Maximum Fun', 'ridiculous-history': 'iHeartPodcasts', 'articles-of-interest': 'Radiotopia',
 };
 SOURCES.forEach(s => {
   if (s.network) return;
