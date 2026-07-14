@@ -1027,7 +1027,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.6.1';
+const VERSION = '3.6.2';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1171,7 +1171,7 @@ const SOURCES = [
   { id: 'wsm650',          name: 'WSM 650 AM (Nashville)',            category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:http://stream01048.westreamradio.com/wsm-am-mp3', feedStatus: 'verified', desc: 'Home of the Grand Ole Opry, classic and current country, live and commercial (ads included).' },
   { id: 'z100nyc',         name: 'Z100 / WHTZ (New York)',            category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.revma.ihrhls.com/zc1469', feedStatus: 'verified', desc: "New York's #1 hit music station, live and commercial (ads included)." },
   { id: 'soma-groovesalad', name: 'SomaFM: Groove Salad',            category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:groovesalad', feedStatus: 'verified', desc: 'Ambient/downtempo chill, nonprofit listener-supported, no ads.' },
-  { id: 'soma-dronezone',  name: 'SomaFM: Drone Zone',               category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:dronezone', feedStatus: 'verified', desc: 'Atmospheric ambient, minimal beats, no ads.' },
+  { id: 'soma-dronezone',  name: 'SomaFM: Drone Zone',               category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:dronezone', feedStatus: 'verified', desc: 'Atmospheric ambient, minimal beats, no vocals -- the spa/massage-table pick. No ads.' },
   { id: 'soma-spacestation', name: 'SomaFM: Space Station Soma',     category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:spacestation', feedStatus: 'verified', desc: 'Ambient/mid-tempo electronica, no ads.' },
   { id: 'soma-secretagent', name: 'SomaFM: Secret Agent',            category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:secretagent', feedStatus: 'verified', desc: 'Spy-lounge soundtrack vibe, no ads.' },
   { id: 'soma-metal',      name: 'SomaFM: Metal Detector',           category: 'Music',     cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'somafm:metal', feedStatus: 'verified', desc: 'Black/doom/prog/sludge metal, no ads.' },
