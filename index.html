@@ -1034,7 +1034,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.9.0';
+const VERSION = '3.9.1';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1331,7 +1331,7 @@ const SOURCES = [
   { id: 'sciencehistory-daily', name: 'Science History - Daily',    category: 'Science', cadence: 'Daily', lengthMin: 4,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.megaphone.fm/NPTNI1335956562', feedStatus: 'verified', desc: 'Daily scientific milestones, discoveries, and the people behind them (also listed as "This Day in History - Science"). AI-generated content.' },
 
   // History & Storytelling
-  { id: 'memory-palace',    name: 'The Memory Palace',              category: 'Storytelling', cadence: 'Monthly', lengthMin: 12, flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feeds.thememorypalace.us/thememorypalace', feedStatus: 'unverified', desc: 'Nate DiMeo\'s meditative, beautifully told short stories about specific, tiny moments in history.' },
+  { id: 'memory-palace',    name: 'The Memory Palace',              category: 'Storytelling', cadence: 'Monthly', lengthMin: 12, flexible: false, sourceType: 'podcast-rss', feedUrl: 'http://feeds.thememorypalace.us/thememorypalace', feedStatus: 'verified', desc: 'Nate DiMeo\'s meditative, beautifully told short stories about specific, tiny moments in history.' },
   { id: 'mahnke-cabinet',   name: 'Aaron Mahnke\'s Cabinet of Curiosities', category: 'History', cadence: '2x/week', lengthMin: 30, flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://www.omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/e062c374-9a39-42fa-888f-ae2c007b3c85/f0f95fe5-d5de-4abe-ada4-ae2c007b3c8e/podcast.rss', feedStatus: 'verified', desc: 'Bite-size episodes of weird historical trivia from the creator of Lore, designed for quick listening.' },
 
   // News & Knowledge
@@ -3013,7 +3013,11 @@ function showOfflineBanner(show) {
   if (!el) return;
   if (show) {
     el.textContent = 'No internet connection — broadcast timer paused';
-    el.style.display = '';
+    // Base CSS is `display: none` -- clearing the inline style (the previous behavior here) falls
+    // back to that stylesheet rule instead of overriding it, so the banner never actually became
+    // visible. Found during QA: the offline/online event wiring and text were all firing correctly,
+    // the element itself just silently never rendered. 'block' actually overrides it.
+    el.style.display = 'block';
   } else {
     el.textContent = 'Back online — resuming';
     setTimeout(() => { el.style.display = 'none'; }, 2000);

@@ -50,7 +50,7 @@
 <body>
 
 <h1>Airtime Feed Tester</h1>
-<div class="subtitle">Tests all podcast-rss sources from index.html through the same CORS proxy chain used by the app.</div>
+<div class="subtitle">Tests all podcast-rss sources (via the same CORS proxy chain used by the app) and all fixed-URL internet-radio sources (via a real &lt;audio&gt; element load, same as actual playback) from index.html.</div>
 
 <div class="toolbar">
   <button class="primary" id="run-btn">▶ Run All Tests</button>
@@ -84,6 +84,19 @@
 
 <script>
 // ---------- Proxy chain (same as index.html, minus the Worker which only allows production origin) ----------
+// Testing from localhost means the Worker entry always fails fast (by design -- it only accepts
+// the production origin), so this harness effectively tests the *weakest* link in the chain: the
+// three free public fallbacks. Found during this app's own QA pass: several large, long-running
+// feeds (NPR's Up First, The Indicator, Planet Money, Short Wave, Hidden Brain, Radiolab, and
+// others with 10+ years of episodes/show-notes) fail through ALL THREE of these specifically --
+// corsproxy.io rejects them outright with a fast HTTP 413 ("Response exceeds 1MB size limit"),
+// while allorigins/codetabs just time out trying to relay the full payload. This is a real,
+// reproducible size limitation of the free fallbacks, not proxy rate-limiting from bulk testing --
+// but it does NOT necessarily mean these feeds are broken for real production users, since the
+// Worker (tried first there, untestable here) has a far higher payload limit and never gets a
+// chance to prove that from this environment. Treat "fail" on one of these large feeds as
+// "couldn't confirm from localhost," not "confirmed broken" -- worth a live spot-check from the
+// actual deployed site before assuming a catalog entry needs fixing.
 const CORS_PROXIES = [
   url => url,
   url => `https://airtime-cors-proxy.njf520.workers.dev/?url=${encodeURIComponent(url)}`,
@@ -132,8 +145,8 @@ async function fetchWithTimeout(url, timeoutMs) {
   }
 }
 
-// Returns { ok, text, proxyIndex, error }
-async function fetchFeed(feedUrl) {
+// One pass through the proxy chain. Returns { ok, text, proxyIndex, error }.
+async function fetchFeedOnce(feedUrl) {
   let lastErr;
   for (let i = 0; i < CORS_PROXIES.length; i++) {
     if (stopRequested) throw new Error('Stopped');
@@ -150,6 +163,20 @@ async function fetchFeed(feedUrl) {
     }
   }
   return { ok: false, error: lastErr?.message || 'All proxies failed' };
+}
+
+// Every proxy failing in the same pass usually means a shared, transient rate-limit window across
+// all of them (this harness's own concurrent bulk testing is exactly the kind of burst that can
+// trigger one -- confirmed live: corsproxy.io returned HTTP 413 and allorigins/codetabs both timed
+// out immediately after a full 119-source run, for a feed that had passed minutes earlier), not a
+// dead feed. Mirrors fetchTextWithProxies()'s retry-after-pause in index.html -- without this, the
+// harness reports meaningfully more false failures than a real user (who only ever fetches one feed
+// at a time, never triggering this kind of self-inflicted burst) would actually experience.
+async function fetchFeed(feedUrl) {
+  const first = await fetchFeedOnce(feedUrl);
+  if (first.ok) return first;
+  await new Promise(r => setTimeout(r, 1500));
+  return await fetchFeedOnce(feedUrl);
 }
 
 // Parses the RSS/Atom feed and returns { hasEnclosures, episodeTitle, episodeDate, itemCount }
@@ -222,14 +249,85 @@ async function testSource(src) {
   };
 }
 
+// Fixed-URL internet-radio sources (direct-stream:) are tested via a real <audio> element load --
+// not fetch(), which the app itself avoids for exactly this reason: some of these hosts reject
+// fetch()'s CORS preflight while still happily serving a plain <audio src> (confirmed live during
+// this app's development -- wxradio.org and bobc.io both do this). This matches actual playback
+// behavior instead of producing a false "fail" that doesn't reflect what a real listener hits.
+// Bug found during this app's own QA pass: the first version of this function checked
+// 'loadedmetadata' but never actually stopped the stream afterward -- for a live radio stream
+// (unlike a podcast file) that leaves the connection open and playing silently in the background
+// for the rest of the test run. Across ~14 internet-radio sources in one bulk run, that meant up to
+// 14 simultaneous open streams accumulating in the background, which was starving later fetches
+// (including unrelated podcast-rss ones) of connections/bandwidth and surfacing as unrelated
+// timeouts -- exactly the pattern seen (the same sources failing every run, worse on the second
+// run, not better). `a.pause(); a.removeAttribute('src'); a.load();` in cleanup() actually
+// disconnects it, mirroring how index.html itself tears down a live stream on pause/stop.
+function testAudioUrl(url, timeoutMs = 10000) {
+  return new Promise(resolve => {
+    const a = new Audio();
+    let settled = false;
+    const finish = (r) => { if (settled) return; settled = true; cleanup(); resolve(r); };
+    const timer = setTimeout(() => finish({ ok: false, error: `Timeout after ${timeoutMs / 1000}s` }), timeoutMs);
+    function cleanup() {
+      a.removeEventListener('loadedmetadata', onReady);
+      a.removeEventListener('error', onError);
+      clearTimeout(timer);
+      a.pause();
+      a.removeAttribute('src');
+      a.load();
+    }
+    function onReady() { finish({ ok: true }); }
+    function onError() { finish({ ok: false, error: 'Audio element could not load this stream (unreachable or unsupported format)' }); }
+    a.addEventListener('loadedmetadata', onReady, { once: true });
+    a.addEventListener('error', onError, { once: true });
+    a.src = url;
+    a.load();
+  });
+}
+
+// One retry after a short pause, same rationale as fetchFeed()'s -- running several live-stream
+// connections concurrently (this harness's own bulk-test load, never a real user's single-stream
+// playback) can cause transient bandwidth contention that a lone retry tells apart from an actually
+// dead stream.
+async function testDirectStreamSource(src) {
+  const t0 = Date.now();
+  const url = src.feedUrl.slice('direct-stream:'.length);
+  let r = await testAudioUrl(url);
+  if (!r.ok) {
+    await new Promise(res => setTimeout(res, 1500));
+    r = await testAudioUrl(url);
+  }
+  const ms = Date.now() - t0;
+  return r.ok
+    ? { status: 'pass', detail: 'Live stream connects and loads', ms }
+    : { status: 'fail', detail: r.error, ms };
+}
+
 // ---------- Concurrency runner ----------
 async function runTests() {
-  const testable = sources.filter(s => s.sourceType === 'podcast-rss' && s.feedStatus !== 'none');
-  const skipped = sources.filter(s => s.sourceType === 'podcast-rss' && s.feedStatus === 'none');
+  // podcast-rss: tested via the proxy chain. internet-radio with a fixed direct-stream: URL: tested
+  // via <audio> (see testDirectStreamSource). Sources that resolve dynamically at play time --
+  // radio-browser:* (Custom channels, genre/mood searches) and somafm:* (resolved through SomaFM's
+  // own channels.json, which can rotate edge servers) -- aren't fixed URLs we control, so a failure
+  // there wouldn't indicate a stale catalog entry the way it would for everything else here; skipped
+  // rather than given a misleading pass/fail.
+  const testablePodcast = sources.filter(s => s.sourceType === 'podcast-rss' && s.feedStatus !== 'none');
+  const testableStream = sources.filter(s => s.sourceType === 'internet-radio' && s.feedUrl.startsWith('direct-stream:') && s.feedStatus !== 'none');
+  const testable = [...testablePodcast, ...testableStream];
+
+  const skipped = [
+    ...sources.filter(s => s.sourceType === 'podcast-rss' && s.feedStatus === 'none'),
+    ...sources.filter(s => s.sourceType === 'internet-radio' && !s.feedUrl.startsWith('direct-stream:')),
+    ...sources.filter(s => s.sourceType === 'archive'),
+  ];
 
   // Pre-populate skipped sources
   for (const s of skipped) {
-    results[s.id] = { status: 'skip', detail: 'feedStatus is "none" — known dead feed, not tested' };
+    const reason = s.feedStatus === 'none' ? 'feedStatus is "none" — known dead feed, not tested'
+      : s.sourceType === 'archive' ? 'Archive/date-based source (random or date-matched pick each time), not tested'
+      : 'Resolves dynamically at play time (Radio-Browser or SomaFM), not a fixed URL to test';
+    results[s.id] = { status: 'skip', detail: reason };
   }
 
   // Mark all testable as pending
@@ -245,10 +343,10 @@ async function runTests() {
   async function worker() {
     while (idx < testable.length && !stopRequested) {
       const src = testable[idx++];
-      results[src.id] = { status: 'running', detail: 'Fetching…' };
+      results[src.id] = { status: 'running', detail: src.sourceType === 'internet-radio' ? 'Connecting…' : 'Fetching…' };
       updateRow(src.id);
       try {
-        const r = await testSource(src);
+        const r = src.sourceType === 'internet-radio' ? await testDirectStreamSource(src) : await testSource(src);
         results[src.id] = r;
       } catch (e) {
         results[src.id] = { status: 'fail', detail: e.message };
@@ -274,7 +372,7 @@ function statusClass(status) {
 function renderTable() {
   const tbody = document.getElementById('results-body');
   tbody.innerHTML = '';
-  const visibleSources = sources.filter(s => s.sourceType === 'podcast-rss');
+  const visibleSources = sources.filter(s => s.sourceType === 'podcast-rss' || s.sourceType === 'internet-radio' || s.sourceType === 'archive');
   // Sort: fail first, then running, then pending, then pass, then skip
   const order = { fail: 0, running: 1, pending: 2, pass: 3, skip: 4 };
   const sorted = [...visibleSources].sort((a, b) => {
@@ -360,7 +458,7 @@ function escHtml(s) {
 
 // ---------- Export ----------
 function exportJSON() {
-  const data = sources.filter(s => s.sourceType === 'podcast-rss').map(s => ({
+  const data = sources.filter(s => s.sourceType === 'podcast-rss' || s.sourceType === 'internet-radio' || s.sourceType === 'archive').map(s => ({
     id: s.id, name: s.name, category: s.category, feedUrl: s.feedUrl,
     definedStatus: s.feedStatus, ...results[s.id],
   }));
@@ -370,7 +468,7 @@ function exportJSON() {
 
 function exportCSV() {
   const rows = [['id', 'name', 'category', 'definedStatus', 'testStatus', 'detail', 'episode', 'proxy', 'ms']];
-  sources.filter(s => s.sourceType === 'podcast-rss').forEach(s => {
+  sources.filter(s => s.sourceType === 'podcast-rss' || s.sourceType === 'internet-radio' || s.sourceType === 'archive').forEach(s => {
     const r = results[s.id] || {};
     rows.push([s.id, s.name, s.category, s.feedStatus, r.status || '', r.detail || '', r.episode || '', r.proxy || '', r.ms != null ? r.ms : ''].map(v => `"${String(v).replace(/"/g, '""')}"`));
   });
@@ -443,8 +541,11 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.textContent = '⟳ Loading sources…';
     btn.disabled = true;
     sources = await loadSources();
-    const count = sources.filter(s => s.sourceType === 'podcast-rss' && s.feedStatus !== 'none').length;
-    btn.textContent = `▶ Run All Tests (${count} feeds)`;
+    const count = sources.filter(s =>
+      (s.sourceType === 'podcast-rss' && s.feedStatus !== 'none') ||
+      (s.sourceType === 'internet-radio' && s.feedUrl.startsWith('direct-stream:') && s.feedStatus !== 'none')
+    ).length;
+    btn.textContent = `▶ Run All Tests (${count} sources)`;
     btn.disabled = false;
   } catch (e) {
     btn.textContent = '⚠ Failed to load sources: ' + e.message;
