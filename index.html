@@ -1034,7 +1034,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.7.0';
+const VERSION = '3.8.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1294,6 +1294,34 @@ const SOURCES = [
 
   // Comedy — additions to existing category
   { id: 'scam-goddess',     name: 'Scam Goddess',                   category: 'Comedy',        cadence: 'Biweekly', lengthMin: 60,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/4YELvXgu',                                                                                                                          feedStatus: 'verified', desc: 'Laci Mosley and a comedy guest break down true scam stories with infectious energy — equal parts outrage and laugh-out-loud funny.' },
+
+  // Weather — new category. NOAA's own continuous automated forecast-loop transmitters, streamed
+  // via wxradio.org/wxradio.bobc.io (NOAA-authorized, donation-supported, no ads by nature of being
+  // a government service). Coverage is uneven -- NOAA transmitter siting follows RF coverage needs,
+  // not "biggest city" boundaries, so several major metros (LA, Chicago, SF, Miami, Denver, etc.)
+  // don't have a clean same-name match in the directory and were left out rather than mislabeled.
+  { id: 'wx-nyc',          name: 'NOAA Weather Radio: New York City', category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/NY-NewYorkCity-KWO35', feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the NYC metro. Government service, no ads.' },
+  { id: 'wx-phoenix',      name: 'NOAA Weather Radio: Phoenix',       category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/AZ-Phoenix-KEC94',     feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Phoenix metro. Government service, no ads.' },
+  { id: 'wx-philadelphia', name: 'NOAA Weather Radio: Philadelphia',  category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/PA-Philadelphia-KIH28', feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Philadelphia metro. Government service, no ads.' },
+  { id: 'wx-dallas',       name: 'NOAA Weather Radio: Dallas',        category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/TX-Dallas-KEC56',      feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Dallas metro. Government service, no ads.' },
+  { id: 'wx-fortworth',    name: 'NOAA Weather Radio: Fort Worth',    category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/TX-FortWorth-KEC55',   feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Fort Worth metro. Government service, no ads.' },
+  { id: 'wx-austin',       name: 'NOAA Weather Radio: Austin',        category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/TX-Austin-WXK27',      feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Austin metro. Government service, no ads.' },
+  { id: 'wx-columbus',     name: 'NOAA Weather Radio: Columbus',      category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/OH-Columbus-KIG86',    feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Columbus, OH metro. Government service, no ads.' },
+  { id: 'wx-indianapolis', name: 'NOAA Weather Radio: Indianapolis',  category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/IN-Indianapolis-KEC74', feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Indianapolis metro. Government service, no ads.' },
+  { id: 'wx-seattle',      name: 'NOAA Weather Radio: Seattle',       category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.bobc.io/stream/KHB60',     feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Seattle metro. Government service, no ads.' },
+
+  // Traffic — new category. Real commercial all-news/news-talk stations, since no ad-free public
+  // source of local traffic reporting exists (unlike weather) -- these carry regular commercial
+  // breaks like any AM/FM station. Limited to the handful of major-market stations whose stream
+  // infrastructure (iHeart's ihrhls.com CDN, or a plain non-HLS StreamTheWorld redirect) actually
+  // works from a direct <audio> embed -- several other major-market flagships (1010 WINS, KNX 1070,
+  // WBBM 780) either don't have a discoverable direct stream or only expose HLS (.m3u8), which this
+  // app's plain <audio> playback can't decode.
+  { id: 'traffic-nyc',     name: 'WABC 770 AM (New York)',   category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://playerservices.streamtheworld.com/api/livestream-redirect/WABCAM.mp3', feedStatus: 'verified', desc: 'New York news/talk with regular traffic and weather updates. Commercial radio -- includes ads.' },
+  { id: 'traffic-la',      name: 'KFI 640 AM (Los Angeles)', category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.revma.ihrhls.com/zc177',                                        feedStatus: 'verified', desc: 'Los Angeles news/talk with regular traffic and weather updates. Commercial radio -- includes ads.' },
+  { id: 'traffic-chicago', name: 'WLS 890 AM (Chicago)',     category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:http://15723.live.streamtheworld.com/WLSAMAAC_SC',              feedStatus: 'verified', desc: 'Chicago news/talk with regular traffic and weather updates. Commercial radio -- includes ads.' },
+  { id: 'traffic-dc',      name: 'WTOP 103.5 FM (Washington DC)', category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://playerservices.streamtheworld.com/api/livestream-redirect/WTOPFM.mp3', feedStatus: 'verified', desc: 'Washington DC\'s famous "traffic and weather together on the 8s" all-news format. Commercial radio -- includes ads.' },
+  { id: 'traffic-boston',  name: 'WBZ NewsRadio 1030 (Boston)', category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.revma.ihrhls.com/zc7729',                                  feedStatus: 'verified', desc: 'Boston all-news radio with regular traffic and weather updates. Commercial radio -- includes ads.' },
 ];
 
 const CATEGORY_COLORS = {
@@ -1301,7 +1329,7 @@ const CATEGORY_COLORS = {
   Storytelling: '#d4954a', Comedy: '#c468a8', Science: '#8a8fd4', Poetry: '#c9954a',
   Reflection: '#9aa0ab', History: '#c98a4a', Drama: '#c9564a', Weather: '#4fd1ff', Music: '#3ecf8e',
   Sports: '#4a9fd4', Sleep: '#8a6fad', Technology: '#3b82c4', Health: '#4aad6e',
-  'True Crime': '#c94f5c',
+  'True Crime': '#c94f5c', Traffic: '#d1a83e',
 };
 
 // User-created custom radio channels (any Radio-Browser tag/name search) are appended to SOURCES
@@ -1360,6 +1388,8 @@ const NETWORK_MAP = {
   'rest-is-history': 'Goalhanger', 'american-scandal': 'Wondery', 'cautionary-tales': 'Pushkin Industries',
   'no-stupid-questions': 'Freakonomics Radio Network', 'mike-rowe': 'MikeRoweWORKS',
   'zoe-nutrition': 'ZOE', 'scam-goddess': 'Earwolf',
+  'wx-nyc': 'NOAA', 'wx-phoenix': 'NOAA', 'wx-philadelphia': 'NOAA', 'wx-dallas': 'NOAA',
+  'wx-fortworth': 'NOAA', 'wx-austin': 'NOAA', 'wx-columbus': 'NOAA', 'wx-indianapolis': 'NOAA', 'wx-seattle': 'NOAA',
 };
 SOURCES.forEach(s => {
   if (s.network) return;
