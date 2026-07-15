@@ -4,6 +4,46 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Airtime — build your own broadcast</title>
+
+<!-- SEO: the strings below marked NAME are tied to "Airtime", a placeholder name that
+     will change before release. When the real name is picked, update: this <title>,
+     meta description, og:title/og:description/og:site_name, twitter:title/description,
+     the JSON-LD "name" field below, and manifest.json's name/short_name. The canonical
+     URL and screenshot.png can stay as-is until the repo/domain itself is renamed. -->
+<meta name="description" content="Build your own radio station from podcasts and internet radio -- drag shows into a timeline and hit play. 160+ curated sources, free, no sign-up, no account needed.">
+<link rel="canonical" href="https://njf520.github.io/airtime/">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://njf520.github.io/airtime/">
+<meta property="og:site_name" content="Airtime">
+<meta property="og:title" content="Airtime — build your own broadcast">
+<meta property="og:description" content="Build your own radio station from podcasts and internet radio -- drag shows into a timeline and hit play. 160+ curated sources, free, no sign-up, no account needed.">
+<meta property="og:image" content="https://njf520.github.io/airtime/screenshot.png">
+<meta property="og:image:width" content="1677">
+<meta property="og:image:height" content="847">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Airtime — build your own broadcast">
+<meta name="twitter:description" content="Build your own radio station from podcasts and internet radio -- drag shows into a timeline and hit play. 160+ curated sources, free, no sign-up, no account needed.">
+<meta name="twitter:image" content="https://njf520.github.io/airtime/screenshot.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Airtime",
+  "description": "Build your own radio station from podcasts and internet radio -- drag shows into a timeline and hit play. 160+ curated sources, free, no sign-up, no account needed.",
+  "url": "https://njf520.github.io/airtime/",
+  "applicationCategory": "MultimediaApplication",
+  "operatingSystem": "Any (runs in any modern web browser)",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  }
+}
+</script>
+
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231b1915'/%3E%3Crect x='6' y='37' width='8' height='15' rx='2' fill='%23e0a13c'/%3E%3Crect x='17' y='17' width='8' height='35' rx='2' fill='%23e0a13c'/%3E%3Crect x='28' y='28' width='8' height='24' rx='2' fill='%23e0a13c'/%3E%3Crect x='39' y='12' width='8' height='40' rx='2' fill='%23e0a13c'/%3E%3Crect x='50' y='40' width='8' height='12' rx='2' fill='%23e0a13c'/%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,7 +98,13 @@
     --text: #2b2620;
     --text-dim: #8a8172;
     --accent: #d99a34;
-    --accent-label: #b07d24;
+    /* Darkened from #b07d24 -- found during an accessibility pass that the old value only hit
+       2.97:1 contrast against --bg in light mode, well under WCAG AA's 4.5:1 for normal text. This
+       value measures 5.03:1. Every text-color usage of the plain --accent variable (which measures
+       just 2.00:1, badly failing even the 3:1 UI-component threshold) was also switched to this
+       variable instead -- dark mode is completely unaffected, since dark mode's --accent-label was
+       already identical to --accent there. */
+    --accent-label: #825a19;
     --accent-tint: rgba(184,125,36,0.08);
     --good: #6f8a4f;
     --warn: #b07d24;
@@ -111,6 +157,7 @@
     letter-spacing: -0.01em;
     color: var(--text);
     line-height: 1;
+    margin: 0; /* now an <h1> -- neutralize the browser's default h1 margin, unrelated to this class's own sizing */
   }
   .header-subtitle {
     display: none;
@@ -184,7 +231,7 @@
   .timeline-heading-actions .btn { font-size: 12px; padding: 5px 10px; }
   .toggle-btn.active {
     border-color: var(--accent);
-    color: var(--accent);
+    color: var(--accent-label);
     background: var(--accent-tint);
   }
   .rundown-section {
@@ -224,6 +271,15 @@
     transition: border-color 0.15s;
   }
   .rundown-chip:hover { border-color: var(--accent); }
+  .rundown-chip-load {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
   .rundown-chip-del {
     background: none;
     border: none;
@@ -296,7 +352,7 @@
     transition: border-color 0.15s, color 0.15s;
     white-space: nowrap;
   }
-  .recent-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .recent-chip:hover { border-color: var(--accent); color: var(--accent-label); }
   .recent-chip-plus { font-size: 13px; opacity: 0.45; line-height: 1; }
   /* On mobile, HTML5 drag-and-drop does not fire on touch at all — swap instructional text. */
   .drag-hint { display: inline; }
@@ -318,10 +374,12 @@
     cursor: pointer;
     user-select: none;
     white-space: nowrap;
+    -webkit-appearance: none;
+    appearance: none; /* now a <button> -- strip native OS chrome, .cat-chip already fully styles it */
   }
   .cat-chip.active {
     border-color: var(--accent);
-    color: var(--accent);
+    color: var(--accent-label);
     background: var(--accent-tint);
   }
   /* A browsable grid uses the full-width library section effectively -- auto-fit lets the column
@@ -364,7 +422,7 @@
     border-radius: 999px;
     background: var(--panel);
     border: 1px solid var(--border);
-    color: var(--accent);
+    color: var(--accent-label);
     font-size: 17px;
     line-height: 1;
     cursor: pointer;
@@ -398,7 +456,7 @@
   }
   .tag-network {
     background: var(--accent-tint);
-    color: var(--accent);
+    color: var(--accent-label);
     font-weight: 600;
   }
   .source-desc {
@@ -411,7 +469,7 @@
   .sequential-progress {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 10.5px;
-    color: var(--accent);
+    color: var(--accent-label);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -427,7 +485,7 @@
     padding: 1px 6px;
     cursor: pointer;
   }
-  .sequential-reset-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .sequential-reset-btn:hover { border-color: var(--accent); color: var(--accent-label); }
   .empty-state {
     color: var(--text-dim);
     font-size: 13px;
@@ -560,7 +618,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    color: var(--accent);
+    color: var(--accent-label);
     background: var(--tint-strong);
     padding: 1px 6px;
     border-radius: 4px;
@@ -637,7 +695,7 @@
     height: 24px;
     padding: 0;
   }
-  .block-move:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .block-move:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-label); }
   .block-move:disabled { opacity: 0.3; cursor: not-allowed; }
   .feed-badge {
     font-size: 9.5px;
@@ -853,7 +911,7 @@
     padding: 4px 10px;
     white-space: nowrap;
   }
-  #feedback-link:hover, #suggest-source-link:hover { border-color: var(--accent); color: var(--accent); }
+  #feedback-link:hover, #suggest-source-link:hover { border-color: var(--accent); color: var(--accent-label); }
   #footer-status {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
@@ -972,7 +1030,7 @@
       <div style="height:34px"></div>
       <div style="height:10px"></div>
     </div>
-    <span class="brand-wordmark">Airtime</span>
+    <h1 class="brand-wordmark">Airtime</h1>
     <span class="version-badge" id="version-display"></span>
   </div>
   <div class="header-buttons">
@@ -1003,7 +1061,7 @@
         <div id="np-scrub"><div id="np-scrub-fill"></div></div>
         <span id="np-total">0:00</span>
       </div>
-      <div id="np-status"></div>
+      <div id="np-status" aria-live="polite"></div>
     </div>
     <div class="timeline-heading-row">
       <div class="timeline-heading-left">
@@ -1043,7 +1101,7 @@
       </div>
       <p class="library-subtitle">Pick from the catalog</p>
     </div>
-    <input type="text" id="search" placeholder="Search by name or network (e.g. BBC)...">
+    <input type="text" id="search" placeholder="Search by name or network (e.g. BBC)..." aria-label="Search sources by name or network">
     <div class="cat-filters" id="cat-filters"></div>
     <div class="cat-filters" id="length-filters"></div>
     <div class="cat-filters" id="format-filters"></div>
@@ -1071,7 +1129,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.14.0';
+const VERSION = '3.15.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1754,6 +1812,11 @@ function matchesLengthBucket(s) {
 
 // Rebuilds the category, length, and format chip rows, keeping the currently active chip highlighted.
 // NPR sorts first in the category list — it has the most entries and is the most-used filter.
+// Filter chips are real <button> elements (not <div>s with onclick) so keyboard users can actually
+// reach and activate them -- found during an accessibility pass that they were plain divs, meaning
+// the entire category/length/format filtering system (the primary way to navigate 150+ sources) was
+// completely unreachable without a mouse or touchscreen. aria-pressed reflects the active state for
+// screen readers, matching how a real toggle button should announce itself.
 function renderFilters() {
   const cats = [...new Set(SOURCES.map(s => s.category))].sort((a, b) => {
     if (a === 'NPR') return -1;
@@ -1762,45 +1825,57 @@ function renderFilters() {
   });
   const wrap = document.getElementById('cat-filters');
   wrap.innerHTML = '';
-  const allChip = document.createElement('div');
+  const allChip = document.createElement('button');
+  allChip.type = 'button';
   allChip.className = 'cat-chip' + (activeCategory === null ? ' active' : '');
   allChip.textContent = 'All';
+  allChip.setAttribute('aria-pressed', String(activeCategory === null));
   allChip.onclick = () => { activeCategory = null; renderFilters(); renderLibrary(); };
   wrap.appendChild(allChip);
   cats.forEach(cat => {
-    const chip = document.createElement('div');
+    const chip = document.createElement('button');
+    chip.type = 'button';
     chip.className = 'cat-chip' + (activeCategory === cat ? ' active' : '');
     chip.textContent = cat;
+    chip.setAttribute('aria-pressed', String(activeCategory === cat));
     chip.onclick = () => { activeCategory = (activeCategory === cat ? null : cat); renderFilters(); renderLibrary(); };
     wrap.appendChild(chip);
   });
 
   const lengthWrap = document.getElementById('length-filters');
   lengthWrap.innerHTML = '';
-  const allLengthChip = document.createElement('div');
+  const allLengthChip = document.createElement('button');
+  allLengthChip.type = 'button';
   allLengthChip.className = 'cat-chip' + (activeLengthBucket === null ? ' active' : '');
   allLengthChip.textContent = 'Any length';
+  allLengthChip.setAttribute('aria-pressed', String(activeLengthBucket === null));
   allLengthChip.onclick = () => { activeLengthBucket = null; renderFilters(); renderLibrary(); };
   lengthWrap.appendChild(allLengthChip);
   LENGTH_BUCKETS.forEach(b => {
-    const chip = document.createElement('div');
+    const chip = document.createElement('button');
+    chip.type = 'button';
     chip.className = 'cat-chip' + (activeLengthBucket === b.id ? ' active' : '');
     chip.textContent = b.label;
+    chip.setAttribute('aria-pressed', String(activeLengthBucket === b.id));
     chip.onclick = () => { activeLengthBucket = (activeLengthBucket === b.id ? null : b.id); renderFilters(); renderLibrary(); };
     lengthWrap.appendChild(chip);
   });
 
   const formatWrap = document.getElementById('format-filters');
   formatWrap.innerHTML = '';
-  const allFormatChip = document.createElement('div');
+  const allFormatChip = document.createElement('button');
+  allFormatChip.type = 'button';
   allFormatChip.className = 'cat-chip' + (activeFormat === null ? ' active' : '');
   allFormatChip.textContent = 'Any format';
+  allFormatChip.setAttribute('aria-pressed', String(activeFormat === null));
   allFormatChip.onclick = () => { activeFormat = null; renderFilters(); renderLibrary(); };
   formatWrap.appendChild(allFormatChip);
   FORMAT_GROUPS.forEach(g => {
-    const chip = document.createElement('div');
+    const chip = document.createElement('button');
+    chip.type = 'button';
     chip.className = 'cat-chip' + (activeFormat === g.id ? ' active' : '');
     chip.textContent = g.label;
+    chip.setAttribute('aria-pressed', String(activeFormat === g.id));
     chip.onclick = () => { activeFormat = (activeFormat === g.id ? null : g.id); renderFilters(); renderLibrary(); };
     formatWrap.appendChild(chip);
   });
@@ -1955,6 +2030,12 @@ function renderTimeline() {
     block.className = 'block' + (isFlexible ? ' flexible' : '') + (typeof playerState !== 'undefined' && playerState.currentIndex === idx ? ' playing' : '');
     block.draggable = true;
     block.dataset.uid = b.uid;
+    // Keyboard equivalent for "click a block to jump straight to playing it" -- role/tabindex/
+    // keydown mirror the existing click handler below (including its guard against double-handling
+    // clicks on the block's own nested button/input children).
+    block.tabIndex = 0;
+    block.setAttribute('role', 'button');
+    block.setAttribute('aria-label', 'Play ' + b.name);
     block.style.setProperty('--card-color', CATEGORY_COLORS[b.category] || 'var(--accent)');
     block.style.width = blockWidthPx(b.lengthMin) + 'px';
     block.innerHTML = `
@@ -1990,6 +2071,13 @@ function renderTimeline() {
     block.addEventListener('dragend', () => block.classList.remove('dragging'));
     block.addEventListener('click', e => {
       if (e.target.closest('button, input')) return;
+      playerState.playing = true;
+      playBlockAt(idx);
+    });
+    block.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      if (e.target.closest('button, input')) return;
+      e.preventDefault(); // stop Space from also scrolling the page
       playerState.playing = true;
       playBlockAt(idx);
     });
@@ -2087,16 +2175,19 @@ function renderRundownChips() {
     el.innerHTML = '<p class="rundown-empty">No saved broadcasts yet.</p>';
     return;
   }
+  // The "load" trigger is a real <button>, not a click handler on the wrapping <div> -- found
+  // during an accessibility pass that the whole chip (including every starter template) was
+  // unreachable by keyboard, only the delete "x" (already a real button) was. No stopPropagation/
+  // closest() guard needed anymore since load and delete are now sibling buttons, not parent/child.
   el.innerHTML = rundowns.map(r => `
-    <div class="rundown-chip" data-id="${escapeHtml(r.id)}">
-      <span>${escapeHtml(r.name)}</span>
+    <div class="rundown-chip">
+      <button class="rundown-chip-load" data-id="${escapeHtml(r.id)}">${escapeHtml(r.name)}</button>
       <button class="rundown-chip-del" data-id="${escapeHtml(r.id)}" title="Delete this broadcast" aria-label="Delete ${escapeHtml(r.name)}">×</button>
     </div>
   `).join('');
-  el.querySelectorAll('.rundown-chip').forEach(chip => {
-    chip.addEventListener('click', e => {
-      if (e.target.closest('.rundown-chip-del')) return;
-      const id = chip.dataset.id;
+  el.querySelectorAll('.rundown-chip-load').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
       const r = rundowns.find(x => x.id === id);
       if (!r) return;
       if (timelineBlocks.length > 0 && !confirm('Replace your current timeline with "' + r.name + '"?')) return;
@@ -2114,9 +2205,10 @@ function renderRundownChips() {
       persistTimeline();
       renderTimeline();
     });
-    chip.querySelector('.rundown-chip-del').addEventListener('click', e => {
-      e.stopPropagation();
-      const id = e.currentTarget.dataset.id;
+  });
+  el.querySelectorAll('.rundown-chip-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
       const r = rundowns.find(x => x.id === id);
       if (!r || !confirm('Delete "' + r.name + '"?')) return;
       rundowns = rundowns.filter(x => x.id !== id);
