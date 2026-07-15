@@ -1059,10 +1059,21 @@
     <span class="version-badge" id="version-display"></span>
   </div>
   <div class="header-buttons">
+    <button class="btn" id="premium-btn" title="Longer broadcasts, more saved slots, more custom sources">⭐ Premium</button>
     <button class="btn icon-btn" id="theme-toggle-btn" title="Switch to light mode" aria-label="Switch to light mode">🌙</button>
     <button class="btn primary" id="play-broadcast-btn">▶ Play Broadcast</button>
   </div>
 </header>
+
+<div class="modal-overlay" id="premium-modal-overlay">
+  <div class="modal">
+    <h3>⭐ Airtime Premium</h3>
+    <div id="premium-modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn" id="premium-modal-close">Close</button>
+    </div>
+  </div>
+</div>
 
 <main>
   <section id="timeline-col">
@@ -1154,7 +1165,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.16.0';
+const VERSION = '3.17.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1558,6 +1569,13 @@ SOURCES.forEach(s => {
 function addCustomRadioChannel(query) {
   const trimmed = query.trim();
   if (!trimmed) return;
+  const maxCustom = isPremium() ? PREMIUM_MAX_CUSTOM_SOURCES : FREE_MAX_CUSTOM_SOURCES;
+  if (customRadioSources.length >= maxCustom) {
+    openPremiumModal(isPremium()
+      ? `You've reached the Premium limit of ${PREMIUM_MAX_CUSTOM_SOURCES} custom sources -- remove one to add a new one.`
+      : `Free accounts can add ${FREE_MAX_CUSTOM_SOURCES} custom source -- go Premium for up to ${PREMIUM_MAX_CUSTOM_SOURCES}.`);
+    return;
+  }
   const entry = {
     id: 'custom-' + Date.now(),
     name: trimmed + ' (Radio)',
@@ -1650,6 +1668,13 @@ async function validatePodcastFeed(url) {
 async function addCustomPodcast(url) {
   const trimmed = url.trim();
   if (!trimmed) return;
+  const maxCustom = isPremium() ? PREMIUM_MAX_CUSTOM_SOURCES : FREE_MAX_CUSTOM_SOURCES;
+  if (customRadioSources.length >= maxCustom) {
+    openPremiumModal(isPremium()
+      ? `You've reached the Premium limit of ${PREMIUM_MAX_CUSTOM_SOURCES} custom sources -- remove one to add a new one.`
+      : `Free accounts can add ${FREE_MAX_CUSTOM_SOURCES} custom source -- go Premium for up to ${PREMIUM_MAX_CUSTOM_SOURCES}.`);
+    return;
+  }
   const statusEl = document.getElementById('custom-radio-status');
   if (statusEl) { statusEl.className = ''; statusEl.textContent = 'Checking feed…'; }
   try {
@@ -1702,6 +1727,111 @@ let rundowns = load('airtime_rundowns_v1', []);
 // end is reached by natural auto-advance or a manual "next" past the last block, since both funnel
 // through that same check.
 let repeatBroadcast = load('airtime_repeat_v1', false);
+
+// ---------- Premium ----------
+// Free-tier limits kept generous enough to build a real daily routine, but capped enough that
+// wanting more (longer broadcasts, more saved lineups, more of your own sources) is a reason to
+// buy Premium. Verified via a Cloudflare Worker route rather than calling Lemon Squeezy directly
+// from the browser (their license API doesn't set CORS headers for that) -- see
+// cors-proxy-worker.js's /license-verify route, which also confirms the key belongs to this
+// specific product before trusting it.
+const FREE_MAX_BROADCAST_MIN = 120;
+const FREE_MAX_SAVED_RUNDOWNS = 1;
+const PREMIUM_MAX_SAVED_RUNDOWNS = 20;
+const FREE_MAX_CUSTOM_SOURCES = 1;
+const PREMIUM_MAX_CUSTOM_SOURCES = 10;
+const LICENSE_VERIFY_URL = 'https://airtime-cors-proxy.njf520.workers.dev/license-verify';
+// TODO: replace with the real Lemon Squeezy checkout URL once the Airtime Premium product exists
+// (Dashboard -> Products -> the product -> "Copy checkout URL").
+const LEMONSQUEEZY_CHECKOUT_URL = 'https://REPLACE.lemonsqueezy.com/buy/REPLACE_WITH_CHECKOUT_ID';
+
+let premiumLicense = load('airtime_premium_v1', null); // { key, email, verifiedAt } or null
+function isPremium() { return !!premiumLicense; }
+
+async function verifyLicenseKey(rawKey) {
+  const key = rawKey.trim();
+  if (!key) throw new Error('Enter a license key');
+  let data;
+  try {
+    const res = await fetch(LICENSE_VERIFY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ licenseKey: key }),
+    });
+    data = await res.json();
+  } catch (e) {
+    throw new Error('Could not reach the license server -- check your connection and try again');
+  }
+  if (!data.success) throw new Error(data.message || 'That license key isn\'t valid');
+  premiumLicense = { key: data.key || key, email: data.email || null, verifiedAt: Date.now() };
+  save('airtime_premium_v1', premiumLicense);
+  return premiumLicense;
+}
+
+function removeLicenseKey() {
+  premiumLicense = null;
+  save('airtime_premium_v1', null);
+}
+
+function renderPremiumModal(reason) {
+  const body = document.getElementById('premium-modal-body');
+  if (isPremium()) {
+    body.innerHTML = `
+      <p>✓ Premium is active${premiumLicense.email ? ' for ' + escapeHtml(premiumLicense.email) : ''}. Enjoy broadcasts of any length, up to ${PREMIUM_MAX_SAVED_RUNDOWNS} saved broadcasts, and up to ${PREMIUM_MAX_CUSTOM_SOURCES} custom sources.</p>
+      <div class="modal-actions" style="justify-content:flex-start;margin-top:14px;">
+        <button class="btn danger" id="premium-remove-btn">Remove license from this browser</button>
+      </div>
+    `;
+    document.getElementById('premium-remove-btn').addEventListener('click', () => {
+      if (!confirm('Remove your Premium license from this browser? You can re-activate it anytime with the same key.')) return;
+      removeLicenseKey();
+      renderPremiumModal();
+    });
+    return;
+  }
+
+  body.innerHTML = `
+    ${reason ? `<p style="color:var(--bad);">${escapeHtml(reason)}</p>` : ''}
+    <p>Free: broadcasts up to ${FREE_MAX_BROADCAST_MIN / 60} hours, ${FREE_MAX_SAVED_RUNDOWNS} saved broadcast, ${FREE_MAX_CUSTOM_SOURCES} custom source.<br>
+    Premium: broadcasts of any length, up to ${PREMIUM_MAX_SAVED_RUNDOWNS} saved broadcasts, up to ${PREMIUM_MAX_CUSTOM_SOURCES} custom sources.</p>
+    <p><a href="${LEMONSQUEEZY_CHECKOUT_URL}" target="_blank" rel="noopener">Get Premium →</a> — you'll get a license key by email after checkout.</p>
+    <label for="premium-key-input">Already have a license key?</label>
+    <input type="text" id="premium-key-input" placeholder="XXXX-XXXX-XXXX-XXXX">
+    <div id="premium-key-status" style="font-size:12px;margin-top:6px;"></div>
+    <div class="modal-actions">
+      <button class="btn primary" id="premium-activate-btn">Activate</button>
+    </div>
+  `;
+  document.getElementById('premium-key-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('premium-activate-btn').click();
+  });
+  document.getElementById('premium-activate-btn').addEventListener('click', async () => {
+    const input = document.getElementById('premium-key-input');
+    const statusEl = document.getElementById('premium-key-status');
+    const btn = document.getElementById('premium-activate-btn');
+    btn.disabled = true;
+    statusEl.style.color = 'var(--text-dim)';
+    statusEl.textContent = 'Checking…';
+    try {
+      await verifyLicenseKey(input.value);
+      statusEl.style.color = 'var(--good)';
+      statusEl.textContent = '✓ Activated!';
+      setTimeout(() => renderPremiumModal(), 700);
+    } catch (e) {
+      statusEl.style.color = 'var(--bad)';
+      statusEl.textContent = e.message;
+      btn.disabled = false;
+    }
+  });
+}
+
+function openPremiumModal(reason) {
+  renderPremiumModal(reason);
+  document.getElementById('premium-modal-overlay').classList.add('open');
+}
+function closePremiumModal() {
+  document.getElementById('premium-modal-overlay').classList.remove('open');
+}
 
 // One-time seed of a few starter broadcasts, so a first-time visitor has something to hit Play on
 // immediately instead of facing an empty timeline and a 100+ source catalog with nothing pre-built.
@@ -2145,7 +2275,17 @@ function renderTimeline() {
       const idx = timelineBlocks.findIndex(x => x.uid === inp.dataset.uid);
       if (idx === -1) return;
       const b = timelineBlocks[idx];
-      b.lengthMin = Math.max(1, parseInt(inp.value) || 1);
+      let newLen = Math.max(1, parseInt(inp.value) || 1);
+      if (!isPremium()) {
+        const othersTotal = timelineBlocks.reduce((sum, x, i) => i === idx ? sum : sum + x.lengthMin, 0);
+        const maxAllowed = Math.max(1, FREE_MAX_BROADCAST_MIN - othersTotal);
+        if (newLen > maxAllowed) {
+          newLen = maxAllowed;
+          inp.value = maxAllowed;
+          openPremiumModal(`Free broadcasts are capped at ${FREE_MAX_BROADCAST_MIN / 60} hours -- go Premium for broadcasts of any length.`);
+        }
+      }
+      b.lengthMin = newLen;
       persistTimeline();
       renderProgress();
       // If this is the block currently playing, apply the new length live instead of only on
@@ -2302,12 +2442,18 @@ timelineEl.addEventListener('drop', e => {
 function addSourceToTimeline(sourceId) {
   const src = SOURCES.find(s => s.id === sourceId);
   if (!src) return;
+  const addedMin = src.flexible ? 30 : src.lengthMin;
+  const currentTotal = timelineBlocks.reduce((sum, b) => sum + b.lengthMin, 0);
+  if (!isPremium() && currentTotal + addedMin > FREE_MAX_BROADCAST_MIN) {
+    openPremiumModal(`Free broadcasts are capped at ${FREE_MAX_BROADCAST_MIN / 60} hours -- go Premium for broadcasts of any length.`);
+    return;
+  }
   timelineBlocks.push({
     uid: 'b' + Date.now() + Math.random().toString(36).slice(2, 7),
     sourceId: src.id,
     name: src.name,
     category: src.category,
-    lengthMin: src.flexible ? 30 : src.lengthMin,
+    lengthMin: addedMin,
   });
   trackRecentSource(src.id);
   persistTimeline();
@@ -2353,6 +2499,13 @@ document.getElementById('search').addEventListener('input', e => {
 });
 document.getElementById('rundown-save-btn').addEventListener('click', () => {
   if (timelineBlocks.length === 0) { alert('Your timeline is empty — nothing to save.'); return; }
+  const maxSaved = isPremium() ? PREMIUM_MAX_SAVED_RUNDOWNS : FREE_MAX_SAVED_RUNDOWNS;
+  if (rundowns.length >= maxSaved) {
+    openPremiumModal(isPremium()
+      ? `You've reached the Premium limit of ${PREMIUM_MAX_SAVED_RUNDOWNS} saved broadcasts -- delete one to save a new one.`
+      : `Free accounts can save ${FREE_MAX_SAVED_RUNDOWNS} broadcast -- go Premium for up to ${PREMIUM_MAX_SAVED_RUNDOWNS}.`);
+    return;
+  }
   const name = prompt('Name this broadcast (e.g. "My 8am Commute"):');
   if (!name || !name.trim()) return;
   rundowns.push({
@@ -2440,6 +2593,11 @@ document.getElementById('custom-radio-add').addEventListener('click', () => {
 document.getElementById('custom-podcast-add').addEventListener('click', () => {
   const url = prompt('Paste a podcast\'s RSS feed URL:\n(Look for "RSS feed," "subscribe by RSS," or a copy-link icon on the podcast\'s own website)');
   if (url && url.trim()) addCustomPodcast(url.trim());
+});
+document.getElementById('premium-btn').addEventListener('click', () => openPremiumModal());
+document.getElementById('premium-modal-close').addEventListener('click', closePremiumModal);
+document.getElementById('premium-modal-overlay').addEventListener('click', e => {
+  if (e.target.id === 'premium-modal-overlay') closePremiumModal();
 });
 document.getElementById('export-timeline-btn').addEventListener('click', () => {
   if (timelineBlocks.length === 0) { alert('Your timeline is empty — nothing to export.'); return; }
