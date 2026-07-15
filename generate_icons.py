@@ -1,43 +1,51 @@
 """Generates icon-512.png and icon-192.png for the Airtime PWA.
 
-Same glyph as the inline SVG favicon in index.html: a blue play-button
-circle with two broadcast arcs above it, on the app's dark background.
-Kept within a safe center zone since manifest icons are "maskable" (the OS
-may crop to a circle/squircle). Run once; output files are checked into
-the repo.
+Same glyph as the inline SVG favicon in index.html: five vertical bars of
+varying height (like an audio level meter), on the app's dark background --
+matches the "brand-bars" logo shown in the header. Bar geometry is defined
+on the SVG's own 64x64 unit grid and scaled up, so it stays pixel-faithful
+to the favicon at any output size.
+
+Previously this drew a different glyph entirely (a blue play-button circle
+with broadcast arcs) -- stale from before the header/favicon was redesigned
+to the current bar-chart look, which is why the PNG icons (used for
+apple-touch-icon and the PWA manifest) didn't match the favicon a phone's
+browser actually shows. Run once; output files are checked into the repo.
 """
 from PIL import Image, ImageDraw
 
-SIZE = 512
-BG = (15, 17, 21, 255)      # #0f1115
-ACCENT = (79, 176, 255, 255)  # #4fb0ff
+BG = (27, 25, 21, 255)       # #1b1915 -- same background as the favicon SVG
+ACCENT = (224, 161, 60, 255)  # #e0a13c -- same accent color as the favicon SVG
+
+# Bar geometry on the favicon SVG's own 64x64 unit grid: (x, y, width, height).
+BARS_64 = [
+    (6, 37, 8, 15),
+    (17, 17, 8, 35),
+    (28, 28, 8, 24),
+    (39, 12, 8, 40),
+    (50, 40, 8, 12),
+]
+CORNER_RADIUS_64 = 14  # background rect corner radius
+BAR_RADIUS_64 = 2      # each bar's own corner radius
+
+
+def render(size):
+    scale = size / 64
+    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([0, 0, size - 1, size - 1], radius=CORNER_RADIUS_64 * scale, fill=BG)
+    for x, y, w, h in BARS_64:
+        d.rounded_rectangle(
+            [x * scale, y * scale, (x + w) * scale, (y + h) * scale],
+            radius=BAR_RADIUS_64 * scale,
+            fill=ACCENT,
+        )
+    return img
 
 
 def main():
-    img = Image.new('RGBA', (SIZE, SIZE), BG)
-    d = ImageDraw.Draw(img)
-
-    cx, cy = SIZE // 2, SIZE // 2 + 40
-
-    # Broadcast arcs above the play button (two concentric quarter-rings)
-    arc_w = 18
-    d.arc([cx - 110, cy - 220, cx + 110, cy - 60], start=200, end=340, fill=ACCENT, width=arc_w)
-    d.arc([cx - 150, cy - 260, cx + 150, cy - 20], start=203, end=337, fill=(79, 176, 255, 150), width=arc_w)
-
-    # Play-button circle
-    r = 115
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=ACCENT)
-
-    # Play triangle cut into the circle, in the background color
-    tri_w, tri_h = 90, 110
-    d.polygon([
-        (cx - tri_w * 0.35, cy - tri_h / 2),
-        (cx - tri_w * 0.35, cy + tri_h / 2),
-        (cx + tri_w * 0.65, cy),
-    ], fill=BG)
-
-    img.convert('RGB').save('icon-512.png')
-    img.convert('RGB').resize((192, 192), Image.LANCZOS).save('icon-192.png')
+    render(512).convert('RGB').save('icon-512.png')
+    render(192).convert('RGB').save('icon-192.png')
 
 
 if __name__ == '__main__':
