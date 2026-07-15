@@ -75,7 +75,10 @@ async function runSmokeTest() {
     consoleLog.push(`[goto] status=${gotoRes?.status()} url=${page.url()}`);
 
     try {
-      await page.waitForFunction(() => !document.getElementById('run-btn').disabled, { timeout: 30000 });
+      // waitForFunction(pageFunction, arg, options) -- options is the THIRD argument. Passing it
+      // second (as `arg`) silently no-ops and falls back to Playwright's 30s default, which is
+      // exactly what happened here on the first two live runs against this workflow.
+      await page.waitForFunction(() => !document.getElementById('run-btn').disabled, null, { timeout: 60000 });
     } catch (e) {
       const btnText = await page.evaluate(() => document.getElementById('run-btn')?.textContent).catch(() => '(no button)');
       throw new Error(`Sources never finished loading (run-btn text: "${btnText}").\n${consoleLog.join('\n')}`);
@@ -84,6 +87,7 @@ async function runSmokeTest() {
     await page.click('#run-btn');
     await page.waitForFunction(
       () => !document.getElementById('export-json-btn').disabled,
+      null,
       { timeout: RUN_TIMEOUT_MS }
     );
     return await page.evaluate(() => (
