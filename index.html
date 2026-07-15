@@ -540,6 +540,7 @@
     min-width: 130px;
     border: 1.5px dashed var(--border);
     border-radius: 8px;
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -559,6 +560,30 @@
     min-width: 260px;
     min-height: 110px;
     padding: 24px 20px;
+  }
+  /* The empty-timeline state is a real <button> (see renderTimeline) rather than the plain
+     inert div used once there's at least one block -- it's the primary first-time-user call
+     to action, so it needs to look and behave like one instead of a passive hint. */
+  .timeline-drop-hint.cta {
+    pointer-events: auto;
+    cursor: pointer;
+    opacity: 1;
+    flex-direction: column;
+    gap: 6px;
+    color: var(--accent-label);
+    font-weight: 600;
+  }
+  .timeline-drop-hint.cta:hover {
+    border-color: var(--accent);
+    background: var(--accent-tint);
+  }
+  .timeline-cta-sub {
+    display: block;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--text-dim);
   }
   /* Visual time-blocking: each block's width is proportional to its length (see renderTimeline's
      inline style), so the timeline reads like a real broadcast log/clock wheel at a glance. */
@@ -1129,7 +1154,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.15.0';
+const VERSION = '3.16.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -2089,9 +2114,27 @@ function renderTimeline() {
   // wrong advice on mobile -- found during a real mobile-viewport QA pass. .drag-hint/.tap-hint
   // already had a working CSS toggle (shown/hidden by the same 768px breakpoint the rest of the
   // touch-vs-desktop UI uses) but no HTML was actually using it anymore.
-  const hint = document.createElement('div');
-  hint.className = 'timeline-drop-hint';
-  hint.innerHTML = '<span class="drag-hint">Drag a source<br>here to add it</span><span class="tap-hint">Tap + on a source<br>below to add it</span>';
+  //
+  // When the timeline is completely empty, this same slot becomes the first-time-user call to
+  // action instead -- most visitors never read the README, so the page itself has to point them
+  // at "add a source" vs. "load a starter broadcast". Rendered as a real <button> (not the inert
+  // div used once there's at least one block) so it's a genuine clickable/keyboard target.
+  const empty = timelineBlocks.length === 0;
+  const hint = document.createElement(empty ? 'button' : 'div');
+  hint.className = 'timeline-drop-hint' + (empty ? ' cta' : '');
+  if (empty) {
+    hint.type = 'button';
+    hint.setAttribute('aria-label', 'Build your first broadcast by picking a source below');
+    hint.innerHTML = 'Click here to build your first broadcast<span class="timeline-cta-sub">or choose a pre-made broadcast from below</span>';
+    hint.addEventListener('click', () => {
+      document.getElementById('library').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Focusing immediately (even with preventScroll) cancels the smooth-scroll animation
+      // above outright -- confirmed live. Deferring past the scroll's duration lets both happen.
+      setTimeout(() => document.getElementById('search').focus({ preventScroll: true }), 500);
+    });
+  } else {
+    hint.innerHTML = '<span class="drag-hint">Drag a source<br>here to add it</span><span class="tap-hint">Tap + on a source<br>below to add it</span>';
+  }
   el.appendChild(hint);
 
   el.querySelectorAll('.block-move').forEach(btn => {
