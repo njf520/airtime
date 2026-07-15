@@ -159,6 +159,11 @@
     gap: 16px;
     margin-bottom: 4px;
   }
+  .library-h2-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
   .library-h2-row h2 { margin: 0; }
   .library-subtitle {
     font-family: 'Spectral', Georgia, serif;
@@ -833,7 +838,7 @@
     gap: 6px;
     flex-shrink: 0;
   }
-  #feedback-link {
+  #feedback-link, #suggest-source-link {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
     color: var(--text-dim);
@@ -843,7 +848,7 @@
     padding: 4px 10px;
     white-space: nowrap;
   }
-  #feedback-link:hover { border-color: var(--accent); color: var(--accent); }
+  #feedback-link:hover, #suggest-source-link:hover { border-color: var(--accent); color: var(--accent); }
   #footer-status {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
@@ -1025,7 +1030,10 @@
     <div class="library-heading-row">
       <div class="library-h2-row">
         <h2>Source library</h2>
-        <button class="btn primary pill" id="custom-radio-add">+ Custom channel</button>
+        <div class="library-h2-actions">
+          <button class="btn primary pill" id="custom-radio-add">+ Custom channel</button>
+          <button class="btn pill" id="custom-podcast-add" title="Add any podcast by pasting its RSS feed URL -- saved to your own browser, not the shared catalog">+ Add podcast</button>
+        </div>
       </div>
       <p class="library-subtitle">Pick from the catalog</p>
     </div>
@@ -1048,6 +1056,7 @@
     </div>
   </details>
   <div id="footer-right">
+    <a href="#" id="suggest-source-link" title="Suggest a show or station for the shared catalog -- opens a pre-filled GitHub issue">💡 Suggest a source</a>
     <a href="#" id="feedback-link" title="Opens a pre-filled bug report on GitHub (includes your version, browser, and recent playback log to help diagnose the issue) -- you'll need a free GitHub account to submit it">🐛 Report a bug / feedback</a>
     <span id="footer-status"></span>
   </div>
@@ -1056,7 +1065,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.11.0';
+const VERSION = '3.12.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1462,6 +1471,10 @@ function addCustomRadioChannel(query) {
     sourceType: 'internet-radio',
     feedUrl: 'radio-browser:tag:' + trimmed.toLowerCase(),
     feedStatus: 'verified',
+    // Set explicitly rather than left for the id-prefix fallback in the SOURCES.forEach network
+    // pass near NETWORK_MAP -- that pass only runs once at page load, so an entry added live this
+    // session would otherwise show the literal string "undefined" as its network tag until reload.
+    network: 'Radio-Browser',
     desc: 'Custom Radio-Browser search: "' + trimmed + '", length you set.',
   };
   SOURCES.push(entry);
@@ -1498,6 +1511,86 @@ function removeCustomRadioChannel(id) {
   save('airtime_custom_sources_v1', customRadioSources);
   renderFilters();
   renderLibrary();
+}
+
+// Fetches and sanity-checks an arbitrary podcast RSS/Atom URL before adding it -- reuses the same
+// proxy chain every catalog podcast source goes through (fetchTextWithProxies, defined further down
+// but hoisted like every other function declaration in this file), so a feed that needs a proxy to
+// bypass CORS here works exactly the same way it would for a built-in source. Throws with a message
+// meant to be shown directly to the user, rather than returning a generic ok/fail flag, since the
+// failure reasons here (not XML, no episodes, no audio) are meaningfully different problems.
+async function validatePodcastFeed(url) {
+  const xmlText = await fetchTextWithProxies(url);
+  const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+  if (doc.querySelector('parsererror')) throw new Error('That URL didn\'t return a valid RSS feed');
+  const items = [...doc.querySelectorAll('item, entry')];
+  if (items.length === 0) throw new Error('That feed has no episodes');
+  const hasAudio = items.some(item => {
+    if (item.querySelector('enclosure')?.getAttribute('url')) return true;
+    return !!item.getElementsByTagNameNS('*', 'content')[0]?.getAttribute('url');
+  });
+  if (!hasAudio) throw new Error('That feed has episodes but no audio files -- may be video-only or text-only');
+  const title = doc.querySelector('channel > title')?.textContent?.trim()
+    || doc.querySelector('feed > title')?.textContent?.trim()
+    || 'Custom Podcast';
+  // Best-effort typical-episode-length estimate from the latest item's <itunes:duration>, if present
+  // (either plain seconds or HH:MM:SS/MM:SS) -- purely for the running-total display, since this
+  // source plays non-flexible (see addCustomPodcast) and always runs to its own real natural end
+  // regardless of this estimate, same as every other podcast-rss source in the catalog.
+  let lengthMin = 30;
+  const durText = items[0].getElementsByTagNameNS('*', 'duration')[0]?.textContent?.trim();
+  if (durText) {
+    const secs = /^\d+$/.test(durText)
+      ? parseInt(durText, 10)
+      : durText.split(':').map(Number).reduce((acc, n) => (isNaN(n) ? acc : acc * 60 + n), 0);
+    if (secs > 0) lengthMin = Math.max(1, Math.round(secs / 60));
+  }
+  return { title, lengthMin };
+}
+
+// Adds a user's own podcast by RSS URL -- a personal addition saved to this browser only (like
+// addCustomRadioChannel above), not a contribution to the shared catalog everyone else sees.
+async function addCustomPodcast(url) {
+  const trimmed = url.trim();
+  if (!trimmed) return;
+  const statusEl = document.getElementById('custom-radio-status');
+  if (statusEl) { statusEl.className = ''; statusEl.textContent = 'Checking feed…'; }
+  try {
+    const { title, lengthMin } = await validatePodcastFeed(trimmed);
+    const entry = {
+      id: 'custom-' + Date.now(),
+      name: title,
+      category: 'My Podcasts',
+      cadence: 'Varies',
+      lengthMin,
+      flexible: false,
+      sourceType: 'podcast-rss',
+      feedUrl: trimmed,
+      feedStatus: 'verified',
+      network: 'Independent',
+      desc: 'Your own podcast, added by RSS feed URL.',
+    };
+    SOURCES.push(entry);
+    customRadioSources.push(entry);
+    save('airtime_custom_sources_v1', customRadioSources);
+    renderFilters();
+    renderLibrary();
+    addSourceToTimeline(entry.id);
+    if (statusEl) {
+      statusEl.className = '';
+      statusEl.textContent = '✓ "' + title + '" added to your timeline ↑';
+      clearTimeout(statusEl._timer);
+      statusEl._timer = setTimeout(() => {
+        statusEl.classList.add('fade');
+        setTimeout(() => { statusEl.textContent = ''; statusEl.className = ''; }, 350);
+      }, 3500);
+    }
+    const blocks = document.querySelectorAll('#timeline .block');
+    const last = blocks[blocks.length - 1];
+    if (last) last.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+  } catch (e) {
+    if (statusEl) { statusEl.className = 'error'; statusEl.textContent = '✗ Could not add this feed: ' + e.message; }
+  }
 }
 
 // ---------- State ----------
@@ -2161,9 +2254,26 @@ document.getElementById('feedback-link').addEventListener('click', e => {
   const url = 'https://github.com/njf520/airtime/issues/new?' + new URLSearchParams({ title: '', body, labels: 'bug' });
   window.open(url, '_blank', 'noopener');
 });
+// Same rationale as the feedback link above (no backend, so a GitHub issue is the durable place
+// for this to land) -- separate link and template since "here's a show I want" and "here's what
+// broke" call for different information and shouldn't be mixed under one generic form.
+document.getElementById('suggest-source-link').addEventListener('click', e => {
+  e.preventDefault();
+  const body = [
+    'Show/station name:\n',
+    '\nRSS feed URL or link to it (Apple Podcasts / Spotify / the show\'s own site) -- if you have it:\n',
+    '\nWhy you\'d like it added:\n',
+  ].join('\n');
+  const url = 'https://github.com/njf520/airtime/issues/new?' + new URLSearchParams({ title: 'Source suggestion: ', body, labels: 'enhancement' });
+  window.open(url, '_blank', 'noopener');
+});
 document.getElementById('custom-radio-add').addEventListener('click', () => {
   const query = prompt('Enter a genre, mood, or format to find radio stations:\n(e.g. "lofi", "salsa", "80s rock", "talk radio")');
   if (query && query.trim()) addCustomRadioChannel(query.trim());
+});
+document.getElementById('custom-podcast-add').addEventListener('click', () => {
+  const url = prompt('Paste a podcast\'s RSS feed URL:\n(Look for "RSS feed," "subscribe by RSS," or a copy-link icon on the podcast\'s own website)');
+  if (url && url.trim()) addCustomPodcast(url.trim());
 });
 document.getElementById('export-timeline-btn').addEventListener('click', () => {
   if (timelineBlocks.length === 0) { alert('Your timeline is empty — nothing to export.'); return; }
