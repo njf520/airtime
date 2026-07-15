@@ -66,8 +66,21 @@ async function runSmokeTest() {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage();
-    await page.goto(SITE_URL, { waitUntil: 'load' });
-    await page.waitForFunction(() => !document.getElementById('run-btn').disabled, { timeout: 30000 });
+    const consoleLog = [];
+    page.on('console', msg => consoleLog.push(`[console.${msg.type()}] ${msg.text()}`));
+    page.on('pageerror', err => consoleLog.push(`[pageerror] ${err.message}`));
+    page.on('requestfailed', req => consoleLog.push(`[requestfailed] ${req.url()} -- ${req.failure()?.errorText}`));
+
+    const gotoRes = await page.goto(SITE_URL, { waitUntil: 'load' });
+    consoleLog.push(`[goto] status=${gotoRes?.status()} url=${page.url()}`);
+
+    try {
+      await page.waitForFunction(() => !document.getElementById('run-btn').disabled, { timeout: 30000 });
+    } catch (e) {
+      const btnText = await page.evaluate(() => document.getElementById('run-btn')?.textContent).catch(() => '(no button)');
+      throw new Error(`Sources never finished loading (run-btn text: "${btnText}").\n${consoleLog.join('\n')}`);
+    }
+
     await page.click('#run-btn');
     await page.waitForFunction(
       () => !document.getElementById('export-json-btn').disabled,
