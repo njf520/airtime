@@ -1056,7 +1056,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.10.2';
+const VERSION = '3.11.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1332,18 +1332,21 @@ const SOURCES = [
   { id: 'wx-indianapolis', name: 'NOAA Weather Radio: Indianapolis',  category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/IN-Indianapolis-KEC74', feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Indianapolis metro. Government service, no ads.' },
   { id: 'wx-seattle',      name: 'NOAA Weather Radio: Seattle',       category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.bobc.io/stream/KHB60',     feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Seattle metro. Government service, no ads.' },
 
-  // Traffic — new category. Real commercial all-news/news-talk stations, since no ad-free public
-  // source of local traffic reporting exists (unlike weather) -- these carry regular commercial
-  // breaks like any AM/FM station. Limited to the handful of major-market stations whose stream
-  // infrastructure (iHeart's ihrhls.com CDN, or a plain non-HLS StreamTheWorld redirect) actually
-  // works from a direct <audio> embed -- several other major-market flagships (1010 WINS, KNX 1070,
-  // WBBM 780) either don't have a discoverable direct stream or only expose HLS (.m3u8), which this
-  // app's plain <audio> playback can't decode.
-  { id: 'traffic-nyc',     name: 'WABC 770 AM (New York)',   category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://playerservices.streamtheworld.com/api/livestream-redirect/WABCAM.mp3', feedStatus: 'verified', desc: 'New York news/talk with regular traffic and weather updates. Commercial radio -- includes ads.' },
-  { id: 'traffic-la',      name: 'KFI 640 AM (Los Angeles)', category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.revma.ihrhls.com/zc177',                                        feedStatus: 'verified', desc: 'Los Angeles news/talk with regular traffic and weather updates. Commercial radio -- includes ads.' },
-  { id: 'traffic-chicago', name: 'WLS 890 AM (Chicago)',     category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:http://15723.live.streamtheworld.com/WLSAMAAC_SC',              feedStatus: 'verified', desc: 'Chicago news/talk with regular traffic and weather updates. Commercial radio -- includes ads.' },
-  { id: 'traffic-dc',      name: 'WTOP 103.5 FM (Washington DC)', category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://playerservices.streamtheworld.com/api/livestream-redirect/WTOPFM.mp3', feedStatus: 'verified', desc: 'Washington DC\'s famous "traffic and weather together on the 8s" all-news format. Commercial radio -- includes ads.' },
-  { id: 'traffic-boston',  name: 'WBZ NewsRadio 1030 (Boston)', category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.revma.ihrhls.com/zc7729',                                  feedStatus: 'verified', desc: 'Boston all-news radio with regular traffic and weather updates. Commercial radio -- includes ads.' },
+  // Traffic — commented out (not deleted). Reported live: these are general news/talk stations
+  // that merely INCLUDE traffic segments (WTOP's "traffic and weather on the 8s" is a ~90s update
+  // every 10 minutes, not continuous content) -- someone adding "traffic" wanting focused traffic
+  // info instead gets mostly unrelated talk radio. Researched a real fix (Highway Advisory Radio --
+  // government-run stations that loop ONLY traffic/detour/construction info, the traffic equivalent
+  // of NOAA Weather Radio) before just deleting these: confirmed via web search, Radio-Browser (the
+  // same directory that surfaced NOAA Weather Radio), and state-DOT-specific searches that HAR has
+  // no online-streaming equivalent anywhere -- it's thousands of hyper-local, low-power AM stations
+  // meant for car radios near a specific highway segment, with no hobbyist relay network the way
+  // NOAA Weather Radio has. No dedicated, focused, embeddable traffic-only source exists publicly.
+  // { id: 'traffic-nyc',     name: 'WABC 770 AM (New York)',   category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://playerservices.streamtheworld.com/api/livestream-redirect/WABCAM.mp3', feedStatus: 'verified', desc: 'New York news/talk with regular traffic and weather updates. Commercial radio -- includes ads.' },
+  // { id: 'traffic-la',      name: 'KFI 640 AM (Los Angeles)', category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.revma.ihrhls.com/zc177',                                        feedStatus: 'verified', desc: 'Los Angeles news/talk with regular traffic and weather updates. Commercial radio -- includes ads.' },
+  // { id: 'traffic-chicago', name: 'WLS 890 AM (Chicago)',     category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:http://15723.live.streamtheworld.com/WLSAMAAC_SC',              feedStatus: 'verified', desc: 'Chicago news/talk with regular traffic and weather updates. Commercial radio -- includes ads.' },
+  // { id: 'traffic-dc',      name: 'WTOP 103.5 FM (Washington DC)', category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://playerservices.streamtheworld.com/api/livestream-redirect/WTOPFM.mp3', feedStatus: 'verified', desc: 'Washington DC\'s famous "traffic and weather together on the 8s" all-news format. Commercial radio -- includes ads.' },
+  // { id: 'traffic-boston',  name: 'WBZ NewsRadio 1030 (Boston)', category: 'Traffic', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://stream.revma.ihrhls.com/zc7729',                                  feedStatus: 'verified', desc: 'Boston all-news radio with regular traffic and weather updates. Commercial radio -- includes ads.' },
 
   // Daily Science & Nature
   { id: 'birdnote-daily',   name: 'BirdNote Daily',                 category: 'Science', cadence: 'Daily', lengthMin: 2,  flexible: false, sourceType: 'podcast-rss', feedUrl: 'https://feeds.simplecast.com/OB7SrYSf', feedStatus: 'verified', desc: 'A two-minute daily story about birds and the natural world, rich in sound and imagery.' },
@@ -1373,7 +1376,7 @@ const CATEGORY_COLORS = {
   Storytelling: '#d4954a', Comedy: '#c468a8', Science: '#8a8fd4', Poetry: '#c9954a',
   Reflection: '#9aa0ab', History: '#c98a4a', Drama: '#c9564a', Weather: '#4fd1ff', Music: '#3ecf8e',
   Sports: '#4a9fd4', Sleep: '#8a6fad', Technology: '#3b82c4', Health: '#4aad6e',
-  'True Crime': '#c94f5c', Traffic: '#d1a83e',
+  'True Crime': '#c94f5c',
 };
 
 // User-created custom radio channels (any Radio-Browser tag/name search) are appended to SOURCES
