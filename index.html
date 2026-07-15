@@ -1056,7 +1056,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.10.0';
+const VERSION = '3.10.1';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1881,9 +1881,14 @@ function renderTimeline() {
     el.appendChild(block);
   });
 
+  // Drag-and-drop doesn't fire at all on touchscreens (see the "+" button / tap-to-add path used
+  // everywhere else in this file), so telling a phone user to "drag a source here" is actively
+  // wrong advice on mobile -- found during a real mobile-viewport QA pass. .drag-hint/.tap-hint
+  // already had a working CSS toggle (shown/hidden by the same 768px breakpoint the rest of the
+  // touch-vs-desktop UI uses) but no HTML was actually using it anymore.
   const hint = document.createElement('div');
   hint.className = 'timeline-drop-hint';
-  hint.innerHTML = 'Drag a source<br>here to add it';
+  hint.innerHTML = '<span class="drag-hint">Drag a source<br>here to add it</span><span class="tap-hint">Tap + on a source<br>below to add it</span>';
   el.appendChild(hint);
 
   el.querySelectorAll('.block-move').forEach(btn => {
