@@ -182,6 +182,11 @@
   #timeline-col .timeline-heading-row h2 { margin: 0 0 8px 0; }
   .timeline-heading-actions { display: flex; gap: 6px; align-items: center; }
   .timeline-heading-actions .btn { font-size: 12px; padding: 5px 10px; }
+  .toggle-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-tint);
+  }
   .rundown-section {
     display: flex;
     align-items: center;
@@ -1006,6 +1011,7 @@
         <div id="progress-label"></div>
       </div>
       <div class="timeline-heading-actions">
+        <button class="btn toggle-btn" id="repeat-toggle-btn" title="When on, the broadcast starts over from the beginning instead of stopping once it reaches the end" aria-pressed="false">🔁 Repeat: Off</button>
         <button class="btn" id="export-timeline-btn" title="Download this exact timeline as a file, e.g. to move it to another device or share it with someone">Export to file</button>
         <button class="btn" id="import-timeline-btn" title="Load a timeline from a file previously saved with Export to file">Import from file</button>
         <input type="file" id="import-timeline-input" accept="application/json" style="display:none">
@@ -1065,7 +1071,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.12.0';
+const VERSION = '3.13.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1600,6 +1606,11 @@ let activeFormat = null;
 let searchText = '';
 let timelineBlocks = load('airtime_timeline_v1', []);
 let rundowns = load('airtime_rundowns_v1', []);
+// Defaults off. When on, reaching the end of the timeline restarts from block 0 instead of
+// stopping (see the "index >= timelineBlocks.length" branch in playBlockAt) -- applies whether the
+// end is reached by natural auto-advance or a manual "next" past the last block, since both funnel
+// through that same check.
+let repeatBroadcast = load('airtime_repeat_v1', false);
 
 // One-time seed of a few starter broadcasts, so a first-time visitor has something to hit Play on
 // immediately instead of facing an empty timeline and a 100+ source catalog with nothing pre-built.
@@ -2216,6 +2227,18 @@ document.getElementById('clear-timeline-btn').addEventListener('click', () => {
   timelineBlocks = [];
   persistTimeline();
   renderTimeline();
+});
+function updateRepeatButton() {
+  const btn = document.getElementById('repeat-toggle-btn');
+  btn.textContent = repeatBroadcast ? '🔁 Repeat: On' : '🔁 Repeat: Off';
+  btn.classList.toggle('active', repeatBroadcast);
+  btn.setAttribute('aria-pressed', String(repeatBroadcast));
+}
+updateRepeatButton();
+document.getElementById('repeat-toggle-btn').addEventListener('click', () => {
+  repeatBroadcast = !repeatBroadcast;
+  save('airtime_repeat_v1', repeatBroadcast);
+  updateRepeatButton();
 });
 document.getElementById('copy-log-btn').addEventListener('click', async () => {
   if (playbackLog.length === 0) { alert('Nothing in the log yet.'); return; }
@@ -3023,6 +3046,9 @@ async function playBlockAt(index) {
   if (myGen !== playGeneration) return; // superseded while fading out
 
   if (index >= timelineBlocks.length) {
+    if (repeatBroadcast && timelineBlocks.length > 0) {
+      return playBlockAt(0);
+    }
     playerState.playing = false;
     playerState.currentIndex = -1;
     setNowPlaying('Broadcast finished', '', '');
