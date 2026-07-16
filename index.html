@@ -1303,7 +1303,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.21.0';
+const VERSION = '3.21.1';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -2710,7 +2710,15 @@ document.getElementById('search').addEventListener('input', e => {
 document.getElementById('rundown-save-btn').addEventListener('click', () => {
   if (timelineBlocks.length === 0) { alert('Your timeline is empty — nothing to save.'); return; }
   const maxSaved = isPremium() ? PREMIUM_MAX_SAVED_RUNDOWNS : FREE_MAX_SAVED_RUNDOWNS;
-  if (rundowns.length >= maxSaved) {
+  // The three starter templates (STARTER_RUNDOWNS, seeded into `rundowns` on first visit -- see
+  // that seeding code) are a value-add convenience, not something a user "saved" themselves, so
+  // they shouldn't burn the free-tier save cap. Without this exclusion every brand-new free user
+  // starts 3 broadcasts over a cap of 1, and hits the Premium paywall on their very first save --
+  // before they've built anything of their own. Starters are identifiable by their fixed
+  // `starter-` id prefix (deleting one is a real user action that turns it into an ordinary
+  // rundown with the same id, so this only ever excludes the untouched originals).
+  const ownSavedCount = rundowns.filter(r => !r.id.startsWith('starter-')).length;
+  if (ownSavedCount >= maxSaved) {
     openPremiumModal(isPremium()
       ? `You've reached the Premium limit of ${PREMIUM_MAX_SAVED_RUNDOWNS} saved broadcasts -- delete one to save a new one.`
       : `Free accounts can save ${FREE_MAX_SAVED_RUNDOWNS} broadcast -- go Premium for up to ${PREMIUM_MAX_SAVED_RUNDOWNS}.`);
