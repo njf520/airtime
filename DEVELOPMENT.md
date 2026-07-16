@@ -832,6 +832,116 @@ below it, where they're load-bearing since drag genuinely doesn't work.
   modes (invalid JSON syntax, valid JSON missing the `blocks` array, and a
   `blocks` array with malformed entries) plus the valid round-trip.
 
+## Accessibility pass — v3.15.0
+
+A dedicated pass, not incidental fixes -- audited real rendered contrast
+ratios (relative-luminance formula, walking up to the actual composited
+background rather than trusting raw CSS-variable pairs) and keyboard
+reachability across the whole app, then fixed every genuine finding:
+
+- **No `<h1>` anywhere on the page.** The brand wordmark was a `<span>`.
+  Changed to `<h1 class="brand-wordmark">`, with `margin: 0` added to
+  neutralize the browser's default `h1` margin (unrelated to that class's
+  own sizing).
+- **The search input had no accessible name** beyond its placeholder
+  (placeholder text is not a reliable substitute for screen readers). Added
+  `aria-label="Search sources by name or network"`.
+- **Light-mode `--accent-label` failed WCAG AA for text use**: measured
+  2.97:1 against its actual rendered background, well under the 4.5:1
+  threshold for normal text. Changed from `#b07d24` to `#825a19` (5.03:1) --
+  `--accent-label` exists specifically as the WCAG-safe variant of
+  `--accent` for anywhere accent color is used as *text*, not just a border
+  or fill; nine CSS rules that were still using `--accent` for text
+  (`.toggle-btn.active`, `.recent-chip:hover`, `.cat-chip.active`,
+  `.source-add-btn`/`.source-remove-btn`, `.tag-network`,
+  `.sequential-progress`, `.sequential-reset-btn:hover`, `.flex-badge`,
+  `.block-move:hover:not(:disabled)`, the footer feedback/suggest links)
+  were switched to `--accent-label`.
+- **The biggest finding**: category/length/format filter chips and the
+  "load this saved broadcast" chips were `<div>`s with only mouse click
+  handlers -- no `tabindex`, no keyboard handler, no button semantics. That
+  meant core navigation (every category/length/format filter) and core
+  functionality (loading any saved broadcast, including all three starter
+  templates) were **completely unusable via keyboard**. Fixed by rewriting
+  `renderFilters()` to create real `<button type="button">` elements with
+  `aria-pressed` reflecting active state, and by splitting each rundown
+  chip's markup into a real `<button class="rundown-chip-load">` (the
+  load action) plus a separate delete button, replacing the old
+  `closest()`/`stopPropagation()` div-with-nested-click-targets pattern.
+- Timeline blocks themselves gained `tabIndex = 0`, `role="button"`,
+  an `aria-label` ("Play {name}"), and a `keydown` handler mirroring the
+  existing click handler (same guard against double-handling clicks on a
+  block's own nested button/input children) so Tab + Enter/Space plays a
+  block exactly like a click does.
+- `#np-status` (the now-playing status line) got `aria-live="polite"` so
+  screen readers announce status changes (buffering, errors, skips)
+  without the user needing to have focus there.
+
+All verified live via `document.activeElement` checks, `aria-pressed`
+state changes, and keyboard-triggered Enter activation producing the same
+state change as a click -- not just visual inspection.
+
+## SEO metadata + robots.txt/sitemap.xml — v3.15.0
+
+Added in the same release as the accessibility pass. Before this, the
+`<head>` had no meta description, no Open Graph or Twitter Card tags, no
+canonical link, and no structured data -- confirmed via direct inspection
+before starting, not assumed. Added:
+
+- `<meta name="description">`, Open Graph (`og:type`, `og:url`,
+  `og:site_name`, `og:title`, `og:description`, `og:image` +
+  width/height), Twitter Card (`twitter:card=summary_large_image`,
+  title/description/image), a canonical `<link>`, and JSON-LD
+  (`schema.org` `WebApplication`, `applicationCategory`, a
+  `$0` `Offer`).
+- `robots.txt` (allow all, points at the sitemap) and `sitemap.xml`
+  (single URL, the production root) as new top-level files.
+- Reused the existing `screenshot.png` as the OG/Twitter image rather than
+  commissioning new branded artwork, since it would need redoing anyway
+  once the app is renamed (see below) -- and the screenshot itself already
+  needs a refresh regardless, since it shows an old version number in
+  frame.
+
+**Explicitly built around the fact that "Airtime" is a placeholder name.**
+Every string tied to the current name is flagged inline with an HTML
+comment in `index.html`'s `<head>` so a rename is a find-and-replace, not
+an archaeology project: `<title>`, meta description, `og:title`/
+`og:description`/`og:site_name`, `twitter:title`/`twitter:description`,
+the JSON-LD `name` field, `manifest.json`'s `name`/`short_name`, and (as
+of the Premium work below) the Lemon Squeezy checkout URL's implied
+product name.
+
+Verified locally before shipping: all meta tags render with the correct
+values, the JSON-LD parses without error, and both new static files serve
+correctly.
+
+## First-time-visitor call to action on the empty timeline — v3.16.0
+
+Most visitors never read the README, so the in-app experience itself
+needed to carry the "what do I do first" message, not just the GitHub
+page. The empty timeline previously showed only a passive dashed-border
+hint ("Drag a source here to add it" / "Tap + on a source below to add
+it" on mobile) -- informational, not actionable (`pointer-events: none`).
+
+When the timeline is empty, that same slot now renders as a real
+`<button>` (not the inert `<div>` used once there's at least one block):
+**"Click here to build your first broadcast"** in larger accent-colored
+text, with **"or choose a pre-made broadcast from below"** underneath in
+smaller text, pointing at the "Saved broadcasts" section directly below
+it. Clicking it scrolls to the source library and focuses the search
+input. Built as a native `<button>` specifically so it's keyboard-operable
+for free, consistent with the accessibility pass above -- no custom ARIA
+plumbing needed for something that's natively interactive.
+
+**A real bug turned up while verifying this live, unrelated to the
+feature itself**: calling `element.focus({preventScroll: true})`
+immediately after starting a smooth `scrollIntoView()` on a *different*
+element cancels that scroll outright -- confirmed by isolating the two
+calls and testing each independently. `preventScroll` stops focus from
+causing its own jump, but doesn't stop it from interrupting an
+already-in-flight unrelated scroll animation. Fixed by deferring the
+focus call past the scroll's duration with `setTimeout(..., 500)`.
+
 ## Freemium gate (Premium) — v3.17.0
 
 Three free-tier limits, lifted for Premium: broadcasts capped at 2 hours

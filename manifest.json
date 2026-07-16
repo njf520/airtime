@@ -4,8 +4,8 @@
   "description": "Build and play a custom radio broadcast timeline",
   "start_url": "/airtime/",
   "display": "standalone",
-  "background_color": "#0f1115",
-  "theme_color": "#0f1115",
+  "background_color": "#1b1915",
+  "theme_color": "#1b1915",
   "icons": [
     {
       "src": "icon-192.png",
