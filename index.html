@@ -1165,7 +1165,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.18.2';
+const VERSION = '3.19.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -2133,7 +2133,7 @@ function renderLibrary() {
       chip.className = 'recent-chip';
       chip.style.setProperty('--chip-color', CATEGORY_COLORS[s.category] || 'var(--border)');
       chip.title = s.desc;
-      chip.innerHTML = `${s.name} <span class="recent-chip-plus">+</span>`;
+      chip.innerHTML = `${escapeHtml(s.name)} <span class="recent-chip-plus">+</span>`;
       chip.addEventListener('click', () => addSourceToTimeline(s.id));
       row.appendChild(chip);
     });
@@ -2166,17 +2166,17 @@ function renderLibrary() {
       const badgeClass = effectiveStatus === 'degraded' ? 'degraded' : s.feedStatus;
       card.innerHTML = `
         <div class="source-card-top">
-          <div class="source-name">${s.name}</div>
+          <div class="source-name">${escapeHtml(s.name)}</div>
           <div class="source-card-btns">
-            ${s.id.startsWith('custom-') ? `<button class="source-remove-btn" title="Delete this custom channel" aria-label="Delete ${s.name}" data-id="${s.id}">✕</button>` : ''}
-            <button class="source-add-btn" title="Add to timeline" aria-label="Add ${s.name} to timeline" data-id="${s.id}">+</button>
+            ${s.id.startsWith('custom-') ? `<button class="source-remove-btn" title="Delete this custom channel" aria-label="Delete ${escapeHtml(s.name)}" data-id="${s.id}">✕</button>` : ''}
+            <button class="source-add-btn" title="Add to timeline" aria-label="Add ${escapeHtml(s.name)} to timeline" data-id="${s.id}">+</button>
           </div>
         </div>
-        <div class="source-desc">${s.desc}</div>
+        <div class="source-desc">${escapeHtml(s.desc)}</div>
         <div class="source-meta">
-          <span class="tag tag-network">${s.network}</span>
-          <span class="tag">${s.category}</span>
-          <span class="tag">${s.cadence}</span>
+          <span class="tag tag-network">${escapeHtml(s.network)}</span>
+          <span class="tag">${escapeHtml(s.category)}</span>
+          <span class="tag">${escapeHtml(s.cadence)}</span>
           <span class="tag">${s.flexible ? 'flex' : s.lengthMin + ' min'}</span>
           ${badgeText ? `<span class="feed-badge ${badgeClass}">${badgeText}</span>` : ''}
         </div>
@@ -2250,9 +2250,9 @@ function renderTimeline() {
       <div class="block-top">
         <div class="block-index">${idx + 1}</div>
         <div class="block-body">
-          <div class="block-name">${b.name}</div>
+          <div class="block-name">${escapeHtml(b.name)}</div>
           <div class="block-meta">
-            ${b.category} · ${src ? src.cadence : '<span class="feed-badge none">source removed</span>'}
+            ${escapeHtml(b.category)} · ${src ? escapeHtml(src.cadence) : '<span class="feed-badge none">source removed</span>'}
             ${src?.feedStatus === 'none' ? '<span class="feed-badge none">unavailable</span>' : ''}
             ${isFlexible ? `<span class="flex-badge" title="You set how long this one plays -- it's a live stream or open-ended queue, not a fixed episode.">Flexible</span>` : ''}
           </div>
@@ -2261,13 +2261,13 @@ function renderTimeline() {
       <div class="block-bottom">
         <div class="block-duration">
           ${isFlexible
-            ? `<input type="number" min="1" value="${b.lengthMin}" data-uid="${b.uid}" class="dur-input" aria-label="Length in minutes for ${b.name}"> min`
+            ? `<input type="number" min="1" value="${b.lengthMin}" data-uid="${b.uid}" class="dur-input" aria-label="Length in minutes for ${escapeHtml(b.name)}"> min`
             : `<span class="dur-fixed" title="This plays to its own natural end automatically -- it can't be lengthened or shortened. Shown here only as an estimate for the running total.">~${b.lengthMin} min</span>`
           }
         </div>
-        <button class="block-move" data-uid="${b.uid}" data-dir="-1" title="Move up" aria-label="Move ${b.name} up" ${idx === 0 ? 'disabled' : ''}>↑</button>
-        <button class="block-move" data-uid="${b.uid}" data-dir="1" title="Move down" aria-label="Move ${b.name} down" ${idx === timelineBlocks.length - 1 ? 'disabled' : ''}>↓</button>
-        <button class="block-remove" data-uid="${b.uid}" aria-label="Remove ${b.name} from timeline">✕</button>
+        <button class="block-move" data-uid="${b.uid}" data-dir="-1" title="Move up" aria-label="Move ${escapeHtml(b.name)} up" ${idx === 0 ? 'disabled' : ''}>↑</button>
+        <button class="block-move" data-uid="${b.uid}" data-dir="1" title="Move down" aria-label="Move ${escapeHtml(b.name)} down" ${idx === timelineBlocks.length - 1 ? 'disabled' : ''}>↓</button>
+        <button class="block-remove" data-uid="${b.uid}" aria-label="Remove ${escapeHtml(b.name)} from timeline">✕</button>
       </div>
       <div class="block-progress-bar"><div class="block-progress-fill"></div></div>
     `;
