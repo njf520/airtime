@@ -154,11 +154,13 @@
   .brand-wordmark {
     font-family: 'Spectral', Georgia, serif;
     font-weight: 600;
-    font-size: 28px;
+    font-size: 30px;
     letter-spacing: -0.01em;
     color: var(--text);
     line-height: 1;
     margin: 0; /* now an <h1> -- neutralize the browser's default h1 margin, unrelated to this class's own sizing */
+    position: relative;
+    top: -2px;
   }
   .header-subtitle {
     display: none;
@@ -175,7 +177,7 @@
     vertical-align: baseline;
     background: none;
     align-self: center;
-    margin-top: 16px;
+    margin-top: 11px;
   }
   /* Timeline on top (full width, so proportional-width blocks have real room to breathe), source
      library below as a browsable grid -- one layout that already matches what the mobile
@@ -1304,7 +1306,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.23.0';
+const VERSION = '3.23.1';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
