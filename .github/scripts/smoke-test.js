@@ -90,11 +90,10 @@ async function runSmokeTest() {
       null,
       { timeout: RUN_TIMEOUT_MS }
     );
-    return await page.evaluate(() => (
-      sources
-        .filter(s => s.sourceType === 'podcast-rss' || s.sourceType === 'internet-radio')
-        .map(s => ({ id: s.id, name: s.name, definedStatus: s.feedStatus, ...results[s.id] }))
-    ));
+    // Calls test.html's own window.getTestResults() rather than reaching into its `sources`/
+    // `results` globals directly -- that used to work, but any internal rename over there would
+    // have silently broken this script with no warning. This is the one contract between the two.
+    return await page.evaluate(() => window.getTestResults());
   } finally {
     await browser.close();
   }

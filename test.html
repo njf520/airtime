@@ -456,6 +456,18 @@ function escHtml(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// ---------- Automation API ----------
+// The daily CI smoke test (.github/scripts/smoke-test.js) drives this page headlessly and reads
+// results back out. It used to do that by reaching directly into the `sources`/`results` globals
+// above -- which worked, but meant any internal rename here would silently break CI with no
+// compile-time warning. This function is the one thing external automation should ever call:
+// a stable shape, independent of whatever this file's own variables happen to be named.
+window.getTestResults = function() {
+  return sources
+    .filter(s => s.sourceType === 'podcast-rss' || s.sourceType === 'internet-radio')
+    .map(s => ({ id: s.id, name: s.name, definedStatus: s.feedStatus, ...results[s.id] }));
+};
+
 // ---------- Export ----------
 function exportJSON() {
   const data = sources.filter(s => s.sourceType === 'podcast-rss' || s.sourceType === 'internet-radio' || s.sourceType === 'archive').map(s => ({
