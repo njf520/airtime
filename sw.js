@@ -2,7 +2,7 @@
 //
 // Bump CACHE_NAME on every deploy so old caches get cleaned up and clients
 // pick up fresh assets.
-const CACHE_NAME = 'airtime-v3.17.1';
+const CACHE_NAME = 'airtime-v3.18.0';
 const APP_SHELL = [
   './',
   './index.html',
@@ -16,6 +16,10 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(APP_SHELL))
       .then(() => self.skipWaiting())
+      // cache.addAll rejects (and aborts entirely) if even one APP_SHELL file 404s or is
+      // momentarily unreachable -- without this, that failure is completely silent and the app
+      // just never gets offline support for that client, with no way to tell why.
+      .catch(e => console.error('sw.js install: failed to cache the app shell.', e))
   );
 });
 
@@ -24,6 +28,7 @@ self.addEventListener('activate', event => {
     caches.keys()
       .then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
+      .catch(e => console.error('sw.js activate: failed to clean up old caches.', e))
   );
 });
 
@@ -32,8 +37,9 @@ self.addEventListener('fetch', event => {
   const url = new URL(req.url);
 
   // Only handle same-origin GET requests — leave podcast RSS feeds, CORS
-  // proxies, Spotify's API/SDK, Archive.org, and everything else completely
-  // alone (cross-origin, and must never be served stale or cached here).
+  // proxies, Archive.org, Radio-Browser, SomaFM, and everything else
+  // completely alone (cross-origin, and must never be served stale or
+  // cached here).
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;
 
   // Network-first for navigations and index.html itself, so a fresh deploy
@@ -42,9 +48,14 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(req).then(res => {
         const copy = res.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
+        caches.open(CACHE_NAME)
+          .then(cache => cache.put(req, copy))
+          .catch(e => console.warn('sw.js: failed to cache navigation response for', req.url, e));
         return res;
-      }).catch(() => caches.match(req).then(res => res || caches.match('./index.html')))
+      }).catch(e => {
+        console.warn('sw.js: network fetch failed for', req.url, '-- falling back to cache.', e);
+        return caches.match(req).then(res => res || caches.match('./index.html'));
+      })
     );
     return;
   }
@@ -56,7 +67,9 @@ self.addEventListener('fetch', event => {
       if (cached) return cached;
       return fetch(req).then(res => {
         const copy = res.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(req, copy));
+        caches.open(CACHE_NAME)
+          .then(cache => cache.put(req, copy))
+          .catch(e => console.warn('sw.js: failed to cache response for', req.url, e));
         return res;
       });
     })

@@ -45,6 +45,7 @@ async function handleLicenseVerify(request) {
     const body = await request.json();
     licenseKey = String(body.licenseKey || '').trim();
   } catch (e) {
+    console.error('handleLicenseVerify: request body was not valid JSON.', e);
     return new Response(JSON.stringify({ success: false, message: 'Invalid request body' }), { status: 400, headers });
   }
   if (!licenseKey) {
@@ -79,6 +80,7 @@ async function handleLicenseVerify(request) {
       email: data.meta?.customer_email || null,
     }), { status: 200, headers });
   } catch (e) {
+    console.error('handleLicenseVerify: request to Lemon Squeezy failed.', e);
     return new Response(JSON.stringify({ success: false, message: 'Verification request failed: ' + (e.message || 'unknown error') }), { status: 502, headers });
   }
 }
@@ -101,6 +103,7 @@ async function handleRssProxy(request) {
   try {
     targetUrl = new URL(target);
   } catch (e) {
+    console.warn('handleRssProxy: malformed ?url= parameter "' + target + '".', e);
     return new Response('Invalid url parameter', { status: 400, headers: corsHeaders() });
   }
   if (targetUrl.protocol !== 'https:' && targetUrl.protocol !== 'http:') {
@@ -131,6 +134,7 @@ async function handleRssProxy(request) {
       },
     });
   } catch (e) {
+    console.warn('handleRssProxy: upstream fetch failed for "' + targetUrl.toString() + '".', e);
     return new Response('Upstream fetch failed: ' + (e.message || 'unknown error'), { status: 502, headers: corsHeaders() });
   }
 }

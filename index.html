@@ -1165,7 +1165,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.17.1';
+const VERSION = '3.18.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1711,6 +1711,7 @@ async function addCustomPodcast(url) {
     const last = blocks[blocks.length - 1];
     if (last) last.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   } catch (e) {
+    console.warn('addCustomPodcast(): failed to add feed "' + trimmed + '".', e);
     if (statusEl) { statusEl.className = 'error'; statusEl.textContent = '✗ Could not add this feed: ' + e.message; }
   }
 }
@@ -1760,6 +1761,7 @@ async function verifyLicenseKey(rawKey) {
     });
     data = await res.json();
   } catch (e) {
+    console.error('verifyLicenseKey(): request to the license-verify Worker failed.', e);
     throw new Error('Could not reach the license server -- check your connection and try again');
   }
   if (!data.success) throw new Error(data.message || 'That license key isn\'t valid');
@@ -1947,10 +1949,24 @@ function load(key, fallback) {
   try {
     const v = localStorage.getItem(key);
     return v ? JSON.parse(v) : fallback;
-  } catch (e) { return fallback; }
+  } catch (e) {
+    // Corrupted JSON in this key, or localStorage inaccessible (rare, but happens in some private-
+    // browsing modes) -- fall back silently for the user (an empty/default state beats a crashed
+    // page), but log it so a corrupted-data report is actually diagnosable after the fact.
+    console.warn('load(): could not read "' + key + '" from localStorage, using fallback.', e);
+    return fallback;
+  }
 }
 function save(key, val) {
-  localStorage.setItem(key, JSON.stringify(val));
+  try {
+    localStorage.setItem(key, JSON.stringify(val));
+  } catch (e) {
+    // Most commonly a full storage quota. Silent failure here would be actively misleading -- the
+    // user just clicked "Save" and has no other way to know it didn't stick -- so surface it rather
+    // than only logging it.
+    console.error('save(): could not write "' + key + '" to localStorage.', e);
+    alert('Could not save -- your browser storage may be full. Try removing an old saved broadcast or custom source and try again.');
+  }
 }
 
 // ---------- Library rendering ----------
@@ -2567,6 +2583,7 @@ document.getElementById('copy-log-btn').addEventListener('click', async () => {
     setTimeout(() => { btn.textContent = original; }, 1500);
   } catch (e) {
     // Clipboard API can be blocked (permissions, insecure context) -- fall back to a selectable prompt
+    console.warn('copy-log-btn: Clipboard API write failed, falling back to prompt().', e);
     prompt('Copy this log (Ctrl+A, Ctrl+C):', text);
   }
 });
@@ -2649,6 +2666,7 @@ document.getElementById('import-timeline-input').addEventListener('change', asyn
     persistTimeline();
     renderTimeline();
   } catch (err) {
+    console.warn('import-timeline-input: failed to import file.', err);
     alert('Could not import this file: ' + err.message);
   }
 });
@@ -2681,7 +2699,11 @@ function getProxyOrder(url) {
       const rest = CORS_PROXIES.map((_, i) => i).filter(i => i !== hint.index);
       return [hint.index, ...rest];
     }
-  } catch (e) {}
+  } catch (e) {
+    // Malformed url or a corrupted cache entry -- non-critical (falls through to the default proxy
+    // order below), but worth a trace if proxy ordering ever looks wrong in the field.
+    console.warn('getProxyOrder(): falling back to default order for "' + url + '".', e);
+  }
   return CORS_PROXIES.map((_, i) => i);
 }
 function saveProxyHint(url, index) {
@@ -2689,7 +2711,9 @@ function saveProxyHint(url, index) {
     const host = new URL(url).hostname;
     proxyHintCache[host] = { index, savedAt: Date.now() };
     save('airtime_proxy_hints_v1', proxyHintCache);
-  } catch (e) {}
+  } catch (e) {
+    console.warn('saveProxyHint(): could not save a proxy hint for "' + url + '".', e);
+  }
 }
 
 async function fetchWithTimeout(url, opts, timeoutMs) {
@@ -2725,6 +2749,10 @@ async function fetchTextWithProxiesOnce(url) {
       }
       if (text && text.trim().length > 0) throw new Error('Response did not look like a valid feed (possibly a proxy error page)');
     } catch (e) {
+      // Logged per-attempt (not just the final failure) so a "why does this feed always fail"
+      // report can actually show which proxy in the chain broke and how, rather than just the
+      // last one tried.
+      console.warn('fetchTextWithProxiesOnce(): proxy #' + i + ' failed for "' + url + '".', e);
       lastErr = e;
     }
   }
@@ -2802,10 +2830,16 @@ const RADIO_BROWSER_HOSTS = [
 async function radioBrowserTry(host, params) {
   try {
     const res = await fetchWithTimeout(host + '/json/stations/search?' + new URLSearchParams(params), {}, 8000);
-    if (!res.ok) return [];
+    if (!res.ok) {
+      console.warn('radioBrowserTry(): ' + host + ' returned HTTP ' + res.status + ' for ' + JSON.stringify(params));
+      return [];
+    }
     const stations = await res.json();
     return Array.isArray(stations) ? stations : [];
   } catch (e) {
+    // Falls through to the next mirror host in RADIO_BROWSER_HOSTS -- logged so a "no results ever
+    // come back" report is traceable to a specific host/param combination instead of a dead end.
+    console.warn('radioBrowserTry(): request to ' + host + ' failed for ' + JSON.stringify(params), e);
     return [];
   }
 }
@@ -3238,6 +3272,7 @@ audioEl.addEventListener('error', () => {
   if (probingAudio) return;
   if (!playerState.playing) return;
   const name = timelineBlocks[playerState.currentIndex]?.name || '';
+  console.warn('audioEl error event: "' + name + '" dropped mid-playback.', audioEl.error, 'src:', audioEl.currentSrc);
   stopTick();
   // If the device is offline, the audio drop is expected -- hold the broadcast here rather than
   // skipping the block. The 'online' handler will retry the current block when connectivity returns.
@@ -3433,6 +3468,7 @@ async function playBlockAt(index) {
       if (playerState.blockIsLiveStream) startIcyPolling(winner.audioUrl);
     } catch (err) {
       if (myGen !== playGeneration) return;
+      console.warn('playBlockAt(): "' + src.name + '" (' + src.id + ') failed to play.', err);
       recordSourceFailure(src.id); // health: increment fail count, degrade after 3 failures
       setNowPlaying(block.name, '', 'Could not load this feed (' + err.message + ') — skipping in 2s…');
       playerState.blockTimer = setTimeout(() => advanceBlock(), 2000);
@@ -3458,9 +3494,24 @@ function togglePlayPause() {
     if (playerState.blockIsLiveStream && playerState.currentStreamUrl) {
       audioEl.src = playerState.currentStreamUrl;
       audioEl.load();
-      audioEl.play().catch(() => {});
+      audioEl.play().catch(e => {
+        // A rejected play() promise here (autoplay policy, AbortError from a rapid pause/resume
+        // race) doesn't fire the 'error' event handled below -- that's for media/network errors,
+        // this is play() itself failing. Without this, playerState.playing would already be true
+        // (set unconditionally right after) while nothing is actually audible: a real "stuck on
+        // Pause but nothing plays" bug, not just a missing log.
+        console.warn('togglePlayPause(): resume play() rejected for a live stream.', e);
+        playerState.playing = false;
+        updatePlayButtonLabel();
+        setNowPlaying(timelineBlocks[playerState.currentIndex]?.name || '', '', 'Could not resume playback — try Play again.');
+      });
     } else {
-      audioEl.play();
+      audioEl.play().catch(e => {
+        console.warn('togglePlayPause(): resume play() rejected.', e);
+        playerState.playing = false;
+        updatePlayButtonLabel();
+        setNowPlaying(timelineBlocks[playerState.currentIndex]?.name || '', '', 'Could not resume playback — try Play again.');
+      });
     }
     playerState.playing = true;
   } else {
