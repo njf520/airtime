@@ -4,7 +4,9 @@ This is the development history: what got built, why, what broke and how it
 got fixed, verified live with real testing at each step. If you're looking
 for what the app *is* and how to use it, see **[README.md](README.md)**
 instead — this doc is for anyone digging into the code or curious how a
-specific feature came to be.
+specific feature came to be. For a map of how the pieces fit together
+(what talks to what, and why), see **[ARCHITECTURE.md](ARCHITECTURE.md)**
+first — it's the faster way in before reading this chronological log.
 
 ---
 
