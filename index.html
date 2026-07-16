@@ -1165,7 +1165,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.18.0';
+const VERSION = '3.18.1';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1503,6 +1503,9 @@ const CATEGORY_COLORS = {
 let customRadioSources = load('airtime_custom_sources_v1', []);
 customRadioSources.forEach(cs => SOURCES.push(cs));
 let recentSourceIds = load('airtime_recent_sources_v1', []);
+// Maintains a most-recently-used list (newest first, deduplicated, capped at 6) shown as quick-add
+// chips at the top of the source library, so a source you keep reaching for doesn't require
+// re-searching or re-filtering to find every time.
 function trackRecentSource(id) {
   recentSourceIds = [id, ...recentSourceIds.filter(x => x !== id)].slice(0, 6);
   save('airtime_recent_sources_v1', recentSourceIds);
@@ -1749,6 +1752,11 @@ const LEMONSQUEEZY_CHECKOUT_URL = 'https://REPLACE.lemonsqueezy.com/buy/REPLACE_
 let premiumLicense = load('airtime_premium_v1', null); // { key, email, verifiedAt } or null
 function isPremium() { return !!premiumLicense; }
 
+// Posts to the Worker's /license-verify route (not Lemon Squeezy directly -- see the Premium
+// section comment above) and, on success, stores the result and flips isPremium() on. Throws with
+// a message meant to be shown directly to the user (network failure vs. an actually-invalid key
+// are different problems worth telling apart), mirroring validatePodcastFeed's pattern elsewhere
+// in this file.
 async function verifyLicenseKey(rawKey) {
   const key = rawKey.trim();
   if (!key) throw new Error('Enter a license key');
@@ -1770,11 +1778,20 @@ async function verifyLicenseKey(rawKey) {
   return premiumLicense;
 }
 
+// Local-only "log out" of Premium -- does not revoke or invalidate the license on Lemon Squeezy's
+// side, just forgets it in this browser. Re-entering the same key re-activates it (see
+// verifyLicenseKey), which is why the confirm() dialog before calling this says exactly that.
 function removeLicenseKey() {
   premiumLicense = null;
   save('airtime_premium_v1', null);
 }
 
+// Fills in #premium-modal-body with either the "you're Premium" view or the free-tier pitch +
+// activation form, depending on current status -- called both when the modal opens and whenever
+// its own state changes (activate success, remove-license), so it always reflects
+// isPremium() rather than getting out of sync. `reason`, when passed, is the specific cap that was
+// just hit (see openPremiumModal's callers) -- shown as a highlighted line above the pitch instead
+// of the modal opening with no context for why it appeared.
 function renderPremiumModal(reason) {
   const body = document.getElementById('premium-modal-body');
   if (isPremium()) {
@@ -2884,6 +2901,9 @@ function improveStationQuality(stations) {
   return filterWithFallback(filterWithFallback(stations, isMonolingualEnglish), hasFocusedDecadeTags);
 }
 
+// Tries each Radio-Browser mirror host in turn, and within each host tries tag search before name
+// search (most callers pass a genre/mood/decade tag, but a custom channel might be a station or
+// artist name instead) -- returns on the first non-empty result rather than merging across hosts.
 async function radioBrowserSearchExact(query, limit) {
   const commonParams = { limit: String(limit), hidebroken: 'true', order: 'clickcount', reverse: 'true' };
   for (const host of RADIO_BROWSER_HOSTS) {
@@ -2908,6 +2928,9 @@ async function radioBrowserSearchExact(query, limit) {
   return [];
 }
 
+// Wraps radioBrowserSearchExact with a broader fallback: if the exact query returns nothing
+// (or nothing actually playable), falls back to a word-by-word tag search so a multi-word custom
+// query like "90s alternative" still has a real chance of matching something.
 async function radioBrowserSearch(query, limit = 20) {
   const stations = await radioBrowserSearchExact(query, limit);
   // Must check for *playable* candidates, not just non-empty station lists. Radio-Browser can return
@@ -3107,6 +3130,12 @@ async function tryLoadAudio(candidates, myGen, perAttemptTimeoutMs = 12000) {
   }
 }
 
+// Central dispatch for turning a SOURCES entry's feedUrl into one or more playable audio
+// candidates, branching on its scheme prefix (archive-item:, date-archive:, direct-stream:,
+// somafm:, radio-browser:, or a plain podcast RSS/Atom URL as the default case) -- see each
+// branch's own comment below for why that particular source type needs its own resolution path.
+// Returns { candidates: [...] } for tryLoadAudio to probe in order, not a single URL, since most
+// of these paths can legitimately have more than one option (recent episodes, matching stations).
 async function fetchLatestEpisode(feedUrl) {
   if (feedUrl.startsWith('archive-item:')) {
     const r = await fetchRandomArchiveItemAudio(feedUrl.slice('archive-item:'.length));
@@ -3334,6 +3363,10 @@ function formatTime(totalSeconds) {
   return m + ':' + String(sec).padStart(2, '0');
 }
 
+// Runs every second while a block is playing: updates the elapsed-time display and progress bar,
+// and drives auto-advance for flexible (open-ended) blocks once their assigned length is up. Also
+// a safety net for fixed content -- if a stream stalls and never fires the 'ended' event, this
+// forces an advance after 2x the estimated length + 5 minutes rather than hanging the broadcast.
 function startTick() {
   clearInterval(playerState.tickTimer);
   playerState.tickTimer = setInterval(() => {
