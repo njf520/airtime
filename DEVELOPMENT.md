@@ -1,4 +1,12 @@
-# Airtime — engineering log
+# Airsona — engineering log
+
+> **Renamed from "Airtime" to "Airsona".** Everything below this note is a
+> chronological record and refers to the app by whatever name was current at
+> the time — entries below still say "Airtime" and that's intentional, not
+> stale; rewriting history here would make this log less accurate, not more.
+> The repo, its URL (`njf520.github.io/airtime/`), and the Cloudflare Worker
+> subdomain haven't been renamed yet (see `ARCHITECTURE.md` and the SEO
+> comment at the top of `index.html`'s `<head>` for what's deferred and why).
 
 This is the development history: what got built, why, what broke and how it
 got fixed, verified live with real testing at each step. If you're looking
@@ -10,7 +18,7 @@ first — it's the faster way in before reading this chronological log.
 
 ---
 
-# Airtime (commercial branch)
+# Airsona (commercial branch)
 
 A drag-and-drop timeline builder for assembling a custom "broadcast" out of
 recurring audio sources — news briefings, science shorts, poetry readings,
@@ -994,13 +1002,53 @@ Lemon Squeezy product doesn't exist yet, and the Worker needs a manual
 redeploy (Cloudflare dashboard, same process as always — see
 `cors-proxy-worker.js`'s own header comment) once it does.
 
-The product name itself is also still pending: **"Airtime" is a
-placeholder that will change before release.** `LEMONSQUEEZY_CHECKOUT_URL`
-joins the existing list of name-tied strings that all need updating
-together once the real name is picked: the `<title>`, meta description,
-Open Graph/Twitter title & description, the JSON-LD `name` field,
-`manifest.json`'s `name`/`short_name`, and the GitHub repo name/description
-— plus, now, this Lemon Squeezy product itself and its checkout URL.
+The product name itself was also still pending at the time this was
+written: "Airtime" was a placeholder. **It's since been decided: the app is
+now Airsona** (see the "Renamed from Airtime to Airsona" section further
+down for what that rename did and did not touch). `LEMONSQUEEZY_CHECKOUT_URL`
+was one of the name-tied strings that needed updating once the real name
+was picked, alongside the `<title>`, meta description, Open Graph/Twitter
+title & description, the JSON-LD `name` field, and `manifest.json`'s
+`name`/`short_name` — the GitHub repo name/description and the Lemon
+Squeezy product/checkout URL itself are still pending, deliberately, since
+neither the repo nor the Lemon Squeezy product has been created/renamed
+yet.
+
+## Renamed from Airtime to Airsona
+
+The name landed on **Airsona** — Air (broadcast/on-air) + persona (this is
+*your* personal mix, your identity in it) — after checking availability
+across `.com`/`.net`/`.io`/`.radio`/`.audio` for a long list of candidates
+(Rundown, Dial, Rotation, Vox Novas, and others) and finding almost every
+real dictionary word already squatted on every TLD that mattered; Airsona
+survived specifically because it's a coined portmanteau, not a real word.
+`airsona.net` was picked over `.io` on both price and the same
+mainstream-trust reasoning that ruled out `.io` earlier (see the SEO
+section above) — no trademark collision found either.
+
+**What this rename touched**: every user-visible and comment-level "Airtime"
+string across `index.html` (title, OG/Twitter tags, JSON-LD, the `<h1>`
+wordmark, the Premium modal title, footer/feedback text, import error
+messages), `manifest.json` (`name`/`short_name`), `sw.js` (top comment,
+`CACHE_NAME` prefix), `test.html` (title, export filenames),
+`cors-proxy-worker.js` (comments, the "not for Airtime Premium" message,
+the User-Agent string), `.github/scripts/package.json`, `README.md`
+(fully), and `generate_icons.py`'s docstring.
+
+**What this rename deliberately did NOT touch, and why**: the GitHub repo
+name (`njf520/airtime`) and everything whose value depends on it —
+`index.html`'s canonical URL, `og:url`, `og:image`, the JSON-LD `url`,
+`manifest.json`'s `start_url`, `ARCHITECTURE.md`'s repo/Worker references,
+`smoke-test.js`'s `REPO`/`SITE_URL` constants — plus the Cloudflare
+Worker's live subdomain (`airtime-cors-proxy.njf520.workers.dev`, still
+referenced by `index.html`'s `LICENSE_VERIFY_URL` and `CORS_PROXIES`).
+Renaming the GitHub repo would break the live `njf520.github.io/airtime/`
+URL immediately — unlike the `github.com/user/repo` page itself, GitHub
+Pages doesn't transparently redirect a renamed repo's Pages URL — and the
+`airsona.net` domain isn't purchased/pointed yet either. Doing the content
+rename now and the URL/infrastructure migration later (once the domain is
+live) avoids breaking the only working URL this project has for no
+immediate benefit.
 
 ## Versioning
 

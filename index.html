@@ -3,27 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Airtime — build your own broadcast</title>
+<title>Airsona — build your own broadcast</title>
 
-<!-- SEO: the strings below marked NAME are tied to "Airtime", a placeholder name that
-     will change before release. When the real name is picked, update: this <title>,
-     meta description, og:title/og:description/og:site_name, twitter:title/description,
-     the JSON-LD "name" field below, and manifest.json's name/short_name. The canonical
-     URL and screenshot.png can stay as-is until the repo/domain itself is renamed. -->
+<!-- SEO: the app was renamed from "Airtime" to "Airsona" -- every name-tied string below is
+     updated, but the canonical URL, og:url, og:image, and JSON-LD "url" still point at
+     njf520.github.io/airtime/ deliberately: the GitHub repo hasn't been renamed yet (that would
+     break this URL outright, since GitHub Pages doesn't redirect it the way the repo page itself
+     does), and the airsona.net domain isn't purchased/pointed yet either. Update these once
+     either of those actually happens. -->
 <meta name="description" content="Build your own radio station from podcasts and internet radio -- drag shows into a timeline and hit play. 160+ curated sources, free, no sign-up, no account needed.">
 <link rel="canonical" href="https://njf520.github.io/airtime/">
 
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://njf520.github.io/airtime/">
-<meta property="og:site_name" content="Airtime">
-<meta property="og:title" content="Airtime — build your own broadcast">
+<meta property="og:site_name" content="Airsona">
+<meta property="og:title" content="Airsona — build your own broadcast">
 <meta property="og:description" content="Build your own radio station from podcasts and internet radio -- drag shows into a timeline and hit play. 160+ curated sources, free, no sign-up, no account needed.">
 <meta property="og:image" content="https://njf520.github.io/airtime/screenshot.png">
 <meta property="og:image:width" content="1677">
 <meta property="og:image:height" content="847">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Airtime — build your own broadcast">
+<meta name="twitter:title" content="Airsona — build your own broadcast">
 <meta name="twitter:description" content="Build your own radio station from podcasts and internet radio -- drag shows into a timeline and hit play. 160+ curated sources, free, no sign-up, no account needed.">
 <meta name="twitter:image" content="https://njf520.github.io/airtime/screenshot.png">
 
@@ -31,7 +32,7 @@
 {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  "name": "Airtime",
+  "name": "Airsona",
   "description": "Build your own radio station from podcasts and internet radio -- drag shows into a timeline and hit play. 160+ curated sources, free, no sign-up, no account needed.",
   "url": "https://njf520.github.io/airtime/",
   "applicationCategory": "MultimediaApplication",
@@ -1190,7 +1191,7 @@
       <div style="height:34px"></div>
       <div style="height:10px"></div>
     </div>
-    <h1 class="brand-wordmark">Airtime</h1>
+    <h1 class="brand-wordmark">Airsona</h1>
     <span class="version-badge" id="version-display"></span>
   </div>
   <div class="header-buttons">
@@ -1204,7 +1205,7 @@
   <div class="modal modal-premium" role="dialog" aria-modal="true" aria-labelledby="premium-modal-title">
     <div class="modal-premium-head">
       <span class="modal-premium-badge" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></span>
-      <h3 id="premium-modal-title">Airtime Premium</h3>
+      <h3 id="premium-modal-title">Airsona Premium</h3>
     </div>
     <div id="premium-modal-body"></div>
     <div class="modal-actions">
@@ -1303,7 +1304,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.22.0';
+const VERSION = '3.23.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1313,7 +1314,7 @@ document.getElementById('version-display').textContent = 'v' + VERSION;
   Promise.resolve().then(() => {
     const healthy = typeof SOURCES !== 'undefined'
       ? SOURCES.filter(s => s.feedStatus === 'verified').length : 0;
-    el.textContent = `Airtime v${VERSION} · ${healthy} feeds healthy`;
+    el.textContent = `Airsona v${VERSION} · ${healthy} feeds healthy`;
   });
 })();
 
@@ -1891,7 +1892,7 @@ const PREMIUM_MAX_SAVED_RUNDOWNS = 20;
 const FREE_MAX_CUSTOM_SOURCES = 1;
 const PREMIUM_MAX_CUSTOM_SOURCES = 10;
 const LICENSE_VERIFY_URL = 'https://airtime-cors-proxy.njf520.workers.dev/license-verify';
-// TODO: replace with the real Lemon Squeezy checkout URL once the Airtime Premium product exists
+// TODO: replace with the real Lemon Squeezy checkout URL once the Airsona Premium product exists
 // (Dashboard -> Products -> the product -> "Copy checkout URL").
 const LEMONSQUEEZY_CHECKOUT_URL = 'https://REPLACE.lemonsqueezy.com/buy/REPLACE_WITH_CHECKOUT_ID';
 
@@ -2793,7 +2794,7 @@ document.getElementById('feedback-link').addEventListener('click', e => {
   const body = [
     'Describe the issue:\n',
     '\n---',
-    `Airtime version: ${VERSION}`,
+    `Airsona version: ${VERSION}`,
     `Browser: ${navigator.userAgent}`,
     `Online: ${navigator.onLine}`,
     `Timeline blocks: ${timelineBlocks.length}`,
@@ -2833,7 +2834,7 @@ document.getElementById('premium-modal-overlay').addEventListener('click', e => 
 });
 document.getElementById('export-timeline-btn').addEventListener('click', () => {
   if (timelineBlocks.length === 0) { alert('Your timeline is empty — nothing to export.'); return; }
-  const payload = { airtimeExportVersion: 1, blocks: timelineBlocks };
+  const payload = { airsonaExportVersion: 1, blocks: timelineBlocks };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -2852,9 +2853,9 @@ document.getElementById('import-timeline-input').addEventListener('change', asyn
   try {
     const text = await file.text();
     const data = JSON.parse(text);
-    if (!data || !Array.isArray(data.blocks)) throw new Error('File doesn\'t look like an Airtime export (missing "blocks" array)');
+    if (!data || !Array.isArray(data.blocks)) throw new Error('File doesn\'t look like an Airsona export (missing "blocks" array)');
     const valid = data.blocks.every(b => b && typeof b.sourceId === 'string' && typeof b.lengthMin === 'number');
-    if (!valid) throw new Error('File doesn\'t look like an Airtime export (malformed block entries)');
+    if (!valid) throw new Error('File doesn\'t look like an Airsona export (malformed block entries)');
     // Every other way blocks reach timelineBlocks (addSourceToTimeline, the flexible-block
     // duration input) already enforces FREE_MAX_BROADCAST_MIN before the block is ever added --
     // so a free account's timeline can never legitimately exceed it except through this one path.
@@ -3565,7 +3566,7 @@ function logPlayback(message) {
     `<div class="log-entry log-${e.level}"><span class="log-time">${e.time}</span>${escapeHtml(e.message)}</div>`
   ).join('');
   el.scrollTop = el.scrollHeight;
-  if (level === 'error') console.error('[Airtime]', message);
+  if (level === 'error') console.error('[Airsona]', message);
 }
 
 function updateScrub(frac) {

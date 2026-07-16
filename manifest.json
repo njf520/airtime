@@ -1,6 +1,6 @@
 {
-  "name": "Airtime",
-  "short_name": "Airtime",
+  "name": "Airsona",
+  "short_name": "Airsona",
   "description": "Build and play a custom radio broadcast timeline",
   "start_url": "/airtime/",
   "display": "standalone",

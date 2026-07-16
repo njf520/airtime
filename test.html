@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Airtime Feed Tester</title>
+<title>Airsona Feed Tester</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: system-ui, sans-serif; font-size: 14px; background: #111; color: #ddd; padding: 20px; }
@@ -49,7 +49,7 @@
 </head>
 <body>
 
-<h1>Airtime Feed Tester</h1>
+<h1>Airsona Feed Tester</h1>
 <div class="subtitle">Tests all podcast-rss sources (via the same CORS proxy chain used by the app) and all fixed-URL internet-radio sources (via a real &lt;audio&gt; element load, same as actual playback) from index.html.</div>
 
 <div class="toolbar">
@@ -475,7 +475,7 @@ function exportJSON() {
     definedStatus: s.feedStatus, ...results[s.id],
   }));
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  download(blob, 'airtime-test-results-' + new Date().toISOString().slice(0, 10) + '.json');
+  download(blob, 'airsona-test-results-' + new Date().toISOString().slice(0, 10) + '.json');
 }
 
 function exportCSV() {
@@ -485,7 +485,7 @@ function exportCSV() {
     rows.push([s.id, s.name, s.category, s.feedStatus, r.status || '', r.detail || '', r.episode || '', r.proxy || '', r.ms != null ? r.ms : ''].map(v => `"${String(v).replace(/"/g, '""')}"`));
   });
   const blob = new Blob([rows.map(r => r.join(',')).join('\n')], { type: 'text/csv' });
-  download(blob, 'airtime-test-results-' + new Date().toISOString().slice(0, 10) + '.csv');
+  download(blob, 'airsona-test-results-' + new Date().toISOString().slice(0, 10) + '.csv');
 }
 
 function download(blob, filename) {

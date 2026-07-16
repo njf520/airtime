@@ -1,8 +1,8 @@
-// Airtime — service worker for offline support / installability.
+// Airsona (formerly Airtime) — service worker for offline support / installability.
 //
 // Bump CACHE_NAME on every deploy so old caches get cleaned up and clients
 // pick up fresh assets.
-const CACHE_NAME = 'airtime-v3.22.0';
+const CACHE_NAME = 'airsona-v3.23.0';
 const APP_SHELL = [
   './',
   './index.html',

@@ -1,16 +1,16 @@
-# Airtime
+# Airsona
 
 **Build your own radio station out of the podcasts and internet radio you actually like — then hit play and it just runs.**
 
 ### [▶ Try it live — no sign-up, no account](https://njf520.github.io/airtime/)
 
-![Airtime timeline screenshot](screenshot.png)
+![Airsona timeline screenshot](screenshot.png)
 
-Drag news briefings, science shorts, comedy, true crime, old-time radio drama, and internet-radio genre/decade/mood mixes into a single timeline, and Airtime plays it back to back like a real broadcast — each podcast block streams its actual latest episode, each radio block streams a real live station. When one block ends (or its time is up), the next one starts automatically.
+Drag news briefings, science shorts, comedy, true crime, old-time radio drama, and internet-radio genre/decade/mood mixes into a single timeline, and Airsona plays it back to back like a real broadcast — each podcast block streams its actual latest episode, each radio block streams a real live station. When one block ends (or its time is up), the next one starts automatically.
 
 ## Why
 
-Every podcast app makes you pick one show and listen to it start to finish. Airtime lets you build a *lineup* — five minutes of news, then a science story, then a comedy bit, then live music — exactly like a real morning show, and it remembers your lineup so you can just hit play tomorrow.
+Every podcast app makes you pick one show and listen to it start to finish. Airsona lets you build a *lineup* — five minutes of news, then a science story, then a comedy bit, then live music — exactly like a real morning show, and it remembers your lineup so you can just hit play tomorrow.
 
 ## What you get
 

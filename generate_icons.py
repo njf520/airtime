@@ -1,4 +1,4 @@
-"""Generates icon-512.png and icon-192.png for the Airtime PWA.
+"""Generates icon-512.png and icon-192.png for the Airsona (formerly Airtime) PWA.
 
 Same glyph as the inline SVG favicon in index.html: five vertical bars of
 varying height (like an audio level meter), on the app's dark background --

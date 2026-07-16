@@ -1,5 +1,5 @@
 {
-  "name": "airtime-smoke-test",
+  "name": "airsona-smoke-test",
   "private": true,
   "description": "CI tooling only -- the app itself (index.html) has zero dependencies and no build step. This package.json exists solely so the daily feed smoke-test workflow can install Playwright.",
   "dependencies": {

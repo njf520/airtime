@@ -1,22 +1,23 @@
-// Airtime — dedicated CORS proxy for podcast/RSS feed fetching, plus a narrow Lemon Squeezy
-// license-verify passthrough for the Premium gate.
+// Airsona (formerly Airtime) — dedicated CORS proxy for podcast/RSS feed fetching, plus a narrow
+// Lemon Squeezy license-verify passthrough for the Premium gate.
 //
 // Most podcast RSS feeds don't set Access-Control-Allow-Origin, since they're built for podcast
-// apps, not browser JS. This is a small, dedicated proxy so Airtime doesn't have to depend on
+// apps, not browser JS. This is a small, dedicated proxy so Airsona doesn't have to depend on
 // free public CORS-proxy services (corsproxy.io, allorigins.win, codetabs.com), which have no
 // reliability guarantee and occasionally return their own error page instead of the real feed.
 // Deployed as a Cloudflare Worker (same account as dinner-planner's worker.js) at
-// airtime-cors-proxy.njf520.workers.dev, wired in as the first entry in Airtime's CORS_PROXIES
-// list in index.html. If you ever need to redeploy from scratch: create a new Worker in the
-// Cloudflare dashboard ("Start with Hello World!"), paste this file's contents into its code
-// editor, and Deploy.
+// airtime-cors-proxy.njf520.workers.dev (still the pre-rename subdomain -- renaming a live Worker
+// is its own separate migration, deferred along with the GitHub repo/URL rename), wired in as the
+// first entry in Airsona's CORS_PROXIES list in index.html. If you ever need to redeploy from
+// scratch: create a new Worker in the Cloudflare dashboard ("Start with Hello World!"), paste this
+// file's contents into its code editor, and Deploy.
 //
 // GET /?url=<encoded target URL> -> fetches that URL server-side and returns it with CORS headers
 // added, so it's readable from https://njf520.github.io/airtime/'s browser JS.
 //
 // POST /license-verify {licenseKey} -> forwards to Lemon Squeezy's license validate API
 // (server-to-server only -- it doesn't set CORS headers for browser callers), checks the key
-// actually belongs to the Airtime Premium product, and returns a simple {success, message} shape
+// actually belongs to the Airsona Premium product, and returns a simple {success, message} shape
 // so index.html doesn't need to know anything about Lemon Squeezy's response format. This is a
 // narrowly-scoped route (fixed upstream URL, no user-supplied target) rather than opening the
 // general proxy to POST, which would turn it into an open relay.
@@ -24,7 +25,7 @@
 const ALLOWED_ORIGIN = 'https://njf520.github.io';
 const MAX_RESPONSE_BYTES = 20 * 1024 * 1024; // 20MB -- generous for an RSS feed or a .pls file
 
-// TODO: replace with the real numeric product ID once the Airtime Premium product exists in Lemon
+// TODO: replace with the real numeric product ID once the Airsona Premium product exists in Lemon
 // Squeezy (Dashboard -> Products -> the product -> its ID is in the URL and on the product page).
 // This isn't a secret -- it's just used to confirm a validated key belongs to *this* product,
 // in case the store ever sells anything else.
@@ -67,7 +68,7 @@ async function handleLicenseVerify(request) {
       return new Response(JSON.stringify({ success: false, message: data.error || 'Invalid license key' }), { status: 200, headers });
     }
     if (String(data.meta?.product_id) !== String(LEMONSQUEEZY_PRODUCT_ID)) {
-      return new Response(JSON.stringify({ success: false, message: 'This key is not for Airtime Premium' }), { status: 200, headers });
+      return new Response(JSON.stringify({ success: false, message: 'This key is not for Airsona Premium' }), { status: 200, headers });
     }
     const status = data.license_key?.status;
     if (status === 'disabled' || status === 'expired') {
@@ -115,7 +116,7 @@ async function handleRssProxy(request) {
 
   try {
     const upstream = await fetch(targetUrl.toString(), {
-      headers: { 'User-Agent': 'AirtimeCorsProxy/1.0 (+https://njf520.github.io/airtime/)' },
+      headers: { 'User-Agent': 'AirsonaCorsProxy/1.0 (+https://njf520.github.io/airtime/)' },
       redirect: 'follow',
     });
     const contentLength = upstream.headers.get('content-length');
