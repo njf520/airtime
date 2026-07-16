@@ -1066,8 +1066,8 @@
 </header>
 
 <div class="modal-overlay" id="premium-modal-overlay">
-  <div class="modal">
-    <h3>⭐ Airtime Premium</h3>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="premium-modal-title">
+    <h3 id="premium-modal-title">⭐ Airtime Premium</h3>
     <div id="premium-modal-body"></div>
     <div class="modal-actions">
       <button class="btn" id="premium-modal-close">Close</button>
@@ -1165,7 +1165,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.17.0';
+const VERSION = '3.17.1';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1825,13 +1825,33 @@ function renderPremiumModal(reason) {
   });
 }
 
+// Tracks whatever had focus before the modal opened (the Premium button, or nothing if a cap-hit
+// auto-opened it) so focus can return there on close, and traps Tab/Shift+Tab inside the modal
+// while it's open -- same standard the rest of this session's accessibility pass held everything
+// else to.
+let premiumModalLastFocus = null;
 function openPremiumModal(reason) {
+  premiumModalLastFocus = document.activeElement;
   renderPremiumModal(reason);
   document.getElementById('premium-modal-overlay').classList.add('open');
+  document.getElementById('premium-modal-close').focus();
 }
 function closePremiumModal() {
   document.getElementById('premium-modal-overlay').classList.remove('open');
+  if (premiumModalLastFocus && document.body.contains(premiumModalLastFocus)) premiumModalLastFocus.focus();
+  premiumModalLastFocus = null;
 }
+document.addEventListener('keydown', e => {
+  const overlay = document.getElementById('premium-modal-overlay');
+  if (!overlay.classList.contains('open')) return;
+  if (e.key === 'Escape') { closePremiumModal(); return; }
+  if (e.key !== 'Tab') return;
+  const focusable = [...overlay.querySelectorAll('button, input, a[href]')].filter(el => !el.disabled && el.offsetParent !== null);
+  if (focusable.length === 0) return;
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
 
 // One-time seed of a few starter broadcasts, so a first-time visitor has something to hit Play on
 // immediately instead of facing an empty timeline and a 100+ source catalog with nothing pre-built.

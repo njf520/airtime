@@ -830,6 +830,66 @@ below it, where they're load-bearing since drag genuinely doesn't work.
   modes (invalid JSON syntax, valid JSON missing the `blocks` array, and a
   `blocks` array with malformed entries) plus the valid round-trip.
 
+## Freemium gate (Premium) — v3.17.0
+
+Three free-tier limits, lifted for Premium: broadcasts capped at 2 hours
+(`FREE_MAX_BROADCAST_MIN`), 1 saved broadcast instead of 20
+(`FREE_MAX_SAVED_RUNDOWNS`/`PREMIUM_MAX_SAVED_RUNDOWNS`), 1 custom source
+instead of 10 (`FREE_MAX_CUSTOM_SOURCES`/`PREMIUM_MAX_CUSTOM_SOURCES`).
+Enforcement lives at the four actual mutation points
+(`addSourceToTimeline`, the flexible-block duration `<input>`,
+`rundown-save-btn`, and both `addCustomRadioChannel`/`addCustomPodcast`)
+rather than one central checkpoint, since each has its own limit and its
+own natural failure moment. Deliberately **forward-only**: downgrading
+(removing a license) never hides or deletes anything already saved/added
+over the free limit — it only blocks *new* additions past the cap. Locking
+someone out of their own already-saved broadcasts on downgrade would be a
+worse experience than just capping growth from that point on.
+
+**Payment/licensing: Lemon Squeezy**, chosen over Gumroad specifically for
+lower fees at low sales volume (~5% vs. Gumroad's ~9-10% starting tier) —
+same shape either way (hosted checkout + a license-key API), so the choice
+was pure cost. `.radio` domain registration was also considered and ruled
+out: it's a restricted TLD (European Broadcasting Union), and the
+commercial-use price (~€220/yr) is far higher than the discounted
+radio-sector rate (~€25/yr) this project wouldn't qualify for as a paid
+product.
+
+**Why the license check goes through the Cloudflare Worker, not straight
+from the browser:** Lemon Squeezy's `/v1/licenses/validate` API doesn't set
+CORS headers for browser callers (it's meant for server-to-server use), so
+a direct `fetch()` from `index.html` would fail. `cors-proxy-worker.js` got
+a second, narrowly-scoped route for this: `POST /license-verify` takes
+`{licenseKey}`, forwards it to Lemon Squeezy with a hardcoded
+`LEMONSQUEEZY_PRODUCT_ID`, and — importantly — checks the response's
+`meta.product_id` actually matches that constant before trusting it, so a
+valid license key for some *other* product in the same store couldn't
+accidentally unlock Premium here. This mirrors the existing RSS-proxy
+route's shape (fixed upstream target, not an open relay) rather than
+opening the general proxy to arbitrary POST bodies.
+
+Verification happens once, at license-key entry; the result
+(`{key, email, verifiedAt}`) is trusted from `localStorage`
+(`airtime_premium_v1`) after that rather than re-checked on every load —
+consistent with this app's no-backend, no-accounts architecture. This is
+an honor-adjacent level of security (a leaked key works for anyone who
+pastes it in), which is an accepted tradeoff for a low-stakes hobby-scale
+product, not a mistake.
+
+**Not yet live**: `LEMONSQUEEZY_PRODUCT_ID` (`cors-proxy-worker.js`) and
+`LEMONSQUEEZY_CHECKOUT_URL` (`index.html`) are still placeholders — the
+Lemon Squeezy product doesn't exist yet, and the Worker needs a manual
+redeploy (Cloudflare dashboard, same process as always — see
+`cors-proxy-worker.js`'s own header comment) once it does.
+
+The product name itself is also still pending: **"Airtime" is a
+placeholder that will change before release.** `LEMONSQUEEZY_CHECKOUT_URL`
+joins the existing list of name-tied strings that all need updating
+together once the real name is picked: the `<title>`, meta description,
+Open Graph/Twitter title & description, the JSON-LD `name` field,
+`manifest.json`'s `name`/`short_name`, and the GitHub repo name/description
+— plus, now, this Lemon Squeezy product itself and its checkout URL.
+
 ## Versioning
 
 The header shows a version badge (e.g. `v1.1.0`) next to the title, driven
