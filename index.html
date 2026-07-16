@@ -1303,7 +1303,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.21.2';
+const VERSION = '3.22.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -2488,11 +2488,21 @@ function renderTimeline() {
       let newLen = Math.max(1, parseInt(inp.value) || 1);
       if (!isPremium()) {
         const othersTotal = timelineBlocks.reduce((sum, x, i) => i === idx ? sum : sum + x.lengthMin, 0);
-        const maxAllowed = Math.max(1, FREE_MAX_BROADCAST_MIN - othersTotal);
-        if (newLen > maxAllowed) {
-          newLen = maxAllowed;
-          inp.value = maxAllowed;
-          openPremiumModal(`Free broadcasts are capped at ${FREE_MAX_BROADCAST_MIN / 60} hours -- go Premium for broadcasts of any length.`);
+        // Only clamp if the *other* blocks alone still leave real room under the cap. A downgraded
+        // account can legitimately have pre-existing blocks that already exceed the cap on their
+        // own (built while Premium) -- without this guard, FREE_MAX_BROADCAST_MIN - othersTotal
+        // goes negative and every edit to *any other* block gets clamped down to ~1 minute, which
+        // doesn't protect anything (the timeline's already over) and just makes an unrelated block
+        // impossible to adjust. Once already over cap, only the add-new-content paths (
+        // addSourceToTimeline, Import) need to keep blocking growth -- editing what's already there
+        // shouldn't be punished further.
+        if (othersTotal < FREE_MAX_BROADCAST_MIN) {
+          const maxAllowed = FREE_MAX_BROADCAST_MIN - othersTotal;
+          if (newLen > maxAllowed) {
+            newLen = maxAllowed;
+            inp.value = maxAllowed;
+            openPremiumModal(`Free broadcasts are capped at ${FREE_MAX_BROADCAST_MIN / 60} hours -- go Premium for broadcasts of any length.`);
+          }
         }
       }
       b.lengthMin = newLen;
@@ -2860,7 +2870,22 @@ document.getElementById('import-timeline-input').addEventListener('change', asyn
     }
     if (timelineBlocks.length > 0 && !confirm('Replace your current ' + timelineBlocks.length + '-block timeline with the ' + data.blocks.length + ' blocks from this file?')) return;
     if (typeof stopBroadcast === 'function') stopBroadcast();
-    timelineBlocks = data.blocks; // any legacy targetMinutes field in an old export is just ignored
+    // Rebuild each block from SOURCES rather than trusting the file's own name/category/uid --
+    // the validation above only requires sourceId + lengthMin, so a minimal or hand-edited file
+    // (missing name/category entirely) used to reach renderTimeline() and crash there instead
+    // (`escapeHtml(b.name)` on undefined). Mirrors the rundown-load handler's exact pattern below,
+    // which also means a renamed/removed catalog source shows current info instead of whatever
+    // was true at export time.
+    timelineBlocks = data.blocks.map(b => {
+      const src = SOURCES.find(s => s.id === b.sourceId);
+      return {
+        uid: 'b' + Date.now() + Math.random().toString(36).slice(2, 7),
+        sourceId: b.sourceId,
+        name: src ? src.name : b.sourceId,
+        category: src ? src.category : '',
+        lengthMin: b.lengthMin,
+      };
+    });
     persistTimeline();
     renderTimeline();
   } catch (err) {

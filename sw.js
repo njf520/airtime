@@ -2,7 +2,7 @@
 //
 // Bump CACHE_NAME on every deploy so old caches get cleaned up and clients
 // pick up fresh assets.
-const CACHE_NAME = 'airtime-v3.21.2';
+const CACHE_NAME = 'airtime-v3.22.0';
 const APP_SHELL = [
   './',
   './index.html',
