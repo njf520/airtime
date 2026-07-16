@@ -1165,7 +1165,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.19.1';
+const VERSION = '3.20.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1680,8 +1680,15 @@ async function addCustomPodcast(url) {
   }
   const statusEl = document.getElementById('custom-radio-status');
   if (statusEl) { statusEl.className = ''; statusEl.textContent = 'Checking feed…'; }
+  // Same rationale as playBlockAt's slowLoadTimer: the proxy chain can take 30+ seconds to
+  // exhaust on a slow/dead feed, and "Checking feed…" alone looks identical to a frozen page for
+  // that whole window -- confirmed live. Cleared in both the success and catch paths below.
+  const slowCheckTimer = setTimeout(() => {
+    if (statusEl) statusEl.textContent = 'Still checking… this feed is taking longer than usual';
+  }, 8000);
   try {
     const { title, lengthMin } = await validatePodcastFeed(trimmed);
+    clearTimeout(slowCheckTimer);
     const entry = {
       id: 'custom-' + Date.now(),
       name: title,
@@ -1714,6 +1721,7 @@ async function addCustomPodcast(url) {
     const last = blocks[blocks.length - 1];
     if (last) last.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   } catch (e) {
+    clearTimeout(slowCheckTimer);
     console.warn('addCustomPodcast(): failed to add feed "' + trimmed + '".', e);
     if (statusEl) { statusEl.className = 'error'; statusEl.textContent = '✗ Could not add this feed: ' + e.message; }
   }
@@ -3481,10 +3489,19 @@ async function playBlockAt(index) {
       return;
     }
     setNowPlaying(block.name, src.sequential ? 'Loading next episode…' : 'Loading latest episode…', '');
+    // The CORS proxy chain can legitimately take 30+ seconds to exhaust on a slow/unreachable feed
+    // (multiple proxies, each with its own timeout, plus a full retry pass) -- confirmed live while
+    // testing a dead feed. Without any update in that window, a stalled feed and a frozen app look
+    // identical to the listener. This reassures rather than alarms; cleared the moment the fetch
+    // actually resolves either way, so it never overwrites a real result.
+    const slowLoadTimer = setTimeout(() => {
+      if (myGen === playGeneration) setNowPlaying(block.name, 'Still loading… this feed is taking longer than usual', '');
+    }, 8000);
     try {
       const { candidates, episodeGuid, episodeIndex, totalEpisodes } = src.sequential
         ? await fetchSequentialEpisode(src)
         : await fetchLatestEpisode(src.feedUrl);
+      clearTimeout(slowLoadTimer);
       if (myGen !== playGeneration) return;
       if (candidates.length > 1) setNowPlaying(block.name, 'Checking for a working recording…', '');
       const winner = await tryLoadAudio(candidates, myGen);
@@ -3510,6 +3527,7 @@ async function playBlockAt(index) {
       startTick();
       if (playerState.blockIsLiveStream) startIcyPolling(winner.audioUrl);
     } catch (err) {
+      clearTimeout(slowLoadTimer);
       if (myGen !== playGeneration) return;
       console.warn('playBlockAt(): "' + src.name + '" (' + src.id + ') failed to play.', err);
       recordSourceFailure(src.id); // health: increment fail count, degrade after 3 failures
