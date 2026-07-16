@@ -1165,7 +1165,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.19.0';
+const VERSION = '3.19.1';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -2785,7 +2785,17 @@ async function fetchTextWithProxies(url) {
     return await fetchTextWithProxiesOnce(url);
   } catch (e) {
     await new Promise(r => setTimeout(r, 1500));
-    return await fetchTextWithProxiesOnce(url);
+    try {
+      return await fetchTextWithProxiesOnce(url);
+    } catch (e2) {
+      // Whichever proxy happened to fail *last* produces a raw, inconsistent, often-cryptic
+      // error ("signal is aborted without reason", "HTTP 530", "TypeError: Failed to fetch") that
+      // means nothing to a listener -- confirmed live that this was leaking straight through to
+      // "Could not add this feed: signal is aborted without reason" in the UI. The granular
+      // per-proxy reason is already logged inside fetchTextWithProxiesOnce for debugging; callers
+      // only ever need one clear, consistent message here.
+      throw new Error('Could not reach this feed after trying multiple methods -- it may be down, or blocking automated requests.');
+    }
   }
 }
 
