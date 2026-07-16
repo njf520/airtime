@@ -1303,7 +1303,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.21.1';
+const VERSION = '3.21.2';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -2845,6 +2845,19 @@ document.getElementById('import-timeline-input').addEventListener('change', asyn
     if (!data || !Array.isArray(data.blocks)) throw new Error('File doesn\'t look like an Airtime export (missing "blocks" array)');
     const valid = data.blocks.every(b => b && typeof b.sourceId === 'string' && typeof b.lengthMin === 'number');
     if (!valid) throw new Error('File doesn\'t look like an Airtime export (malformed block entries)');
+    // Every other way blocks reach timelineBlocks (addSourceToTimeline, the flexible-block
+    // duration input) already enforces FREE_MAX_BROADCAST_MIN before the block is ever added --
+    // so a free account's timeline can never legitimately exceed it except through this one path.
+    // Without this check, importing a file was a complete, repeatable bypass of the Premium
+    // broadcast-length gate: confirmed live, a free account could import a 5-hour broadcast with
+    // zero blocking. Saved/loaded rundowns intentionally stay ungated here (that's legacy content
+    // from before a downgrade, not a new way to add length), but an imported file is exactly the
+    // same kind of "add content" action the other two gates already cover.
+    const importedTotal = data.blocks.reduce((sum, b) => sum + b.lengthMin, 0);
+    if (!isPremium() && importedTotal > FREE_MAX_BROADCAST_MIN) {
+      openPremiumModal(`This file is a ${Math.round(importedTotal / 60 * 10) / 10}-hour broadcast -- free accounts are capped at ${FREE_MAX_BROADCAST_MIN / 60} hours. Go Premium to import broadcasts of any length.`);
+      return;
+    }
     if (timelineBlocks.length > 0 && !confirm('Replace your current ' + timelineBlocks.length + '-block timeline with the ' + data.blocks.length + ' blocks from this file?')) return;
     if (typeof stopBroadcast === 'function') stopBroadcast();
     timelineBlocks = data.blocks; // any legacy targetMinutes field in an old export is just ignored
