@@ -160,7 +160,7 @@
     line-height: 1;
     margin: 0; /* now an <h1> -- neutralize the browser's default h1 margin, unrelated to this class's own sizing */
     position: relative;
-    top: -1px;
+    top: 0px;
   }
   .header-subtitle {
     display: none;
@@ -1306,7 +1306,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.23.2';
+const VERSION = '3.23.3';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
