@@ -32,11 +32,9 @@
 const ALLOWED_ORIGINS = ['https://njf520.github.io', 'https://airsona.io', 'https://www.airsona.io'];
 const MAX_RESPONSE_BYTES = 20 * 1024 * 1024; // 20MB -- generous for an RSS feed or a .pls file
 
-// TODO: replace with the real numeric product ID once the Airsona Premium product exists in Lemon
-// Squeezy (Dashboard -> Products -> the product -> its ID is in the URL and on the product page).
-// This isn't a secret -- it's just used to confirm a validated key belongs to *this* product,
-// in case the store ever sells anything else.
-const LEMONSQUEEZY_PRODUCT_ID = 'REPLACE_WITH_LEMONSQUEEZY_PRODUCT_ID';
+// Confirms a validated key belongs to *this* product, in case the store ever sells anything else.
+// Not a secret -- just the Airsona Premium product's ID from its Lemon Squeezy dashboard URL.
+const LEMONSQUEEZY_PRODUCT_ID = '1234558';
 
 function corsHeaders(request, methods = 'GET,OPTIONS') {
   const requestOrigin = request.headers.get('Origin');
