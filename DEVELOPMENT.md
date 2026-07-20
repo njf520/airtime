@@ -1050,6 +1050,45 @@ rename now and the URL/infrastructure migration later (once the domain is
 live) avoids breaking the only working URL this project has for no
 immediate benefit.
 
+## Migrating to the airsona.io custom domain
+
+`airsona.io` (not `.net` — the `.io` ended up being the one actually
+purchased) is now live as a GitHub Pages custom domain on top of
+`njf520/airtime`. Sequencing here matters more than it looks: **setting
+GitHub's side of a custom domain (the `CNAME` file and/or the Pages API's
+`cname` field) takes effect immediately** — it starts redirecting the
+default `njf520.github.io/airtime/` URL right away, regardless of whether
+DNS for the custom domain is actually configured yet. The first attempt at
+this migration set the `CNAME` file and API `cname` before Porkbun's DNS
+records existed, which immediately broke the live site (visitors were
+redirected to `airsona.io`, which just showed Porkbun's parked-domain
+placeholder page). That attempt was reverted (`CNAME` removed, API `cname`
+cleared) and the live site confirmed restored before trying again —
+correctly this time — in the order: (1) add DNS records at the registrar
+first (four A records for the apex pointing at GitHub Pages' IPs —
+`185.199.108.153`, `.109.153`, `.110.153`, `.111.153` — plus a CNAME for
+`www` → `njf520.github.io`), (2) confirm those resolve, **then** (3) only
+after that, re-add the `CNAME` file and re-set the Pages API `cname`.
+
+`cors-proxy-worker.js` was updated ahead of the domain going live to
+support both origins at once (`ALLOWED_ORIGINS`, dynamic
+`Access-Control-Allow-Origin` echo based on the request's `Origin` header,
+`Vary: Origin`) — necessary because a service worker registered at
+`njf520.github.io` doesn't follow a domain migration, so anyone with the
+PWA already installed there keeps hitting that origin independent of where
+new visitors land on `airsona.io`. That change still needs a manual
+Cloudflare redeploy to take effect (see the file's own header comment).
+
+Still pending as of this migration: GitHub's automatic HTTPS certificate
+for `airsona.io` (issuance can take minutes to ~24h; "Enforce HTTPS" can't
+be turned on until it's ready), and the full URL-reference sweep this same
+section flagged as deferred above (canonical/OG/JSON-LD URLs,
+`manifest.json`'s `start_url`, `smoke-test.js`'s constants,
+`ARCHITECTURE.md`, the Worker's own User-Agent string and subdomain) —
+worth doing once the domain is confirmed fully stable end-to-end rather
+than immediately, in case anything about the DNS/cert setup still needs
+adjustment.
+
 ## Versioning
 
 The header shows a version badge (e.g. `v1.1.0`) next to the title, driven
