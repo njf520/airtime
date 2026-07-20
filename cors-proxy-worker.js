@@ -22,7 +22,14 @@
 // narrowly-scoped route (fixed upstream URL, no user-supplied target) rather than opening the
 // general proxy to POST, which would turn it into an open relay.
 
-const ALLOWED_ORIGIN = 'https://njf520.github.io';
+// Multiple allowed origins during the airsona.io migration: the old GitHub Pages origin has to
+// keep working alongside the new custom domain, since a service worker registered at
+// njf520.github.io doesn't follow a domain migration -- anyone with the PWA already installed (or
+// just a cached tab open) keeps loading from that origin for a while, independent of where new
+// visitors land. Access-Control-Allow-Origin can only ever echo back ONE origin per response
+// (never a list), so corsHeaders() below checks the request's actual Origin against this allowlist
+// and echoes back whichever one matches, rather than a single hardcoded value.
+const ALLOWED_ORIGINS = ['https://njf520.github.io', 'https://airsona.io', 'https://www.airsona.io'];
 const MAX_RESPONSE_BYTES = 20 * 1024 * 1024; // 20MB -- generous for an RSS feed or a .pls file
 
 // TODO: replace with the real numeric product ID once the Airsona Premium product exists in Lemon
@@ -31,16 +38,19 @@ const MAX_RESPONSE_BYTES = 20 * 1024 * 1024; // 20MB -- generous for an RSS feed
 // in case the store ever sells anything else.
 const LEMONSQUEEZY_PRODUCT_ID = 'REPLACE_WITH_LEMONSQUEEZY_PRODUCT_ID';
 
-function corsHeaders(methods = 'GET,OPTIONS') {
+function corsHeaders(request, methods = 'GET,OPTIONS') {
+  const requestOrigin = request.headers.get('Origin');
+  const origin = ALLOWED_ORIGINS.includes(requestOrigin) ? requestOrigin : ALLOWED_ORIGINS[0];
   return {
-    'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': methods,
     'Access-Control-Allow-Headers': 'Content-Type',
+    'Vary': 'Origin', // so a cached response for one allowed origin never gets served to another
   };
 }
 
 async function handleLicenseVerify(request) {
-  const headers = { ...corsHeaders('POST,OPTIONS'), 'Content-Type': 'application/json' };
+  const headers = { ...corsHeaders(request, 'POST,OPTIONS'), 'Content-Type': 'application/json' };
   let licenseKey;
   try {
     const body = await request.json();
@@ -97,7 +107,7 @@ async function handleRssProxy(request) {
   const requestUrl = new URL(request.url);
   const target = requestUrl.searchParams.get('url');
   if (!target) {
-    return new Response('Missing ?url= parameter', { status: 400, headers: corsHeaders() });
+    return new Response('Missing ?url= parameter', { status: 400, headers: corsHeaders(request) });
   }
 
   let targetUrl;
@@ -105,13 +115,13 @@ async function handleRssProxy(request) {
     targetUrl = new URL(target);
   } catch (e) {
     console.warn('handleRssProxy: malformed ?url= parameter "' + target + '".', e);
-    return new Response('Invalid url parameter', { status: 400, headers: corsHeaders() });
+    return new Response('Invalid url parameter', { status: 400, headers: corsHeaders(request) });
   }
   if (targetUrl.protocol !== 'https:' && targetUrl.protocol !== 'http:') {
-    return new Response('Only http/https URLs are allowed', { status: 400, headers: corsHeaders() });
+    return new Response('Only http/https URLs are allowed', { status: 400, headers: corsHeaders(request) });
   }
   if (isPrivateHost(targetUrl.hostname)) {
-    return new Response('Refusing to fetch a private/internal address', { status: 400, headers: corsHeaders() });
+    return new Response('Refusing to fetch a private/internal address', { status: 400, headers: corsHeaders(request) });
   }
 
   try {
@@ -121,22 +131,22 @@ async function handleRssProxy(request) {
     });
     const contentLength = upstream.headers.get('content-length');
     if (contentLength && Number(contentLength) > MAX_RESPONSE_BYTES) {
-      return new Response('Upstream response too large', { status: 502, headers: corsHeaders() });
+      return new Response('Upstream response too large', { status: 502, headers: corsHeaders(request) });
     }
     const body = await upstream.arrayBuffer();
     if (body.byteLength > MAX_RESPONSE_BYTES) {
-      return new Response('Upstream response too large', { status: 502, headers: corsHeaders() });
+      return new Response('Upstream response too large', { status: 502, headers: corsHeaders(request) });
     }
     return new Response(body, {
       status: upstream.status,
       headers: {
         'Content-Type': upstream.headers.get('content-type') || 'application/octet-stream',
-        ...corsHeaders(),
+        ...corsHeaders(request),
       },
     });
   } catch (e) {
     console.warn('handleRssProxy: upstream fetch failed for "' + targetUrl.toString() + '".', e);
-    return new Response('Upstream fetch failed: ' + (e.message || 'unknown error'), { status: 502, headers: corsHeaders() });
+    return new Response('Upstream fetch failed: ' + (e.message || 'unknown error'), { status: 502, headers: corsHeaders(request) });
   }
 }
 
@@ -146,19 +156,19 @@ export default {
 
     if (path === '/license-verify') {
       if (request.method === 'OPTIONS') {
-        return new Response(null, { status: 204, headers: corsHeaders('POST,OPTIONS') });
+        return new Response(null, { status: 204, headers: corsHeaders(request, 'POST,OPTIONS') });
       }
       if (request.method !== 'POST') {
-        return new Response('Method not allowed', { status: 405, headers: corsHeaders('POST,OPTIONS') });
+        return new Response('Method not allowed', { status: 405, headers: corsHeaders(request, 'POST,OPTIONS') });
       }
       return handleLicenseVerify(request);
     }
 
     if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders() });
+      return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
     if (request.method !== 'GET') {
-      return new Response('Method not allowed', { status: 405, headers: corsHeaders() });
+      return new Response('Method not allowed', { status: 405, headers: corsHeaders(request) });
     }
     return handleRssProxy(request);
   },
