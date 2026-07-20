@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://njf520.github.io/airtime/sitemap.xml
+Sitemap: https://airsona.io/sitemap.xml

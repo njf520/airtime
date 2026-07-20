@@ -15,7 +15,7 @@ const { chromium } = require('playwright');
 
 const OWNER = 'njf520';
 const REPO = 'airtime';
-const SITE_URL = 'https://njf520.github.io/airtime/test.html';
+const SITE_URL = 'https://airsona.io/test.html';
 const TRACKING_TITLE = 'Feed smoke-test failures';
 const LABEL = 'smoke-test';
 const STATE_MARKER_RE = /<!--\s*smoke-test-state:([\s\S]*?)-->/;

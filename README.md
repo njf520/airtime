@@ -2,7 +2,7 @@
 
 **Build your own radio station out of the podcasts and internet radio you actually like — then hit play and it just runs.**
 
-### [▶ Try it live — no sign-up, no account](https://njf520.github.io/airtime/)
+### [▶ Try it live — no sign-up, no account](https://airsona.io/)
 
 ![Airsona timeline screenshot](screenshot.png)
 
@@ -22,7 +22,7 @@ Every podcast app makes you pick one show and listen to it start to finish. Airs
 
 ## Getting started
 
-1. Open **[the live site](https://njf520.github.io/airtime/)** — nothing to install to try it.
+1. Open **[the live site](https://airsona.io/)** — nothing to install to try it.
 2. Hit **Play** on one of the starter broadcasts, or drag a few sources of your own into the timeline.
 3. Like what you built? Save it as a named broadcast so it's one click away next time.
 4. On your phone, use "Add to Home screen" to install it like an app.

@@ -2,7 +2,7 @@
   "name": "Airsona",
   "short_name": "Airsona",
   "description": "Build and play a custom radio broadcast timeline",
-  "start_url": "/airtime/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#1b1915",
   "theme_color": "#1b1915",

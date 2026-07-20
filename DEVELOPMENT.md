@@ -4,9 +4,10 @@
 > chronological record and refers to the app by whatever name was current at
 > the time — entries below still say "Airtime" and that's intentional, not
 > stale; rewriting history here would make this log less accurate, not more.
-> The repo, its URL (`njf520.github.io/airtime/`), and the Cloudflare Worker
-> subdomain haven't been renamed yet (see `ARCHITECTURE.md` and the SEO
-> comment at the top of `index.html`'s `<head>` for what's deferred and why).
+> The custom domain (`airsona.io`) is live now (see "Migrating to the
+> airsona.io custom domain" below) — the GitHub repo name and the Cloudflare
+> Worker subdomain are the two pieces still deliberately unrenamed (see
+> `ARCHITECTURE.md` for what's deferred and why).
 
 This is the development history: what got built, why, what broke and how it
 got fixed, verified live with real testing at each step. If you're looking
@@ -36,7 +37,10 @@ source on this branch (podcasts, archives, internet radio, and the
 Radio-Browser-backed Music genre/decade/mood channels) is legally clear for
 public/commercial use with no platform-imposed user cap.
 
-Live (`commercial` branch) at **https://njf520.github.io/airtime/**.
+Live (`commercial` branch) at **https://airsona.io/** (also still reachable
+at the original **https://njf520.github.io/airtime/**, kept working during
+the domain transition — see "Migrating to the airsona.io custom domain"
+below).
 
 ## Scaling this to the public
 
