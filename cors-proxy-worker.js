@@ -34,7 +34,7 @@ const MAX_RESPONSE_BYTES = 20 * 1024 * 1024; // 20MB -- generous for an RSS feed
 
 // Confirms a validated key belongs to *this* product, in case the store ever sells anything else.
 // Not a secret -- just the Airsona Premium product's ID from its Lemon Squeezy dashboard URL.
-const LEMONSQUEEZY_PRODUCT_ID = '1234558';
+const LEMONSQUEEZY_PRODUCT_ID = '1286034';
 
 function corsHeaders(request, methods = 'GET,OPTIONS') {
   const requestOrigin = request.headers.get('Origin');
