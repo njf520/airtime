@@ -47,7 +47,7 @@ function corsHeaders(request, methods = 'GET,OPTIONS') {
   };
 }
 
-async function handleLicenseVerify(request) {
+async function handleLicenseVerify(request, env) {
   const headers = { ...corsHeaders(request, 'POST,OPTIONS'), 'Content-Type': 'application/json' };
   let licenseKey;
   try {
@@ -59,6 +59,14 @@ async function handleLicenseVerify(request) {
   }
   if (!licenseKey) {
     return new Response(JSON.stringify({ success: false, message: 'Missing license key' }), { status: 400, headers });
+  }
+
+  // Owner override: a permanent Premium key that never touches Lemon Squeezy, so it can't be
+  // affected by refunds, expiry, or test/live product switches -- unlike a real customer license.
+  // The actual value lives only as a Cloudflare Worker secret (Settings -> Variables), never in
+  // this checked-into-git file, since anyone can read this source on the public repo.
+  if (env.OWNER_LICENSE_KEY && licenseKey === env.OWNER_LICENSE_KEY) {
+    return new Response(JSON.stringify({ success: true, key: licenseKey, email: 'owner' }), { status: 200, headers });
   }
 
   try {
@@ -149,7 +157,7 @@ async function handleRssProxy(request) {
 }
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const path = new URL(request.url).pathname;
 
     if (path === '/license-verify') {
@@ -159,7 +167,7 @@ export default {
       if (request.method !== 'POST') {
         return new Response('Method not allowed', { status: 405, headers: corsHeaders(request, 'POST,OPTIONS') });
       }
-      return handleLicenseVerify(request);
+      return handleLicenseVerify(request, env);
     }
 
     if (request.method === 'OPTIONS') {
