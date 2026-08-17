@@ -13,7 +13,10 @@
 // file's contents into its code editor, and Deploy.
 //
 // GET /?url=<encoded target URL> -> fetches that URL server-side and returns it with CORS headers
-// added, so it's readable from https://njf520.github.io/airtime/'s browser JS.
+// added, so it's readable from https://njf520.github.io/airtime/'s browser JS. Successful fetches
+// are cached at the edge (Cloudflare's built-in Cache API, no extra service/cost) for
+// CACHE_TTL_SECONDS, so a traffic spike -- or just normal use -- doesn't re-fetch the same feed
+// from its origin on every single play.
 //
 // POST /license-verify {licenseKey} -> forwards to Lemon Squeezy's license validate API
 // (server-to-server only -- it doesn't set CORS headers for browser callers), checks the key
@@ -31,6 +34,14 @@
 // and echoes back whichever one matches, rather than a single hardcoded value.
 const ALLOWED_ORIGINS = ['https://njf520.github.io', 'https://airsona.io', 'https://www.airsona.io'];
 const MAX_RESPONSE_BYTES = 20 * 1024 * 1024; // 20MB -- generous for an RSS feed or a .pls file
+
+// How long a fetched feed/playlist is served from cache before re-fetching from the origin.
+// Podcast RSS and .pls files don't change more than a few times a day, so this is generous
+// headroom, not staleness risk. The real point: a traffic spike (or just normal use) stops
+// re-fetching the same feed from its origin on every single play, which is what made the free
+// public CORS proxies feel load-bearing in the first place -- with this, most requests never
+// reach an origin server (or a public proxy fallback) at all.
+const CACHE_TTL_SECONDS = 600;
 
 // Confirms a validated key belongs to *this* product, in case the store ever sells anything else.
 // Not a secret -- just the Airsona Premium product's ID from its Lemon Squeezy dashboard URL.
@@ -109,7 +120,7 @@ function isPrivateHost(hostname) {
   return /^(localhost|127\.|0\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|\[?::1\]?)$/i.test(hostname);
 }
 
-async function handleRssProxy(request) {
+async function handleRssProxy(request, ctx) {
   const requestUrl = new URL(request.url);
   const target = requestUrl.searchParams.get('url');
   if (!target) {
@@ -130,6 +141,24 @@ async function handleRssProxy(request) {
     return new Response('Refusing to fetch a private/internal address', { status: 400, headers: corsHeaders(request) });
   }
 
+  // Cache key is just the target URL, deliberately ignoring which of ALLOWED_ORIGINS asked for it --
+  // every origin shares one cached copy of the same feed. CORS headers are computed fresh from the
+  // real request below on both the hit and miss paths, so a cached body never carries a stale/wrong
+  // Access-Control-Allow-Origin for whichever origin is actually asking this time.
+  const cache = caches.default;
+  const cacheKey = new Request('https://cors-proxy-cache.internal/feed?url=' + encodeURIComponent(targetUrl.toString()));
+
+  const cached = await cache.match(cacheKey);
+  if (cached) {
+    return new Response(cached.body, {
+      status: cached.status,
+      headers: {
+        'Content-Type': cached.headers.get('content-type') || 'application/octet-stream',
+        ...corsHeaders(request),
+      },
+    });
+  }
+
   try {
     const upstream = await fetch(targetUrl.toString(), {
       headers: { 'User-Agent': 'AirsonaCorsProxy/1.0 (+https://njf520.github.io/airtime/)' },
@@ -143,10 +172,23 @@ async function handleRssProxy(request) {
     if (body.byteLength > MAX_RESPONSE_BYTES) {
       return new Response('Upstream response too large', { status: 502, headers: corsHeaders(request) });
     }
+    const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
+
+    if (upstream.ok) {
+      const cacheable = new Response(body, {
+        status: upstream.status,
+        headers: {
+          'Content-Type': contentType,
+          'Cache-Control': `public, max-age=${CACHE_TTL_SECONDS}`,
+        },
+      });
+      ctx.waitUntil(cache.put(cacheKey, cacheable));
+    }
+
     return new Response(body, {
       status: upstream.status,
       headers: {
-        'Content-Type': upstream.headers.get('content-type') || 'application/octet-stream',
+        'Content-Type': contentType,
         ...corsHeaders(request),
       },
     });
@@ -157,7 +199,7 @@ async function handleRssProxy(request) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const path = new URL(request.url).pathname;
 
     if (path === '/license-verify') {
@@ -176,6 +218,6 @@ export default {
     if (request.method !== 'GET') {
       return new Response('Method not allowed', { status: 405, headers: corsHeaders(request) });
     }
-    return handleRssProxy(request);
+    return handleRssProxy(request, ctx);
   },
 };
