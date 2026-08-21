@@ -41,6 +41,12 @@
 
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231b1915'/%3E%3Crect x='6' y='37' width='8' height='15' rx='2' fill='%23e0a13c'/%3E%3Crect x='17' y='17' width='8' height='35' rx='2' fill='%23e0a13c'/%3E%3Crect x='28' y='28' width='8' height='24' rx='2' fill='%23e0a13c'/%3E%3Crect x='39' y='12' width='8' height='40' rx='2' fill='%23e0a13c'/%3E%3Crect x='50' y='40' width='8' height='12' rx='2' fill='%23e0a13c'/%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.json">
+
+<!-- Cloudflare Web Analytics -- privacy-first, no cookies, no individual tracking, just aggregate
+     page views/visits. Chosen over Google Analytics specifically to stay consistent with the
+     no-accounts/nothing-tracked stance already stated publicly about this app. -->
+<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0d59891368f47e0bbf0a7e3c604c66a"}'></script>
+<!-- End Cloudflare Web Analytics -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1324,7 +1330,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.28.0';
+const VERSION = '3.29.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
