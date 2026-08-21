@@ -127,6 +127,20 @@
     flex-wrap: wrap;
     gap: 12px;
   }
+  #sync-notice {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 40px;
+    background: color-mix(in srgb, var(--warn) 16%, var(--bg));
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+  #sync-notice.visible { display: flex; }
+  #sync-notice-text { color: var(--text); }
+  #sync-notice-actions { display: flex; gap: 8px; flex-shrink: 0; }
   .header-brand {
     display: flex;
     align-items: baseline;
@@ -1199,6 +1213,14 @@
   </div>
 </header>
 
+<div id="sync-notice">
+  <span id="sync-notice-text"></span>
+  <div id="sync-notice-actions">
+    <button class="btn primary" id="sync-notice-reload-btn">Reload this tab</button>
+    <button class="btn" id="sync-notice-dismiss-btn">Keep editing here</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="premium-modal-overlay">
   <div class="modal modal-premium" role="dialog" aria-modal="true" aria-labelledby="premium-modal-title">
     <div class="modal-premium-head">
@@ -1302,7 +1324,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.27.0';
+const VERSION = '3.28.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -2563,6 +2585,40 @@ function renderTimelineRuler() {
 }
 
 function persistTimeline() { save('airtime_timeline_v1', timelineBlocks); }
+
+// Cross-tab/cross-context awareness: this app has no server, so a second open context (an
+// installed PWA plus a normal browser tab, or two tabs) means two independent in-memory copies of
+// timelineBlocks/rundowns, each loaded once at startup. Without this, whichever context saves last
+// silently overwrites the other's changes in full -- there's no per-block merge, just one JSON
+// blob per key. This can't safely auto-merge (this tab's own unsaved edits would need to be
+// reconciled block-by-block), so instead it surfaces the conflict rather than hiding it: the user
+// picks between reloading (loses this tab's unsaved changes, picks up the other context's) or
+// continuing here (keeps editing, but is now aware this tab's next save will overwrite what the
+// other context just wrote).
+const SYNC_WATCHED_KEYS = {
+  'airtime_timeline_v1': 'Your timeline',
+  'airtime_rundowns_v1': 'Your saved broadcasts',
+};
+let syncNoticeChangedLabels = new Set();
+function showSyncNotice(storageKey) {
+  const label = SYNC_WATCHED_KEYS[storageKey];
+  if (!label) return;
+  syncNoticeChangedLabels.add(label);
+  const el = document.getElementById('sync-notice');
+  const textEl = document.getElementById('sync-notice-text');
+  if (!el || !textEl) return;
+  const list = [...syncNoticeChangedLabels].join(' and ');
+  textEl.textContent = `${list} changed in another tab or window. Reload to see the latest version, or keep editing here (this tab will overwrite it when you next save).`;
+  el.classList.add('visible');
+}
+window.addEventListener('storage', e => {
+  if (e.key && Object.prototype.hasOwnProperty.call(SYNC_WATCHED_KEYS, e.key)) showSyncNotice(e.key);
+});
+document.getElementById('sync-notice-reload-btn')?.addEventListener('click', () => location.reload());
+document.getElementById('sync-notice-dismiss-btn')?.addEventListener('click', () => {
+  syncNoticeChangedLabels.clear();
+  document.getElementById('sync-notice')?.classList.remove('visible');
+});
 
 // "Rundowns" (broadcast-industry term for a planned segment lineup) are named, saved timeline
 // presets -- they store sourceId + lengthMin per block, NOT specific episodes, so loading one
