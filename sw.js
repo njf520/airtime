@@ -2,7 +2,7 @@
 //
 // Bump CACHE_NAME on every deploy so old caches get cleaned up and clients
 // pick up fresh assets.
-const CACHE_NAME = 'airsona-v3.29.0';
+const CACHE_NAME = 'airsona-v3.30.0';
 const APP_SHELL = [
   './',
   './index.html',

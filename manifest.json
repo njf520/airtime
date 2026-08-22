@@ -19,5 +19,14 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshot.png",
+      "sizes": "1677x847",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Airsona's timeline builder, showing a broadcast assembled from podcasts and internet radio"
+    }
   ]
 }
