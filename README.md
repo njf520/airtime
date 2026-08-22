@@ -32,3 +32,7 @@ Found a broken source or something weird? There's a **🐛 Report a bug / feedba
 ## Curious how it's built?
 
 See **[ARCHITECTURE.md](ARCHITECTURE.md)** for a diagram of how the pieces fit together, or **[DEVELOPMENT.md](DEVELOPMENT.md)** for the full engineering story — no backend, no build step, no framework, one HTML file, and a lot of live-tested detail on how it fetches podcast RSS around CORS, resolves internet radio streams, and handles the dozens of little edge cases that come with aggregating hundreds of independently-run audio sources.
+
+## License
+
+[MIT](LICENSE) — do what you want with it.
