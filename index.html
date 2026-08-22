@@ -1330,7 +1330,7 @@
 <script>
 // Bump on every deploy (alongside CACHE_NAME in sw.js) so the version badge in the header and
 // the service worker's cache both reflect what's actually live.
-const VERSION = '3.31.0';
+const VERSION = '3.32.0';
 document.getElementById('version-display').textContent = 'v' + VERSION;
 (function() {
   const el = document.getElementById('footer-status');
@@ -1607,7 +1607,7 @@ const SOURCES = [
   { id: 'wx-nyc',          name: 'NOAA Weather Radio: New York City', category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/NY-NewYorkCity-KWO35', feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the NYC metro. Government service, no ads.' },
   { id: 'wx-phoenix',      name: 'NOAA Weather Radio: Phoenix',       category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/AZ-Phoenix-KEC94',     feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Phoenix metro. Government service, no ads.' },
   { id: 'wx-philadelphia', name: 'NOAA Weather Radio: Philadelphia',  category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/PA-Philadelphia-KIH28', feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Philadelphia metro. Government service, no ads.' },
-  { id: 'wx-dallas',       name: 'NOAA Weather Radio: Dallas',        category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/TX-Dallas-KEC56',      feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Dallas metro. Government service, no ads.' },
+  { id: 'wx-dallas',       name: 'NOAA Weather Radio: Dallas',        category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/TX-Dallas-KEC56',      feedStatus: 'none', desc: 'Currently unavailable -- wxradio.org retired this relay\'s stream (confirmed 404, other call-sign guesses also failed). Fort Worth (below) covers the same metroplex and still works.' },
   { id: 'wx-fortworth',    name: 'NOAA Weather Radio: Fort Worth',    category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/TX-FortWorth-KEC55',   feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Fort Worth metro. Government service, no ads.' },
   { id: 'wx-austin',       name: 'NOAA Weather Radio: Austin',        category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/TX-Austin-WXK27',      feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Austin metro. Government service, no ads.' },
   { id: 'wx-columbus',     name: 'NOAA Weather Radio: Columbus',      category: 'Weather', cadence: 'Anytime', lengthMin: null, flexible: true, sourceType: 'internet-radio', feedUrl: 'direct-stream:https://wxradio.org/OH-Columbus-KIG86',    feedStatus: 'verified', desc: 'Continuous automated NOAA forecast loop for the Columbus, OH metro. Government service, no ads.' },
