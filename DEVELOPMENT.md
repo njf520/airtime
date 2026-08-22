@@ -1083,15 +1083,132 @@ PWA already installed there keeps hitting that origin independent of where
 new visitors land on `airsona.io`. That change still needs a manual
 Cloudflare redeploy to take effect (see the file's own header comment).
 
-Still pending as of this migration: GitHub's automatic HTTPS certificate
-for `airsona.io` (issuance can take minutes to ~24h; "Enforce HTTPS" can't
-be turned on until it's ready), and the full URL-reference sweep this same
-section flagged as deferred above (canonical/OG/JSON-LD URLs,
-`manifest.json`'s `start_url`, `smoke-test.js`'s constants,
-`ARCHITECTURE.md`, the Worker's own User-Agent string and subdomain) —
-worth doing once the domain is confirmed fully stable end-to-end rather
-than immediately, in case anything about the DNS/cert setup still needs
-adjustment.
+**Update: both since done.** GitHub's HTTPS certificate provisioned and
+"Enforce HTTPS" was turned on once it did (confirmed via the Pages API's
+`https_enforced` field, and that `http://airsona.io` now 301s to
+`https://`). The URL-reference sweep also happened: `index.html`'s
+canonical link, `og:url`, `og:image`/`twitter:image`, and the JSON-LD
+`url` now all point at `airsona.io`; `sitemap.xml` and `robots.txt`'s
+sitemap reference were updated too; `smoke-test.js`'s `SITE_URL` now
+points at `airsona.io/test.html` (its `OWNER`/`REPO` constants stay
+`njf520`/`airtime` on purpose — those identify the GitHub repo for the
+tracking-issue API calls, not the site). `manifest.json`'s `start_url`
+changed from the absolute `/airtime/` to the relative `./` specifically
+*because* of the dual-origin situation — an absolute path baked to one
+origin's subpath would 404 when loaded from the other, since
+`njf520.github.io` serves this app under `/airtime/` while `airsona.io`
+serves it at the root.
+
+**Still deliberately not touched**: the GitHub repo name/URL and the
+Cloudflare Worker's subdomain (`airtime-cors-proxy.njf520.workers.dev`)
+— same reasoning as before, these are separate, larger, riskier
+migrations with no functional benefit to doing now.
+
+## Lemon Squeezy Premium goes live
+
+`LEMONSQUEEZY_PRODUCT_ID` and `LEMONSQUEEZY_CHECKOUT_URL` were placeholders
+for a long time (see "Freemium gate" above) — the product now genuinely
+exists, one-time $9.99 purchase (not a subscription: the app never
+re-verifies a license after first entry, so a subscription would let
+someone stop paying and silently keep access forever, since there's no
+periodic re-check to revoke it).
+
+**A real gotcha discovered live**: the first product was created while the
+Lemon Squeezy store was still in Test mode (before identity verification
+finished). Once the store went live, that product's checkout link kept
+showing "Test mode is currently enabled" to every visitor forever —
+turns out Lemon Squeezy doesn't migrate a test-mode product to live
+automatically; it needs "Copy to Live Mode," which creates a *new*
+product with a *new* ID and a *new* checkout URL. Confirmed via
+`api.lemonsqueezy.com/v1/licenses/validate` directly that the old
+product's keys carried `"test_mode": true` regardless of the account-level
+toggle. Fixed by copying to a live product and re-pointing both constants
+at the new IDs; verified end-to-end with one real (later refunded) $9.99
+purchase that the resulting key validated and unlocked Premium in the live
+app.
+
+**Owner override**: a permanent Premium key for testing that never touches
+Lemon Squeezy at all — `handleLicenseVerify` checks the submitted key
+against `env.OWNER_LICENSE_KEY` (a Cloudflare Worker secret, never
+committed to this public repo) before ever calling Lemon Squeezy, and
+returns success immediately if it matches. This exists because a real
+purchase's license gets tied to that order's paid status — refunding the
+order (done once, to confirm refunds actually work) immediately flips the
+key to `expired` and breaks it, which a permanent test account can't
+afford to have happen.
+
+## CORS proxy: edge caching
+
+Feedback from the launch posts (a Reddit comment) correctly diagnosed the
+free public CORS proxies as the app's most fragile part, and pointed out
+that the dedicated Worker didn't actually fix that — it still re-fetched
+every feed live on every single play, so a real traffic spike would still
+hammer origin servers and lean on the flaky public-proxy fallbacks just as
+much as if the Worker didn't exist.
+
+Fixed with Cloudflare's built-in Cache API (`caches.default`) inside
+`handleRssProxy` — no new service, no extra cost, just a `cache.match()`
+check before fetching and a `cache.put()` after a successful one, with a
+10-minute TTL (`CACHE_TTL_SECONDS`). The cache key is the target URL only,
+deliberately ignoring which of `ALLOWED_ORIGINS` asked for it, so both
+origins share one cached copy of the same feed instead of doubling cache
+entries; CORS headers are computed fresh from the real request on both the
+cache-hit and cache-miss paths specifically so a cached body never carries
+a stale `Access-Control-Allow-Origin` for the wrong caller. Verified live:
+repeated requests to the same feed dropped from ~700ms-1.3s down to
+~80-95ms once cached, roughly a 10x speedup on a hit.
+
+## Cross-tab timeline sync warning
+
+A different piece of Reddit feedback pointed out a real, previously
+unhandled bug: `timelineBlocks` and `rundowns` are each one JSON blob per
+`localStorage` key, loaded once into memory at page load with zero
+cross-tab awareness. An installed PWA plus a normal browser tab open to
+the same site (or just two tabs) each hold their own stale in-memory copy
+— whichever context saves last silently overwrites the other's blob
+entirely, with no per-block merge and no warning. Confirmed live with two
+real tabs: writing a change from one correctly triggered the fix's banner
+in the other.
+
+**This is the honest-minimum fix, not the real one.** A `window`
+`storage` event listener (`SYNC_WATCHED_KEYS`) notices when another
+tab/window wrote to either key and shows a dismissible banner: "Reload
+this tab" (picks up the other context's version) or "Keep editing here"
+(explicitly informed this tab's next save will overwrite it). It doesn't
+merge changes block-by-block — that would need per-entry revisions or an
+append-only operation log, which is a genuinely bigger design task, left
+for later. What this does fix: the data loss is no longer *silent* — the
+user is told and gets to choose, instead of a block just vanishing with no
+explanation.
+
+## Cloudflare Web Analytics
+
+Added purely to answer "is anyone actually using the free version" —
+previously answerable only via GitHub's repo-traffic API, which measures
+visits to the *source code* on github.com, not the live app. Deliberately
+picked over Google Analytics: it's cookieless, collects no per-visitor
+data, and needs no consent banner, which matters given this app already
+publicly says "no accounts, nothing tracked" in its own launch posts —
+GA would have quietly contradicted that. It's one `<script>` tag
+(`beacon.min.js` with a site-specific token), no backend or Worker changes
+at all.
+
+## Screenshot refresh
+
+The `screenshot.png` used for the manifest's install-prompt screenshot and
+the OG/Twitter card was still the one from before the Airtime → Airsona
+rename — it showed the old wordmark and `v3.10.0` in frame, caught while
+reviewing the manifest after a PWA-directory tester (r/PWA) pointed out
+the manifest had no `screenshots` entry at all. Fixed in two steps: first
+added the stale screenshot as a `wide`-form-factor manifest entry (better
+than nothing), then replaced the file itself with a fresh capture of the
+live app — current version number, a populated example timeline (a
+mixed news/reflection/live-radio/podcast lineup, chosen specifically to
+show off the range of what a broadcast can contain) and the source
+library filters visible. `manifest.json`'s `sizes` and the
+`og:image:width`/`height` tags were updated to the new file's actual
+1238×549. A `narrow` (mobile) screenshot is still worth adding later,
+since phone installs are the primary use case.
 
 ## Versioning
 
