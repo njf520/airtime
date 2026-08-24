@@ -27,6 +27,13 @@
       "type": "image/png",
       "form_factor": "wide",
       "label": "Airsona's timeline builder, showing a broadcast assembled from podcasts and internet radio"
+    },
+    {
+      "src": "screenshot-mobile.png",
+      "sizes": "427x958",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Airsona installed on a phone, showing the same broadcast timeline in its mobile layout"
     }
   ]
 }
